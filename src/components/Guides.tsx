@@ -5,12 +5,12 @@ const guides = [
   {
     href: '/authentication',
     name: 'Authentication',
-    description: 'Learn how to authenticate your API requests.',
+    description: 'Learn how to authenticate your dApp with the provider.',
   },
   {
-    href: '/pagination',
-    name: 'Pagination',
-    description: 'Understand how to work with paginated responses.',
+    href: '/transfer',
+    name: 'Transfer',
+    description: 'Understand how to send transfer across blockchain.',
   },
   {
     href: '/errors',
