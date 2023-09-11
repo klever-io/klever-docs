@@ -44,8 +44,8 @@ function InfoIcon(props: React.ComponentPropsWithoutRef<'svg'>) {
 
 export function Note({ children }: { children: React.ReactNode }) {
   return (
-    <div className="border-fucshia-500/20 bg-fucshia-50/50 text-fucshia-900 dark:border-fucshia-500/30 dark:bg-fucshia-500/5 dark:text-fucshia-200 my-6 flex gap-2.5 rounded-2xl border p-4 leading-6 dark:[--tw-prose-links-hover:theme(colors.fucshia.300)] dark:[--tw-prose-links:theme(colors.white)]">
-      <InfoIcon className="fill-fucshia-500 dark:fill-fucshia-200/20 dark:stroke-fucshia-200 mt-1 h-4 w-4 flex-none stroke-white" />
+    <div className="my-6 flex gap-2.5 rounded-2xl border border-fuchsia-500/20 bg-fuchsia-50/50 p-4 leading-6 text-fuchsia-900 dark:border-fuchsia-500/30 dark:bg-fuchsia-500/5 dark:text-fuchsia-200 dark:[--tw-prose-links-hover:theme(colors.fucshia.300)] dark:[--tw-prose-links:theme(colors.white)]">
+      <InfoIcon className="mt-1 h-4 w-4 flex-none fill-fuchsia-500 stroke-white dark:fill-fuchsia-200/20 dark:stroke-fuchsia-200" />
       <div className="[&>:first-child]:mt-0 [&>:last-child]:mb-0">
         {children}
       </div>

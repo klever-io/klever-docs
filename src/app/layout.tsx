@@ -3,14 +3,14 @@ import glob from 'fast-glob'
 import { Providers } from '@/app/providers'
 import { Layout } from '@/components/Layout'
 
+import { type Section } from '@/components/SectionProvider'
 import '@/styles/tailwind.css'
 import { type Metadata } from 'next'
-import { type Section } from '@/components/SectionProvider'
 
 export const metadata: Metadata = {
   title: {
-    template: '%s - Protocol API Reference',
-    default: 'Protocol API Reference',
+    template: '%s - Klever Docs',
+    default: 'Klever Documentation',
   },
 }
 

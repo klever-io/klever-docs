@@ -1,104 +1,79 @@
 export const metadata = {
   title: 'Quickstart',
   description:
-    'This guide will get you all set up and ready to use the Protocol API. We’ll cover how to get started an API client and how to make your first API request.',
+    'This guide will get you all set up and ready to use Klever Wallet in your application. We’ll cover how to get started and how to make your first method call.',
 }
 
 # Quickstart
 
-This guide will get you all set up and ready to use the Protocol API. We'll cover how to get started using one of our API clients and how to make your first API request. We'll also look at where to go next to find all the information you need to take full advantage of our powerful REST API. {{ className: 'lead' }}
+This guide will get you all set up and ready to use Klever Wallet in your application. We’ll cover how to get started using vanilla JavaScript and how to make your first method call. {{ className: 'lead' }}
 
 <Note>
-  Before you can make requests to the Protocol API, you will need to grab your
-  API key from your dashboard. You find it under [Settings &raquo; API](#).
+  Before you can procced with this quickstart, make sure your Klever Wallet is
+  properly installed and configured. If you haven't done so already, check out
+  the [Klever Wallet
+  Installer](https://chrome.google.com/webstore/detail/klever-wallet/lmbifcmbofehdpolpdpnlcnanolnlkec).
 </Note>
 
-## Choose your client
+## Verify installation
 
-Before making your first API request, you need to pick which API client you will use. In addition to good ol' cURL HTTP requests, Protocol offers clients for JavaScript, Python, and PHP. In the following example, you can see how to install each client.
+The presence of the Klever Wallet provider object, `window.klever`, in a user's browser indicates an Klever user. Is extremelly recommend this step for better user experience and error handling.
 
-<CodeGroup>
-
-```bash {{ title: 'cURL' }}
-# cURL is most likely already installed on your machine
-curl --version
+```js {{ 'title': 'index.js' }}
+if (typeof window.klever !== 'undefined') {
+  console.log('Klever Wallet is installed!')
+}
 ```
 
-```bash {{ language: 'js' }}
-# Install the Protocol JavaScript SDK
-npm install @example/protocol-api --save
+## User's account
+
+<Row>
+  <Col>
+    To access user's account information is necessary to request to user and validate the access.
+
+    When acessing a user's accounts:
+    * **Only** initiate a connection request in response to direct user action, such as selecting a connect button.
+    * **Always** disable the connect button while the connection request is pending.
+
+  </Col>
+  <Col>
+
+    ```js {{ title: 'index.js' }}
+      await window.klever.initialize();
+      const address = await window.klever.getWalletAddress();
+      if (!address || address.length === 0) {
+        throw new Error("Session not properly initialized");
+      }
+    ```
+
+  </Col>
+</Row>
+
+## Secure your application
+
+To increase security of your application and trying to verify integrity of user's wallet,
+you can add more one step in account validation, a message verification through a signed value.
+
+After retrieve user's address, you can request a signed value to user and validate it.
+
+```js {{ title: 'index.js' }}
+// ...
+
+const messageToSign = 'Validate this message to proceed.'
+const signedMessage = await window.klever.signMessage(messageToSign)
+const isValid = await window.klever.validateSignature(
+  messageToSign,
+  signedMessage,
+  address,
+)
+if (!isValid) {
+  throw new Error('Invalid signature')
+}
 ```
-
-```bash {{ language: 'python' }}
-# Install the Protocol Python SDK
-pip install protocol_api
-```
-
-```bash {{ language: 'php' }}
-# Install the Protocol PHP SDK
-composer require protocol/sdk
-```
-
-</CodeGroup>
-
-<div className="not-prose">
-  <Button
-    href="/sdks"
-    variant="text"
-    arrow="right"
-    children="Check out our list of first-party SDKs"
-  />
-</div>
-
-## Making your first API request
-
-After picking your preferred client, you are ready to make your first call to the Protocol API. Below, you can see how to send a GET request to the Conversations endpoint to get a list of all your conversations. In the cURL example, results are limited to ten conversations, the default page length for each client.
-
-<CodeGroup tag="GET" label="/v1/conversations">
-
-```bash {{ title: 'cURL' }}
-curl -G https://api.protocol.chat/v1/conversations \
-  -H "Authorization: Bearer {token}" \
-  -d limit=10
-```
-
-```js
-import ApiClient from '@example/protocol-api'
-
-const client = new ApiClient(token)
-
-await client.conversations.list()
-```
-
-```python
-from protocol_api import ApiClient
-
-client = ApiClient(token)
-
-client.conversations.list()
-```
-
-```php
-$client = new \Protocol\ApiClient($token);
-
-$client->conversations->list();
-```
-
-</CodeGroup>
-
-<div className="not-prose">
-  <Button
-    href="/conversations"
-    variant="text"
-    arrow="right"
-    children="Read the docs for the Conversations endpoint"
-  />
-</div>
 
 ## What's next?
 
-Great, you're now set up with an API client and have made your first request to the API. Here are a few links that might be handy as you venture further into the Protocol API:
+Great, you're now make a secure connection with Klever Wallet. Here are a few links that might be handy as you venture further into Klever Wallet:
 
-- [Grab your API key from the Protocol dashboard](#)
-- [Check out the Conversations endpoint](/conversations)
-- [Learn about the different error messages in Protocol](/errors)
+- [Framework implementations](/frameworks)
+- [Check out the Klever Provider methods](/provider)
