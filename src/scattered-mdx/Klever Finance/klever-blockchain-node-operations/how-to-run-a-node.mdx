@@ -1,0 +1,121 @@
+Klever nodes run inside a docker container, check [System Requirements](undefined) section to download Klever Toolchain first.
+
+### Create statics directory
+
+Create a folder where all the data will be stored:
+
+```undefined
+mkdir -p $(pwd)/node/config $(pwd)/node/db $(pwd)/node/logs
+```
+
+### Network genesis config
+
+Download latest config file and extract into your config directory
+
+_For MainNet_
+
+```undefined
+curl -k https://backup.mainnet.klever.finance/config.mainnet.108.tar.gz \
+    | tar -xz -C ./node
+```
+
+_For TestNet_
+
+```undefined
+curl -k https://backup.testnet.klever.finance/config.testnet.100420.tar.gz \
+    | tar -xz -C ./node
+```
+
+### Create your validator BLS Key
+
+Execute a command inside the docker container to create wallets for validators. The data is then forwarded to the directory created previously.
+
+```undefined
+docker run -it --rm -v $(pwd)/node/config:/opt/klever-blockchain \
+    --user "$(id -u):$(id -g)" \
+    --entrypoint='' kleverapp/klever-go:latest keygenerator
+```
+
+### Run your node the first time
+
+The command for running a node comes with a few settings: it includes mappings for cryptographic keys, data directories and logs, as well as network ports, the application that will run when the docker image is executed and the file of node validators signature.
+
+_MainNet_
+
+```undefined
+docker run -it --rm \
+    --user "$(id -u):$(id -g)" \
+    --name klever-node \
+    -v $(pwd)/node/config:/opt/klever-blockchain/config/node \
+    -v $(pwd)/node/db:/opt/klever-blockchain/db \
+    -v $(pwd)/node/logs:/opt/klever-blockchain/logs \
+    --network=host \
+    --entrypoint=/usr/local/bin/validator \
+    kleverapp/klever-go:latest \
+    '--log-save' '--rest-api-interface=0.0.0.0:8080'
+```
+
+The table below shows what each part of the command is supposed to do.
+
+Import genesis config and the generated .pem file (BLS Key).
+
+-v $(pwd)/node/db:/opt/klever-blockchain/db
+
+Select the destination DB folder.
+
+-v $(pwd)/node/logs:/opt/klever-blockchain/logs
+
+Save log files and set the log folders
+
+-v $(pwd)/config:/opt/klever-blockchain/config/node
+
+If one wants to monitor the node using log files, the flag `--use-log-view` must be passed. Otherwise, the standard view is a visual interface as seen below.
+
+When you are done setting up and running your node, you are expected to see information about your node, the blockchain itself, as well as data from your own computer, just like the example below:
+
+![A node running, showing how many blocks were proposed and accepted, current blocks, slots and connected nodes, last generated hash, computational information, epoch and network processes and a basic log info segment.](files/undefined)
+
+### Run node in the background the first time
+
+When running in the background, add parameter `--use-log-view` and replace `--rm` for `-d`
+
+```undefined
+docker run -it -d --restart unless-stopped \
+    --user "$(id -u):$(id -g)" \
+    --name klever-node \
+    -v $(pwd)/node/config:/opt/klever-blockchain/config/node \
+    -v $(pwd)/node/db:/opt/klever-blockchain/db \
+    -v $(pwd)/node/logs:/opt/klever-blockchain/logs \
+    --network=host \
+    --entrypoint=/usr/local/bin/validator \
+    kleverapp/klever-go:latest \
+    '--log-save' '--use-log-view' '--rest-api-interface=0.0.0.0:8080'
+```
+
+If you are running your node in the background, you can either verify logs in `./node/logs` folder or use the docker command:
+
+```undefined
+docker logs -f --tail 5 klever-node
+```
+
+You can speed up your node's first synchronization by using the FullNode database backup
+
+_For MainNet_
+
+```undefined
+curl -k https://backup.mainnet.klever.finance/kleverchain.mainnet.latest.tar.gz \
+    | tar -xz -C ./node
+```
+
+_For TestNet_
+
+```undefined
+curl -k https://backup.testnet.klever.finance/kleverchain.testnet.latest.tar.gz   | tar -xz -C ./node
+```
+
+You can also opt for using fast sync with `--start-in-epoch` flag. This will indicate node to download last epoch only and start sync from there.
+
+After the first node run, the subsequent commands must remove the flag --start-in-epoch.
+
+This flag is only for node initialization without a db, if the node already has a db, you just need to sync from the last block saved or delete the database and start from the last epoch info.
+

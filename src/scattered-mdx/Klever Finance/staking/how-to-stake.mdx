@@ -1,0 +1,20 @@
+In order to freeze KLV, you should type the following code:
+
+```undefined
+docker run -it --rm --user "$(id -u):$(id -g)" \
+    -v $(pwd)/wallet:/opt/klever-blockchain \
+    --network=host \
+    --entrypoint=/usr/local/bin/operator \
+    kleverapp/klever-go:latest \
+    --key-file=./walletKey.pem \
+    --node=https://node.mainnet.klever.finance account freeze 10000000
+```
+
+After the "freeze" instruction, there is this structure: [AMOUNT].
+
+[AMOUNT] for how much is being frozen.
+
+--kda is the Asset ID.
+
+The minimum amount allowed to stake KLV is 1000 KLV.
+

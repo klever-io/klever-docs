@@ -1,0 +1,19 @@
+If you are using your local node, you should use the regular command:
+
+```bash
+operator [command] [arguments] --[flags]
+```
+
+If you are using the docker image operator, use the generic command version:
+
+```undefined
+docker run -it --rm --user "$(id -u):$(id -g)" \
+    -v $(pwd)/wallet:/opt/klever-blockchain \
+    --network=host \
+    --entrypoint=/usr/local/bin/operator \
+    kleverapp/klever-go:latest \
+    --key-file=./walletKey.pem \
+    --node=https://node.mainnet.klever.finance \
+    [command] [arguments] --[flags]
+```
+

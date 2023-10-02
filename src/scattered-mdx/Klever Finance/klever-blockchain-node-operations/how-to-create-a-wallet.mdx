@@ -1,0 +1,34 @@
+To create a wallet, choosing the output folder, first create the output folder and then run the operator with `create-wallet` command:
+
+```undefined
+mkdir wallet
+```
+
+```undefined
+docker run -it --rm --user "$(id -u):$(id -g)" \
+    -v $(pwd)/wallet:/opt/klever-blockchain \
+    --entrypoint=/usr/local/bin/operator \
+    kleverapp/klever-go:latest account create
+```
+
+This will generate the wallet and return the address asociated with it, as seen below:
+
+![](files/undefined)
+
+If the output directory does not exist, it will be created but you may run into file permission issues.
+
+To check your wallet certificate and address, type:
+
+```undefined
+docker run -it --rm --user "$(id -u):$(id -g)" \
+    -v $(pwd)/wallet:/opt/klever-blockchain \
+    --entrypoint=/usr/local/bin/operator \
+    kleverapp/klever-go:latest account address
+```
+
+This should show your address, as seen below:
+
+![](files/undefined)
+
+
+

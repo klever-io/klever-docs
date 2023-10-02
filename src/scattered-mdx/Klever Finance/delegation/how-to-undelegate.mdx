@@ -1,0 +1,19 @@
+
+> gitbook-to-md
+> node built/gitbook-to-md.js /home/lucas/Documents/gitbook-md/gitbook-to-md/data/Klever Finance/delegation/how-to-undelegate.json
+
+To undelegate, you just need to specify the Bucket ID:
+
+```undefined
+docker run -it --rm --user "$(id -u):$(id -g)" \
+    -v $(pwd)/wallet:/opt/klever-blockchain \
+    --network=host \
+    --entrypoint=/usr/local/bin/operator \
+    kleverapp/klever-go:latest \
+    --key-file=./walletKey.pem \
+    --node=https://node.mainnet.klever.finance \
+    account undelegate \
+    --bucketID=db0748c562c413a68b21a75249e1b936339fc03513e0bf076d3850b7a81113d2
+```
+
+

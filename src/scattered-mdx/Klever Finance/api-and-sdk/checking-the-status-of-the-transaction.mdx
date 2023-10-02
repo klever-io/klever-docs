@@ -1,0 +1,19 @@
+
+> gitbook-to-md
+> node built/gitbook-to-md.js /home/lucas/Documents/gitbook-md/gitbook-to-md/data/Klever Finance/api-and-sdk/checking-the-status-of-the-transaction.json
+
+When you broadcast a transaction, you will receive it's unique hash.
+
+Take the hash `7b066e58b650d4ea6ba61de087350ddf909cfee660cc9537c0167b38df6d4882 `for example.
+
+You can either see the transaction details [using the Klever Explorer](https://kleverscan.org/transaction/7b066e58b650d4ea6ba61de087350ddf909cfee660cc9537c0167b38df6d4882) or by calling one of the api endpoint's.
+
+[Using the proxy api call](https://api.mainnet.klever.finance/v1.0/transaction/7b066e58b650d4ea6ba61de087350ddf909cfee660cc9537c0167b38df6d4882), you will receive the parsed transaction as response.
+
+[Using the node api call](https://node.mainnet.klever.finance/transaction/7b066e58b650d4ea6ba61de087350ddf909cfee660cc9537c0167b38df6d4882), you will receive the transaction as it is in the blockchain.
+
+Using the explorer or the proxy api, you can check the status code of the transaction, if it matches the expected format it will be "`success`".
+
+If, for some reason, your transaction was broadcast but doesn't appear in the proxy api or in the explorer, you can check its status in the node api. It will help you identify if the node that you used to broadcast the transaction is faulty.
+
+

@@ -1,0 +1,15 @@
+Withdrawing assets will remove the values of all the unfrozen buckets automatically. This is how you should do it:
+
+```undefined
+docker run -it --rm --user "$(id -u):$(id -g)" \
+    -v $(pwd)/wallet:/opt/klever-blockchain \
+    --network=host \
+    --entrypoint=/usr/local/bin/operator \
+    kleverapp/klever-go:latest \
+    --key-file=./walletKey.pem \
+    --node=https://node.mainnet.klever.finance \
+    account withdraw
+```
+
+
+

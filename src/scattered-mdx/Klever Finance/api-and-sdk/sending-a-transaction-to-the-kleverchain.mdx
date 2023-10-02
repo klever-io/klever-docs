@@ -1,0 +1,47 @@
+
+> gitbook-to-md
+> node built/gitbook-to-md.js /home/lucas/Documents/gitbook-md/gitbook-to-md/data/Klever Finance/api-and-sdk/sending-a-transaction-to-the-kleverchain.json
+
+If you plan on using the raw endpoints, you'll need to do three main steps: building, signing and broadcasting the transaction.
+
+## 1. Build
+
+To build the transaction, if you are creating a web application, you can use the window method injected by the Klever extension (or the Klever 5 mobile browser).
+
+```typescript
+const unsignedTransaction = await window.kleverWeb.buildTransaction([
+      {
+        payload,
+        type: TransactionType.Transfer,
+      },
+]);
+```
+
+Even though you can use the window kleverWeb object directly, we suggest you [use the Kleverchain JS SDK,](https://klever.gitbook.io/kleverchain-sdk/) if you are using javascript.
+
+
+Alternatively you can send the params [through the `send` endpoint](https://node.mainnet.klever.finance/swagger/index.html#/Transaction/post_transaction_send), and will receive an unsigned transaction as response.
+
+## 2. Sign
+
+To sign the transaction, if you are creating a web application, again, you can use the window method injected by the Klever extension (or the Klever 5 mobile browser).
+
+```typescript
+const signedTransaction = await window.kleverWeb.signTransaction(unsignedTransaction);
+```
+
+
+
+Alternatively, to sign the transaction, you will need to do it using a backend application, so you don't expose your private key. For instance, you can [use the GO SDK](https://github.com/klever-io/klever-go-sdk) or [the Kleverchain JS SDK](https://klever.gitbook.io/kleverchain-sdk/) with NodeJS.
+
+## 3. Broadcast
+
+To broadcast the transaction, if you are creating a web application, again, you can use the window method.
+
+```typescript
+const broadcastResponse = await window.kleverWeb.broadcastTransactions([signedTransaction]);
+```
+
+Alternatively you can send a signed transaction [through the `broadcast` endpoint](https://node.mainnet.klever.finance/swagger/index.html#/Transaction/post_transaction_broadcast) to be processed and validated by the blockchain.
+
+

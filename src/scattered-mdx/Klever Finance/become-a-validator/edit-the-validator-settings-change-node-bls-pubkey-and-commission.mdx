@@ -1,0 +1,36 @@
+
+> gitbook-to-md
+> node built/gitbook-to-md.js /home/lucas/Documents/gitbook-md/gitbook-to-md/data/Klever Finance/become-a-validator/edit-the-validator-settings-change-node-bls-pubkey-and-commission.json
+
+You can change the validator configuration using this command:
+
+```undefined
+docker run -it --rm --user "$(id -u):$(id -g)" \
+    -v $(pwd)/wallet:/opt/klever-blockchain \
+    --network=host \
+    --entrypoint=/usr/local/bin/operator \
+    kleverapp/klever-go:latest \
+    --key-file=./walletKey.pem \
+    --node=https://node.mainnet.klever.finance \
+    validator config \
+    klv1h7vx629mwuv4pnecn0k9clxp9rt7rquat3kvydgu8npt20e0ntjq3jhd40 \
+    --bls=ce3aa977d1028e2a91730259c4b66cd862b77c63253fa12932012288108a0b7f110da4a2e3e1c15cc94802a79afef418f9a724a1ebe1423c0fa897bae669f1735b082ff3f19b3e00acc76a2bb0f31b1856e3e55952655386fbedad9c55322b81 \
+    --rewards=klv1h7vx629mwuv4pnecn0k9clxp9rt7rquat3kvydgu8npt20e0ntjq3jhd40 \
+    --name=MyValidatorName \
+    --logo="https://klever.finance/wp-content/uploads/2021/09/logo.svg" \
+    --commission=5 \
+    --maxDelegation=12000000 \
+    --uris="github=github.com/klever-io"
+```
+
+Here's the structure: [OWNER_ADDRESS], where:
+
+`--bls` is the BLS key
+`--rewards` is the address to whom the rewards are given.
+`--name` represents the Node name.
+`--logo` is the URL for the validator's image.
+`--commission` is the commission of the validator.
+`--maxDelegation` is the max amount of delegation the validator can receive.
+`--uris` is a key=value list of URIS.
+
+

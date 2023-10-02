@@ -1,0 +1,125 @@
+
+> gitbook-to-md
+> node built/gitbook-to-md.js /home/lucas/Documents/gitbook-md/gitbook-to-md/data/Klever Finance/api-and-sdk/websocket-reference.json
+
+# How to receive messages:
+
+To connect to the Blockchain WebSocket client, follow these steps.
+
+1. Connect to the WebSocket URL.
+2. Establish a connection to it using a WebSocket library or framework of your choice.
+3. After successfully connecting, it's important to send an initial message to subscribe to the desired topics or a specific address or hash. This message should contain the necessary information for the server to understand your subscription preferences.
+4. Once subscribed, you will start receiving messages related to the subscribed topics or a specific address or hash.
+
+```go
+package main
+
+import (
+	"github.com/gorilla/websocket"
+	"log"
+	"net/url"
+)
+
+type EventType string
+
+const (
+	ACCOUNTS         EventType = "accounts" // receive all accounts changed or created
+	BLOCKS           EventType = "blocks" // receive all blocks
+	TRANSACTION      EventType = "transaction" // receive all transactions
+)
+
+func main() {
+	u := url.URL{Scheme: "wss", Host: "websocket.mainnet.klever.finance", Path: ""}
+	log.Printf("connecting to %s", u.String())
+
+	c, _, err := websocket.DefaultDialer.Dial(u.String(), nil)
+	if err != nil {
+		log.Fatal("dial:", err)
+	}
+	defer c.Close()
+
+	done := make(chan struct{})
+
+	go func() {
+		defer close(done)
+		for {
+			_, message, err := c.ReadMessage()
+			if err != nil {
+				log.Println("read:", err)
+				return
+			}
+
+			log.Println(string(message))
+		}
+	}()
+
+	subMessage := struct {
+		Action string `json:"action"`
+		Data   struct {
+		        Address string `json:"address"`
+			Hash string `json:"hash"`
+			Topics []EventType `json:"topics"`
+		} `json:"data"`
+	}{
+		Action: "subscribe",
+		Data: struct {
+			Topics []EventType `json:"topics"`
+			Address string `json:"address"`
+			Hash string `json:"hash"`
+		}{
+			Topics: []EventType{indexer.ACCOUNTS},
+			Address: "klv1....", // OPTIONAL field to listen a specific address
+			Hash: "hash11.." // // OPTIONAL field to listen a specific tx hash
+		},
+	}
+	// send the first message to subscribe
+	if err := c.WriteJSON(subMessage); err != nil {
+		log.Println("err: ", err)
+		done <- struct{}{}
+	}
+
+	<-done
+}
+```
+
+```javascript
+import useWebSocket from 'react-use-websocket'
+
+export enum WSTopics {
+  accounts = 'accounts', // receive all accounts changed or created
+  blocks = 'blocks', // receive all blocks
+  transaction = 'transaction', // receive all transactions
+}
+
+const socketUrl = "wss://websocket.mainnet.klever.finance"
+
+const { sendJsonMessage, lastJsonMessage } = useWebSocket(socketUrl, {
+    onOpen: () => {
+      const payload = {
+        action: 'subscribe',
+        data: {
+          address: "klv1....", // OPTIONAL field to listen a specific address
+          topics: [WSTopics.blocks],
+          hash: "hash11.." // // OPTIONAL field to listen a specific tx hash
+        },
+      }
+      sendJsonMessage(payload)
+    }
+})
+```
+
+# Topics
+
+BLOCKS
+
+blocks
+
+TRANSACTIONS
+
+transactions
+
+ACCOUNTS
+
+accounts
+
+

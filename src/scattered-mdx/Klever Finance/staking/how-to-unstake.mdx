@@ -1,0 +1,15 @@
+To unfreeze assets, you need to run the follwoing command, signaling the bucket ID, which was generated when you first staked those assets:
+
+```undefined
+docker run -it --rm --user "$(id -u):$(id -g)" \
+    -v $(pwd)/wallet:/opt/klever-blockchain \
+    --network=host \
+    --entrypoint=/usr/local/bin/operator \
+    kleverapp/klever-go:latest \
+    --key-file=./walletKey.pem \
+    --node=https://node.mainnet.klever.finance \
+    account unfreeze --bucketID=1acd6f3958f24a058e5c185fe1491bb3b42c88f65a085d9b4dbfd5866273481c
+```
+
+[BUCKET_ID]: a hash representing the location of the staked assets
+
