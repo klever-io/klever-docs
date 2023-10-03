@@ -252,6 +252,24 @@ export const navigation: Array<NavGroup> = [
       { title: 'Attachments', href: '/attachments' },
     ],
   },
+  {
+    title: 'Klever Finance',
+    links: [
+      { title: 'About Our Technology', href: '/about-our-technology'},
+      { title: 'All Cli Operations', href: '/all-cli-operations' },
+      { title: 'Are You On Windows', href: '/are-you-on-windows' },
+      { title: 'Chronology', href: '/chronology' },
+      { title: 'Create a kda', href: '/create-a-kda' },
+      { title: 'Create Account', href: '/create-account' },
+      { title: 'Entities', href: '/entities' },
+      { title: 'How to Claim Rewards', href: '/how-to-claim-rewards' },
+      { title: 'How to Delegate Frozen KLV to Node', href: '/how-to-delegate-frozen-klv-to-node' },
+      { title: 'How to Delegate To Others', href: '/how-to-delegate-to-others' },
+      { title: 'Operator Account Address', href: '/operator-account-address' },
+      { title: 'Paying Fees With kdas', href: '/paying-fees-with-kdas' },
+      { title: 'Websocket Reference', href: '/websocket-reference' },
+    ],
+  },
 ]
 
 export function Navigation(props: React.ComponentPropsWithoutRef<'nav'>) {

@@ -1,0 +1,262 @@
+export const metadata = {'title': 'chronology', 'description': 'Content for chronology'}
+
+# chronology
+
+Content for chronology
+
+## Chronology
+
+# Slot
+
+A **slot** is the minimum time delay between each block, before an elected Masternode proposes a new block. The initial slot time is 4** seconds** and can be updated by a network proposal.
+
+
+![](files/-Mkh_-D8Z_rKYvdR0Ucc.png)
+
+# Epoch
+
+**Epochs** are sets of slots defined by a fixed time; each epoch lasts **6 hours**. This parameter can also be upgraded by a network proposal. At the end of each epoch, a new set of masternodes will be selected as the next Epoch validators.
+
+![](files/-Mkh_jrHCNjTOYdOWy_8.png)
+
+## Masternodes
+
+When an epoch starts, initially **21 masternodes** (this number can be changed by network proposal)  are randomly chosen to be the validators for that epoch according to the previous hash. A masternode can be chosen to be a validator more than 2 times in a row.
+
+
+
+
+
+## Consensus
+
+## Proof of Stake
+
+Entities, companies or individuals are chosen as **validators** on the Klever Blockchain, with the task of verifying transactions and mining blocks based on the amount of assets they hold. A user must provide some proof of holding a certain minimum amount of KLV in order to be promoted to validator, and to be able to operate as a Masternode.
+
+## Masternode
+
+A Masternode is essentially a full node on the network that receives incentives and rewards to operate and perform actions on the blockchain. As the Masternode status is obtained by KLV staking, a Masternode owner also participates in the **KLV staking pool** and there will be a limit of **500 eligible Masternodes seats**, which can all compete for a spot among the **top 21 block producers**.
+
+### Pratical Byzantine Fault Tolerance ( PBFT )
+
+The PBFT algorithm consists of a three-phased protocol: **Pre-Prepare, Prepare**, and **Commit**. Together, they form the core of the PBFT consensus algorithm.
+
+
+**Pre-Prepare:** The primary node is responsible for verifying the requests and generating corresponding pre-prepare messages. Then, the Primary node will broadcast pre-prepare messages to all Replica nodes. After receiving the messages, Replica nodes will verify the legitimacy of those pre-prepare messages and then broadcast a corresponding prepare message.
+**Prepare:** Gathering prepare messages. After a certain node gathers 2f+1 prepare messages, it will announce that it is ready for block submission and start to broadcast commit messages;
+**Commit:** Gathering commit messages. After a certain node gathers 2f+1 commit messages, it will process the native requests cached locally and make corresponding changes to the system state.
+
+**f** is the number of nodes in the consensus.
+
+
+
+![PBFT process](files/undefined)
+
+If you want more details about the PBFT consensus algorithm, check [this link](http://pmg.csail.mit.edu/papers/osdi99.pdf). This algorithm will also be used as a way to evaluate and grant bonuses to masternodes.
+
+
+
+## Entities
+
+## Accounts
+
+Each **account** has a pair of keys, **one private and one public**, that are used to control and represent the account respectively. The private key holder of an account can sign transactions to the network.
+
+The **public key is a 65-byte-long piece of information** derived from the private key by an elliptic curve. The public key information can be encoded using the** Bech32 human-readable representation format** in order to create the Account Address. **Klever’s Bech32 HRP is **`klv`.
+
+An account holds information on the amount of **KLV** (Klever network main asset), **KFI** (Klever finance governance asset) and any other token deployed on Klever’s blockchain. A mapping storage is also associated with any Klever Account which can hold any binary value.
+
+
+## Nodes
+
+**Nodes** are devices connected to the network. They are responsible for maintaining historical data and performing actions on users requests. Every node is uniquely identified by its **96-byte-long BLS public key** which allows the network to rate and reward each individual based on its contribution. To be an active entity, a node must upgrade to a **Masternode**.To upgrade to a Masternode, an account must stake a substantial amount of KLV as collateral.
+
+
+
+## Fees
+
+## Bandwidth fees
+
+The base bandwidth fee is 0,5 KLV, but these fees vary according to the size and type of the transactions. They are currently set as 0,04 KLV per data byte.
+
+## Transaction fees
+
+The blockchain fees are regulated by an **on-chain voting mechanism**. For each type of transaction, the fee will be different. The initial transaction fees are the following:
+
+### Type of Transactions
+
+- Transfer: 0.5 KLV
+- Create Asset: 20000 KLV
+- Create Validator: 50000 KLV
+- Validator Configuration: 1000 KLV
+- Freeze: 1 KLV
+- Unfreeze: 1 KLV
+- Delegate: 1 KLV
+- Undelegate: 1 KLV
+- Claim: 1 KLV
+- Withdraw: 1 KLV
+- Unjail: 10.000 KLV
+- Vote: 1 KLV
+- Buy/Sell: 1 KLV
+- Config ITO: 20000 KLV
+- Create Marketplace: 50000 KLV
+- Config Marketplace: 1000 KLV
+- Update account permission: 1000 KLV
+- Proposal: 500 KLV
+- Set ITO price: 1 KLV
+- Cancel Market order: 50 KLV
+- Set account name: 100 KLV
+
+Current values can also be checked on [Klever Explorer](https://kleverscan.org/proposals).
+
+## Swap fees
+
+All swap fees are paid in KLV and the users can reduce their swap fees by holding KLV.
+
+##
+
+
+
+## Klv And K Tokens
+
+**KLV is the main utility token of the Klever Blockchain.**
+
+Klever Swap  uses KLV as its **fee engine**. All users can either reduce their swap fees by **holding KLV** in their wallet or pay fees in KLV thereby receiving lower costs for fees. Additionally, any fee paid on Swap using other coins or tokens is instantly converted to KLV by buying off the market, adding to KLV’s liquidity and usability. A portion of the KLV collected from Swap fees is burned daily.
+
+
+# KDA
+
+KDA are the Klever Blockchain Digital Assets. Digital Assets are meant to build utilities inside Klever Network. KDA can be used inside Klever Network apps and are extremely fast, reliable and secure. Klever Blockchain offers native token creation and features without the need for complicated smart contracts.
+Anyone can create KDA using Klever Wallet and the initial cost to create one will be **20,000 KLV.**
+
+
+# KFI (Klever Finance Token)
+
+**The Klever Finance Token (KFI) is the Klever Blockchain Application governance token.**
+
+
+KFI token holders have complete control over the **apps protocol configuration** (like application fees and referrals) and approval of new apps using an on-chain voting system. KFI owners are entitled to receive application rewards in KLV.
+
+
+### Rewards
+
+- As a main feature, network participants are able to add KLV as liquidity for all Klever-based Tokens in order to mine KFI tokens.
+
+## Votes
+
+The KFI will be utilized as the users voting power with respect to the KApps.
+
+### Vote types
+
+KFI holders will be able to vote for the following topics:
+
+- New application proposals
+- New projects
+- Changing application proposals
+
+
+
+## Network
+
+
+> gitbook-to-md
+> node built/gitbook-to-md.js /home/lucas/Documents/gitbook-md/gitbook-to-md/data/Klever Finance/about-our-technology/network.json
+
+A network is a group of interconnected devices that exchange information. These devices can be connected locally by a cable or wirelessly through the internet. In Klever blockchain, we use a distributed  type of network called peer-to-peer.
+
+
+
+## P2P Protocol
+
+In our protocol there are two ways to send data to the other peers:
+
+1.  Broadcasting message on a pubsub using topics;
+
+2 . Sending direct messages to the connected peers.
+
+
+The first type is used to send messages that have to reach every node (from the corresponding shard, metachain, consensus group, etc.) and the second type is used to resolve requests coming from directly-connected peers.
+The Messenger interface with its implementation is used to define the way to communicate between the nodes.
+
+
+
+
+## Pre Built Kapps
+
+KleverChain will offer pre-built and ready-to-use apps and functionalities native to the blockchain, not merely a smart contracts platform.
+
+In a smart contract blockchain platform, developers need to code a smart contract for all their blockchain applications and features, including something as simple as creating a token. This means that as a builder of dapps without smart contract experience, you have to rely on and trust the person or team that has developed the smart contract itself and simply hope that nothing vulnerable or malicious is hidden in the smart contract.
+
+Unlike other blockchain protocols and foundations, Klever Finance will work directly with developers and projects - providing full blockchain integration for them and building the functionalities they want and need in the protocol.
+
+This approach of utilizing ready-built Kapps for all developers to use results in blockchain applications that are safer by design since they are native to the blockchain as well as easy to use for the developers - the process will just be a function call, not a complex and often vulnerable smart contract.
+
+Developers will be able to implement their own interface solution through the easy-to-use, intuitive, and versatile KleverOS Software Development Kit (SDK). Using the innovation of the KleverOS SDK, the functionalities of the Kapps deployed to KleverChain will constantly evolve. Klever Finance will be deploying new versions with improvements to the Kapps that do not block or inhibit the use of previous versions.
+
+
+
+## Process Workings
+
+
+> gitbook-to-md
+> node built/gitbook-to-md.js /home/lucas/Documents/gitbook-md/gitbook-to-md/data/Klever Finance/about-our-technology/process-workings.json
+
+There are 21 Producers per epoch.
+
+**21 producers are selected** and at the end of each epoch,  **6 producers are removed** while **6 new are added at the start**, the removal and new selection are performed **randomly** using the epoch start block **random seed**. The block random seed is generated by the signature of the last block random seed by the block proposer, ensuring fair randomization where allocation is provided by chance.
+
+For every block a `**block proposer**` is selected using the last block **random seed** among the 21 producers of the epoch. The block proposer is **responsible** for selecting and ordering the transactions to be packed in the current block. To be accepted the proposed block must be accepted and **cosigned by 2/3** of the current epoch producers group.
+
+
+If a producer was performing badly at the end of the epoch, it will go to **jail** and then a new one will be selected to replace it.
+
+
+Only **actively-producing nodes** (with 10M+ KLV) will earn blocks and transaction fees. The other masternodes (with 1,5M to 10M KLV) will participate only in the **staking pool**.
+
+Masternodes with less than 1,5M KLV in self-staking will remain **inactive**.
+
+
+
+
+## Staking And Rewards
+
+
+> gitbook-to-md
+> node built/gitbook-to-md.js /home/lucas/Documents/gitbook-md/gitbook-to-md/data/Klever Finance/about-our-technology/staking-and-rewards.json
+
+## How to become a Masternode?
+
+To become a masternode, a user must apply as a candidate.  A fee of **50,000 KLV** will be charged and burned in the masternode application processes. The masternode candidate on Klever Finance Blockchain must hold a minimum of **1,500,000 KLV in self-staking **to be considered** active**. To become an **eligible** masternode for the consensus and produce blocks,  the node must reach the threshold of **10,000,000 KLV** through self-staking plus delegated-staking. The masternode owner can also specify if it will allow delegated-staking and its delegation cap.
+
+
+- If for any reason the masternode delegation goes below the threshold, the masternode becomes inactive and will be added to the waiting list until the threshold is reached again.
+- If a node doesn't have a minimum of 1,5M KLV in self-staking, it will not participate in any staking or earns
+- The minimum self-staking  of 1,500,000 KLV can only be retrieved if the masternode cancels the application and there is no delegation-stake in process
+- The 1,5M self-staked KLV will be blocked and only available if the owner decides to destroy the masternode
+- If a master node is below 10M KLV staking, it will not be a producer, but it will be allowed to participate in the staking pool
+- A masternode can choose to have an open or closed delegated pool as well to cap the max amount of delegated votes
+- The delegation cap can be increased at any time, but only reduced to the current staked amount.
+- Masternodes can set a commission fee for the delegated staking on their node (if the pool is open)
+
+![](files/undefined)
+
+## Masternode Rewards
+
+Masternodes earn block confirmation rewards when transactions are confirmed by their blockchain nodes. The block reward flowback is set initially to **50% of fee paid by users**. The additional **50% of fees will be burned to control inflation** and maintain a healthy network interoperability. An additional amount of **15 KLV will be added to the block rewards**. Both the fees and the block rewards will be distributed **proportionally to the staked amount** of each wallet.
+All staked amounts bound to masternodes (eligible or not) will participate in a **rewards pool of 500,000 KLV** daily, proportional to the staked amount of each wallet.
+
+- Masternode owners can set a commission fee for the delegated-staking on their node.
+- All rewards are added to a claimable balance in the wallet and must be claimed by the wallet owner to be made available.
+- All parameters can be adjusted by on-chain proposals
+- All rewards are claimable and must be claimed by the owner wallet
+- 50% of the fees are burnt and 50% are distributed to the masternodes that produced blocks
+
+## Developer Rewards (K-APPS)
+
+When creating an application on the blockchain, the developer can use their **developer code**(Referral code) within their k-app transactions to receive rewards (each k-app will have a percentage of the transaction fee). The reward will be paid in the currency in which the kApp transaction is provided.
+
+
+
+
+
+

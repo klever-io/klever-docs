@@ -1,0 +1,52 @@
+export const metadata = {'title': 'paying-fees-with-kdas', 'description': 'Content for paying-fees-with-kdas'}
+
+# paying-fees-with-kdas
+
+Content for paying-fees-with-kdas
+
+## Paying Fees With Kdas
+
+# How to Set Up the Asset
+
+## KDA Pool
+
+In order to use a KDA to pay for any transaction fees, KDA Create must setup a KDA Pool. Once a transaction is submitted with `kdaFee` option, the KDA will be automatically swapped in the on-chain pool. The the pool is active, any KDA holder can use the KDA to pay transaction fees for any transaction in the KleverChain.
+
+##  1. Create a Asset
+
+First of all you need a KDA that you are the owner. Use the `Create Asset` Contract ([more info](https://app.gitbook.com/o/-MhOOdjn5Z5cRwUc4juT/s/-MhOOqqi00w4Kmd3lNcs/~/changes/120/about-our-technology/klv-and-k-tokens/create-a-kda)).
+
+## 2. Create or Update KDA Pool
+
+Use the `Asset Trigger` Contract, with the `UpdateKDAFeePool` Trigger, to activate and set the price per KDA (in KLV) for the fees payment.
+
+Optional: create a routine that does this periodically, updating the price based on the desired ratio conversion of your KDA and the KLV one for example.
+
+```bash
+docker run -it --rm --user "$(id -u):$(id -g)" \
+    -v $(pwd)/wallet:/opt/klever-blockchain \
+    --network=host \
+    --entrypoint=/usr/local/bin/operator \
+    kleverapp/klever-go:latest \
+    --key-file=./walletKey.pem \
+    --node=https://node.mainnet.klever.finance \
+    kda trigger 15 --kdaID=YOUR_KDA_ID --updateKdaPool='active=true,adminAddress=yourAddress,fixedRatioKLV=KLVRATIO,fixedRatioKDA=KDARATIO'
+```
+
+## 3. Deposit KLV in the KDA Fee Pool
+
+Use the `Deposit` Contract, with `depositType 1` to deposit KLV in the KDA Fee Pool, this is where the blockchain will get the fees payed from, while you buy back your asset from circulation, reducing inflation.
+
+```bash
+docker run -it --rm --user "$(id -u):$(id -g)" \
+    -v $(pwd)/wallet:/opt/klever-blockchain \
+    --network=host \
+    --entrypoint=/usr/local/bin/operator \
+    kleverapp/klever-go:latest \
+    --key-file=./walletKey.pem \
+    --node=https://node.mainnet.klever.finance \
+    kda deposit AMOUNT --depositType=1 --kdaID=YOUR_KDA_ID --currencyID=KLV
+```
+
+
+

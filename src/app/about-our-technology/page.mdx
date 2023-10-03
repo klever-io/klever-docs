@@ -1,0 +1,346 @@
+export const metadata = {'title': 'about-our-technology', 'description': 'Content for about-our-technology'}
+
+# about-our-technology
+
+Content for about-our-technology
+
+## About Our Technology
+
+Here is the place to understand better KleverChain's concepts and processes.
+
+
+
+## Account Permissions
+
+# Permission Data
+
+Before making the transaction on the blockchain, it is necessary to understand the basic structure of the permissions that will be sent in the body of the command.
+
+```json
+{
+   "type":1,
+   "threshold":2,
+   "operations":"01af",
+   "permissionName": "Klever Permission!"
+   "signers":[
+      {
+         "address":"Address-A",
+         "weight":1
+      },
+      {
+         "address":"Address-B",
+         "weight":1
+      },
+      {
+         "address":"Address-C",
+         "weight":2
+      }
+   ]
+}
+```
+
+### Type
+
+The type of permission that will be configured for your signers. You can configure the type as 0 - Owner or 1 - User
+
+**0 -> Owner (default):** When you set the permission to owner, signers will be able to perform all types of Transactions in the name of the original address. It will not be necessary to pass the **operations** field as all operations will already be allowed.
+
+**1 -> User: **When you set that the permission is user, the signers will only be able to carry out the transactions that you configured in the **operations** field.
+
+### Permission Name
+
+It is the name that you can put in the permission that you are configuring, just to facilitate identification and it is not mandatory to be passed.
+
+**Threshold**
+
+The minimum amount of signatures for the blockchain to accept a transaction.
+
+### Operations
+
+The operations that you want to allow users to be able to submit. It is necessary to pass in hexadecimal as below:
+
+**0000 0001 1010 1111 -> 01af**
+
+Each bit represents a type of contract and in this example, permission is being given on contracts of 0 - Transfer, 1 - CreateAsset, 2 - Create Validator, 3 - Config Validator, 5 - Unfreeze, 7 - Undelegate, 8 - Withdraw.
+
+With the **least significant bit** being the most to the right, the table below shows the order of contracts.
+
+```
+Transfer
+CreateAsset
+CreateValidator
+ValidatorConfig
+Freeze
+Unfreeze
+Delegate
+Undelegate
+Withdraw
+Claim
+Unjail
+AssetTrigger
+SetAccountName
+Proposal
+Vote
+ConfigITO
+SetITOPrices
+Buy
+Sell
+CancelMarketOrder
+CreateMarketplace
+ConfigMarketplace
+UpdateAccountPermission
+Deposit
+ITOTrigger
+```
+
+### Signers
+
+It is an array of objects that you define who will have permission and the weight of your signature for the transaction.
+
+The Transaction will only be submitted to the blockchain if the sum of the transaction signature weights is greater than the permission **threshold**.
+
+# Understanding PermID
+
+PermID, despite not being used in account permission transactions, is of paramount importance for users with account permission to perform transactions properly. Without mastering this concept, users may simply be unable to interact with the blockchain.
+
+An account that has never executed an account permission contract will have the following structure in the API:
+
+![](files/IVKAM0zwZd0kmiTdvW96.png)
+
+Notice that the permissions field is an empty array. In this case, the account permissions are default. Only the owner, klv1…wsjl, can perform all transactions without any restrictions. This means that when sending a transaction, this address does not need to worry about PermID, as it is default (PermID=0, and wsjl is the owner).
+
+However, when this account initiates an account permission transaction, everything can change. Consider another account that has granted user(1) permission to another address:
+
+![](files/wEq8sMwS8swnFwgdDs6n.png)
+
+The account permission transaction that modified the array was simply granting transfer permission and a few other contracts to the address wsjl. Thus, in the first position of the array, the address is present with a user type of 1. It can perform operations 0fff with a weight of 1, and the permission contract's threshold was set to 1.
+
+This was the object passed:
+
+```json
+{"type":1,
+"threshold": 1,
+"operations":"0fff",
+"signers":
+[{"address":"klv1nnu8d0mcqnxunqyy5tc7kj7vqtp4auy4a24gv35fn58n2qytl9xsx7wsjl","weight": 1}]}
+```
+
+However, there must be an owner on the account. So, the blockchain automatically adds an owner to the last position of the permissions array. Since no owner was specified in the contract, the blockchain designates the account owner as the owner, with a threshold of 1 and weight of 1. In this case, the owner can still do everything, but now they will need to pass PermID=1.
+
+**CAUTION**! When transferring ownership permission to another account, you lose your original permission if you do not also designate your address as the owner. Every account must have one owner, and it may not necessarily be the original owner of the account. It's as if, in the account permission type owner, you transfer ownership of the account to another. In the user type, it's as if you grant power of attorney.
+
+However, it may be desired for an account to have multiple owners, like a multi-property scenario. In this case, simply designate multiple addresses as owners, and none of them will have the threshold value individually. This results in a true multi-signature account where no one can sign alone.
+
+![](files/URxHrLeabtcsNtF1ReeZ.png)
+
+Now, take note of the id field. This field is created **after** the transaction occurs and is not a value the user sends in the transaction. However, it is the PermID, and it is essential to pass the PermID in all transactions made on an account that has undergone an account permission transaction. This is because the blockchain needs to identify the permissions associated with the account, and this is achieved through PermID or just id in the API.
+
+The id is created in the order of account permission transactions, with the first being 0, the second being 1, and so on. The issue that can arise here is the account owner wanting to grant a user permission without designating any owner. In this case, the owner will have to specify PermID 1 every time they make a transaction. However, this can be avoided by first sending the ownership permission to the account owner and then setting up other permissions. This way, they will have PermID 0, and 0 doesn't need to be specified because it's the first one.
+
+Finally, it's worth noting that PermID is passed when creating the transaction build. Therefore, in a multi-signature account, only the account that initiated the transaction needs to pass the PermID of the used account. This allows the blockchain to determine which of the account's permissions is being referred to and which addresses are authorized to sign for that permission.
+
+# How to send a AccountPermission transaction
+
+For you to create the permissions of your account it is necessary to carry out an UpdateAccountPermission transaction
+
+```bash
+docker run -it --rm --user "$(id -u):$(id -g)" \
+    -v $(pwd)/wallet:/opt/klever-blockchain \
+    --network=host \
+    --entrypoint=/usr/local/bin/operator \
+    kleverapp/klever-go:latest \
+    --key-file=./walletKey.pem \
+    --node=https://node.mainnet.klever.finance \
+    account permission --perm='your-permission-here'
+```
+
+Instead of putting **your-permission-here**, you should put your permissions based on the permission data shown above.
+
+```bash
+docker run -it --rm --user "$(id -u):$(id -g)" \
+    -v $(pwd)/wallet:/opt/klever-blockchain \
+    --network=host \
+    --entrypoint=/usr/local/bin/operator \
+    kleverapp/klever-go:latest \
+    --key-file=./walletKey.pem \
+    --node=https://node.mainnet.klever.finance \
+    account permission --perm='{"type":1,"threshold":2,"operations":"01af","permissionName": "Klever Permission!" "signers":[{"address":"Address-A","weight":1},{"address":"Address-B","weight":1},{"address":"Address-C","weight":2}]}'
+```
+
+if you want to see how account permission works in klever extension you can do it through the [link](https://www.youtube.com/watch?v=8J74KszeWKY).
+
+
+
+
+
+## Api And Sdk
+
+## Web SDK
+
+If you want to create a web app that communicates with the Kleverchain via the Klever web extension or via the Klever mobile app's built-in browser, you can find more info on our javascript library in this link:
+
+
+
+## Kleverchain API
+
+If you need more info on the Kleverchain APIs to interact directly with the blockchain, you can access the swagger documentation for the API endpoints through the following URLs:
+
+### Proxy API endpoints
+
+Proxy API endpoints
+
+### Node API endpoints
+
+Node API endpoints
+
+### Multi-Signature API
+
+Create and handle transactions with multiple signatures accounts:
+
+### WebSocket
+
+Receive blocks, addresses and transactions from our WebSocket:
+
+
+
+## Become A Validator
+
+To become a Klever Validator Node you will need 10M KLV staked, from that, at least 1.5M must be self-staked, the remaining amount can be from delegation.
+
+
+
+## Delegation
+
+How to perform delegation on KleverChain.
+
+
+
+## Klever Blockchain Exchange Integration
+
+Connect your exchange with our KleverChain. For that, you need to deploy a node, integrate it with Klever's blockchain and you may also test this integration.
+
+
+
+## Klever Blockchain Node Operations
+
+This segment presents instructions on how to set up a new node on the Klever network, its system requirements and  how to update its status, as well as a quick introduction to Klever's technology.
+
+
+
+## Multisignature
+
+**Want to know more about Multisignature?**
+
+Multisignature, often abbreviated as multisig, is a security feature used in blockchain and cryptocurrency systems to enhance the security and control over digital assets. It requires multiple private keys to authorize and execute transactions, as opposed to the traditional single-key systems where a single private key is sufficient to authorize transactions.
+
+**How Multisignature Works:**
+
+1. **Key Generation:** In a multisignature setup, multiple participants or parties generate their own unique public-private key pairs. Each participant holds their private key securely.
+2. **Creation of a Multisig Address:** There are a few ways you can do that:
+  - You can create a new address that will be the one used to do the transactions.
+  - You can use an existing one.
+
+Both ways, you need to add permissions to allow other participants to send transactions, and the remaining participants can sign if they agree with it. You can read more about on [Account Permissions section](https://docs.klever.finance/account-permissions).
+This address is associated with a specific number of thresholds, often denoted as "m of n," where "m" represents the minimum number of signatures required to authorize a transaction, and "n" represents the total number of participants or addresses involved.
+3. **Transaction Authorization:** When someone wants to send funds from the multisignature address, they create a transaction and specify that it requires the signatures of at least "m" out of the "n" participants to be valid. This ensures that no single individual can unilaterally move the funds. When the threshold is reached, any participant can broadcast the transaction to kleverchain.
+4. **Signature Collection:** Each participant in the multisignature setup reviews the transaction and, if they agree with it, signs it with their private key. These signatures are then combined and attached to the transaction.
+5. **Transaction Execution:** Once the required number of participants have signed the transaction, it becomes valid and any participant can broadcast, and the kleverchain network processes it, transferring the funds as specified.
+
+**How to Create a Multisignature Transaction:**
+
+After you've created the address that will be used for transactions and requires multiple signatures, you need to configure the permissions on that address. You can read more about on [Account Permissions section](https://docs.klever.finance/account-permissions).
+
+- Once on [Klever Explorer](https://kleverscan.org/), enter the "create transaction" page through the navbar or directly access [https://kleverscan.org/create-transaction](https://kleverscan.org/create-transaction).
+
+
+-
+![Create Transaction through navbar](files/undefined)
+
+- Once you've added all the necessary permissions and participants/addresses needed, you can create the transaction. On the _**create transactions**_ page, you can select any contract and fill it as you wish. Then, in 'Advanced Options,' change the option _**Does your account need multiple signatures?**_ to _**Yes.**_
+
+![Enable Multisign](files/undefined)
+
+- If you're in the account that is the one used for multisigning, you don't need to change the Sender; only change the permission to be the one that other participants must sign too.
+
+![Change Sender](files/undefined)
+
+- But if you're in another address, then you need to:
+  1. Change the Sender by selecting the option _**Do you want to use the current account as the sender? **_to _**No**__._
+  2. Fill the _**Sender Account Address**_'with the address of the multisignature.
+  3. Change to the correct permission for that transaction.
+
+
+![Change sender and permission](files/undefined)
+
+You can sign the transaction now or not, changing the option _**Do you want to sign the transaction now?**_ as you wish.
+
+When all fields are filled correctly, click _**Create Transaction**_, and the transaction will be added to our API for the other participants to sign. Keep in mind that the transaction is not on the kleverchain network yet; it must reach the threshold and then be broadcasted.
+
+
+
+**Checking and Signing the Transaction:**
+
+Once the transaction is created, you can check it by accessing [Klever Explorer Multisign](https://kleverscan.org/multisign) page or through the navbar. Here, you can view information about the transaction, including the number of signatures obtained and the number still required to reach the threshold, among other details. Furthermore, if you agree with the transaction and have not yet signed it, you have the option to do so.
+
+![Access Multisign Page](files/undefined)
+
+![](files/undefined)
+
+**Broadcasting the Transaction:**
+
+After the threshold is reached, any participants can broadcast it to the kleverchain network clicking on _**Broadcast Transaction**_.
+
+**Additional Option: Importing and Signing with JSON:**
+
+You can also download the JSON file of the transaction using the _**Download JSON file**_, send it to other participants, and they can sign the transaction using [Klever Explorer](https://kleverscan.org/multisign) through the _**Import Signed JSON file**_.
+
+
+
+## Staking
+
+Staking is a process that allows users to lock up their cryptocurrency funds in a wallet in order to participate in the validation and creation of blocks on the corresponding blockchain. It can contribute to ensuring the liquidity of an asset, preventing sell-offs, and more, depending on the specific blockchain.
+
+### KLV and KFI
+
+Excluding NFTs, all Klever Digital Assets (KDAs) are fit for staking. Nevertheless, KLV and KFi have some singularities. A node who holds 10 million KLV or more is eligible to be a validator in Kleverchain. For KFI, the stakers of this token will have to right to vote in proposals. Moreover, regular users can accumulate more of both these assets through the freeze and claim contracts.
+
+### KDAs
+
+When users interact with Kleverchain to create their own assets, they will be faced with two types of staking: APR and FPR staking.
+
+### APR x FPR
+
+APR staking stands for Annual Percentage Rate. It is a well-known term in the market that represents the percentage earned annually on an investment. On Kleverchain, when creating an asset and choosing this staking modality, the creator must choose what the annual return will be for users who stake their asset. It will be up to the creator to control the emission limits of their token (through initial supply and max supply). The return on investment is always in the currency in which the staking was made. The KDA creator does not need to control the distribution of rewards, since it occurs automatically by Kleverchain. Users will just need to claim the rewards when they meet the conditions.
+
+On the other hand, FPR stands for Flexibe Proportional Return. It is a new modality of staking that the Klever ecosystem offers. When creating a KDA and choosing this option, a pool will be created for depositing any assets from Kleverchain. This pool will always be fed by the owner of the asset, and after the deposits are made, the stakers of that coin during the deposit period will have the right to withdraw the assets deposited in the pool according to the amount of staking they made of the owner's coin.
+
+For example: Some user creates coin A with FPR. This user deposits assets B, C, D, E into his pool. A staker who has 10% of all staking of asset A will be entitled to receive 10% of all assets B, C, D, E that were deposited in the pool in that epoch, provided he had those 10% at the time of deposit and only for that deposit. If in the next deposit that staker no longer has any coins staked of asset A, he will not be entitled to receive the deposited assets.
+
+For a staker to be eligible for withdrawing his rewards, he must have staked in an epoch prior to the deposit. If when the owner deposits the coins but there are no currently stakers from his asset on that epoch, that means no one will receive the deposited coins and after 100 epochs they will return to the owner.
+
+The great advantage of FPR staking is that it allows the owner of the asset to create an additional incentive for people to buy their asset, as they will not only receive yields from their own coin.
+
+This means that the owner of the KDA with FPR will be responsible to their staking community for communicating when and how much assets will be deposited, as well as which assets they intend to deposit. Klever cannot control or guarantee that the deposits will be made according to what the owner of the asset published. That is why it is essential that anyone who intends to stake an FPR asset has a full understanding and confidence in the respective project.
+
+**Important note:** Although KLV and KFI are considered to have FPR system. Their staking returns are always in KLV and the distribution is made automatically through KleverChain in every epoch, based on the KLV spent on fees and according to the network params.
+
+
+
+
+
+
+
+## Testnet
+
+
+
+To run an observer node or a validator on the testnet you can follow all the same steps of the mainnet, just changing the docker image from `kleverapp/klever-go:latest` to `kleverapp/klever-go:latest-testnet` and the config files download URL from `config.mainnet.108.tar.gz` to `config.testnet.100420.tar.gz`
+
+You can use the [Testnet Explorer](https://testnet.kleverscan.org/) to view and interact with all testnet features.
+
+# Faucet
+
+If you need money on testnet you can request a faucet on [Kapps Demo App](https://kapps-demo-testnet.web.app/connect).
+
+
+

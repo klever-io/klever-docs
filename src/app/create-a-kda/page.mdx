@@ -1,0 +1,23 @@
+export const metadata = {'title': 'create-a-kda', 'description': 'Content for create-a-kda'}
+
+# create-a-kda
+
+Content for create-a-kda
+
+## Create A Kda
+
+To create an asset in KleverChain use the follow command, ch
+
+```bash
+docker run -it --rm --user "$(id -u):$(id -g)" \
+    -v $(pwd)/wallet:/opt/klever-blockchain \
+    --network=host \
+    --entrypoint=/usr/local/bin/operator \
+    kleverapp/klever-go:latest \
+    --key-file=./walletKey.pem \
+    --node=https://node.mainnet.klever.finance \
+    kda create 0 --canBurn=true --canMint=true --canFreeze=true --canPause=true --canWipe=true --logo=LOGO_URL --maxSupply=AMOUNT_MAX --precision=6 --name=KDA_NAME --ticker=KDA_TICKER
+```
+
+
+

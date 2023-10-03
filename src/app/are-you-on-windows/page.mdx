@@ -1,0 +1,69 @@
+export const metadata = {'title': 'are-you-on-windows', 'description': 'Content for are-you-on-windows'}
+
+# are-you-on-windows
+
+Content for are-you-on-windows
+
+## Are You On Windows
+
+If you're using **Windows OS**, there a few steps before running your node.
+
+First of all, you need to **install **[**WSL**](https://docs.microsoft.com/en-us/windows/wsl/install), which is a way of using Linux inside your windows system. Make sure you have the 2.0 version.
+
+Then, you should install a **Linux distribution** of your preference through the Microsoft Store app, which comes with Microsoft Windows (you could just type 'store' on the search bar).
+
+And finally, you need to** install **[**Docker**](https://www.docker.com/) and enable the integration with WSL, on the settings menu.
+
+Now, you are good to go. You can use the following instructions on the Linux environment to run your node, being attentive to user permission (typing 'sudo' before the following commands will mostly solve any problems).
+
+### Download Klever node
+
+Download the application from Klever's repository using docker:
+
+```bash
+docker pull kleverapp/klever-go:latest
+```
+
+### Create statics directory
+
+Create a folder where all the data will be stored:
+
+```bash
+mkdir -p $(pwd)/node/config $(pwd)/node/db $(pwd)/node/logs
+```
+
+### Create your validator BLS Key
+
+Execute a command inside the docker container to create wallets for validators. The data is then forwarded to the directory created previously.
+
+```bash
+docker run -it --rm -v $(pwd)/node:/opt/klever-blockchain \
+    --user "$(id -u):$(id -g)" \
+    --entrypoint='' kleverapp/klever-go:latest keygenerator
+```
+
+### Run your node
+
+The command for running a node comes with a few settings: it includes mappings for cryptographic keys, data directories and logs, as well as network ports, the application that will run when the docker image is executed and the file of node validators signature.
+
+```bash
+docker run -it --rm \
+    --user "$(id -u):$(id -g)" \
+    --name klever-node \
+    -v $(pwd)/node/confgi:/opt/klever-blockchain/config/node \
+    -v $(pwd)/node/db:/opt/klever-blockchain/db \
+    -v $(pwd)/node/logs:/opt/klever-blockchain/logs \
+    --network=host \
+    --entrypoint=/usr/local/bin/validator \
+    kleverapp/klever-go-testnet:latest \
+    '--log-save' '--rest-api-interface=0.0.0.0:8080'
+```
+
+When you are done setting up and running your node, you are expected to see information about your node, the blockchain itself, as well as data from your own computer, just like the example below:
+
+![A node running, showing how many blocks were proposed and accepted, current blocks, slots and connected nodes, last generated hash, computational information, epoch and network processes and a basic log info segment.](files/undefined)
+
+
+
+
+
