@@ -1,6 +1,6 @@
 To unfreeze assets, you need to run the follwoing command, signaling the bucket ID, which was generated when you first staked those assets:
 
-```undefined
+```bash
 docker run -it --rm --user "$(id -u):$(id -g)" \
     -v $(pwd)/wallet:/opt/klever-blockchain \
     --network=host \

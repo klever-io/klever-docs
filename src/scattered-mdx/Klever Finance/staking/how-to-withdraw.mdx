@@ -1,6 +1,6 @@
 Withdrawing assets will remove the values of all the unfrozen buckets automatically. This is how you should do it:
 
-```undefined
+```bash
 docker run -it --rm --user "$(id -u):$(id -g)" \
     -v $(pwd)/wallet:/opt/klever-blockchain \
     --network=host \

@@ -12,7 +12,7 @@ Now, you are good to go. You can use the following instructions on the Linux env
 
 Download the application from Klever's repository using docker:
 
-```undefined
+```bash
 docker pull kleverapp/klever-go:latest
 ```
 
@@ -20,7 +20,7 @@ docker pull kleverapp/klever-go:latest
 
 Create a folder where all the data will be stored:
 
-```undefined
+```bash
 mkdir -p $(pwd)/node/config $(pwd)/node/db $(pwd)/node/logs
 ```
 
@@ -28,7 +28,7 @@ mkdir -p $(pwd)/node/config $(pwd)/node/db $(pwd)/node/logs
 
 Execute a command inside the docker container to create wallets for validators. The data is then forwarded to the directory created previously.
 
-```undefined
+```bash
 docker run -it --rm -v $(pwd)/node:/opt/klever-blockchain \
     --user "$(id -u):$(id -g)" \
     --entrypoint='' kleverapp/klever-go:latest keygenerator
@@ -38,7 +38,7 @@ docker run -it --rm -v $(pwd)/node:/opt/klever-blockchain \
 
 The command for running a node comes with a few settings: it includes mappings for cryptographic keys, data directories and logs, as well as network ports, the application that will run when the docker image is executed and the file of node validators signature.
 
-```undefined
+```bash
 docker run -it --rm \
     --user "$(id -u):$(id -g)" \
     --name klever-node \

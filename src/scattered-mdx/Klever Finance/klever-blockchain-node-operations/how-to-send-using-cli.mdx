@@ -8,7 +8,7 @@ Or if you are using a self-hosted node, use `--network=host` to access the local
 
 Send tokens with the following code:
 
-```undefined
+```bash
 docker run -it --rm --user "$(id -u):$(id -g)" \
     -v $(pwd)/wallet:/opt/klever-blockchain \
     --network=host \
@@ -31,7 +31,7 @@ If no `--kda` is passed, as in the example above, the default KDA is KLV.
 
 Here is another example, sending KFI:
 
-```undefined
+```bash
 docker run -it --rm --user "$(id -u):$(id -g)" \
     -v $(pwd)/wallet:/opt/klever-blockchain \
     --network=host \

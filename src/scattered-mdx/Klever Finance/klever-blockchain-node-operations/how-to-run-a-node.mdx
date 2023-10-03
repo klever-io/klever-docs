@@ -4,7 +4,7 @@ Klever nodes run inside a docker container, check [System Requirements](undefine
 
 Create a folder where all the data will be stored:
 
-```undefined
+```bash
 mkdir -p $(pwd)/node/config $(pwd)/node/db $(pwd)/node/logs
 ```
 
@@ -14,14 +14,14 @@ Download latest config file and extract into your config directory
 
 _For MainNet_
 
-```undefined
+```bash
 curl -k https://backup.mainnet.klever.finance/config.mainnet.108.tar.gz \
     | tar -xz -C ./node
 ```
 
 _For TestNet_
 
-```undefined
+```bash
 curl -k https://backup.testnet.klever.finance/config.testnet.100420.tar.gz \
     | tar -xz -C ./node
 ```
@@ -30,7 +30,7 @@ curl -k https://backup.testnet.klever.finance/config.testnet.100420.tar.gz \
 
 Execute a command inside the docker container to create wallets for validators. The data is then forwarded to the directory created previously.
 
-```undefined
+```bash
 docker run -it --rm -v $(pwd)/node/config:/opt/klever-blockchain \
     --user "$(id -u):$(id -g)" \
     --entrypoint='' kleverapp/klever-go:latest keygenerator
@@ -42,7 +42,7 @@ The command for running a node comes with a few settings: it includes mappings f
 
 _MainNet_
 
-```undefined
+```bash
 docker run -it --rm \
     --user "$(id -u):$(id -g)" \
     --name klever-node \
@@ -79,7 +79,7 @@ When you are done setting up and running your node, you are expected to see info
 
 When running in the background, add parameter `--use-log-view` and replace `--rm` for `-d`
 
-```undefined
+```bash
 docker run -it -d --restart unless-stopped \
     --user "$(id -u):$(id -g)" \
     --name klever-node \
@@ -94,7 +94,7 @@ docker run -it -d --restart unless-stopped \
 
 If you are running your node in the background, you can either verify logs in `./node/logs` folder or use the docker command:
 
-```undefined
+```bash
 docker logs -f --tail 5 klever-node
 ```
 
@@ -102,14 +102,14 @@ You can speed up your node's first synchronization by using the FullNode databas
 
 _For MainNet_
 
-```undefined
+```bash
 curl -k https://backup.mainnet.klever.finance/kleverchain.mainnet.latest.tar.gz \
     | tar -xz -C ./node
 ```
 
 _For TestNet_
 
-```undefined
+```bash
 curl -k https://backup.testnet.klever.finance/kleverchain.testnet.latest.tar.gz   | tar -xz -C ./node
 ```
 

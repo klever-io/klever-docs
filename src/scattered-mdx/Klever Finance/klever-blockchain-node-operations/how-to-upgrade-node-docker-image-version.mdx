@@ -1,18 +1,18 @@
 First, stop the node:
 
-```undefined
+```bash
  docker stop klever-node
 ```
 
 Upgrade image:
 
-```undefined
+```bash
 docker pull kleverapp/klever-go:latest
 ```
 
 Then you can recreate the node with a new image. Don't forget to delete  the container if running in the background:
 
-```undefined
+```bash
 docker rm klever-node
 ```
 

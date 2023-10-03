@@ -4,7 +4,7 @@
 
 Delegate to an address [TO], pointing to the bucket [BUCKET_ID] where the frozen KLV is located.
 
-```undefined
+```bash
 docker run -it --rm --user "$(id -u):$(id -g)" \
     -v $(pwd)/wallet:/opt/klever-blockchain \
     --network=host \
@@ -27,7 +27,7 @@ It's important to know that there's a minimum self-staking amount for the valida
 
 WIth the operator CLI, you can check the bucket ID with the command `tx-by-id` followed by the hash of the freeze transaction:
 
-```undefined
+```bash
 docker run -it --rm --user "$(id -u):$(id -g)" \
     -v $(pwd)/wallet:/opt/klever-blockchain \
     --network=host \
