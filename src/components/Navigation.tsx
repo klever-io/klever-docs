@@ -257,7 +257,7 @@ export const navigation: Array<NavGroup> = [
     links: [
       { title: 'Welcome to the Klever Blockchain documentation website!', href: '/welcome-to-the-Klever-Blockchain-documentation-website'},
       {title: 'Getting started with Klever Blockchain', href: '/getting-started-with-klever-blockchain'},
-
+      {title: 'API & SDK', href: '/api-and-sdk'},
       { title: 'About Our Technology', href: '/about-our-technology'},
       { title: 'All Cli Operations', href: '/all-cli-operations' },
       { title: 'Are You On Windows', href: '/are-you-on-windows' },
