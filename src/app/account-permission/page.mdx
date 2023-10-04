@@ -1,0 +1,158 @@
+## Account Permissions
+
+# Permission Data
+
+Before making the transaction on the blockchain, it is necessary to understand the basic structure of the permissions that will be sent in the body of the command.
+
+```json
+{
+   "type":1,
+   "threshold":2,
+   "operations":"01af",
+   "permissionName": "Klever Permission!"
+   "signers":[
+      {
+         "address":"Address-A",
+         "weight":1
+      },
+      {
+         "address":"Address-B",
+         "weight":1
+      },
+      {
+         "address":"Address-C",
+         "weight":2
+      }
+   ]
+}
+```
+
+### Type
+
+The type of permission that will be configured for your signers. You can configure the type as 0 - Owner or 1 - User
+
+**0 -> Owner (default):** When you set the permission to owner, signers will be able to perform all types of Transactions in the name of the original address. It will not be necessary to pass the **operations** field as all operations will already be allowed.
+
+**1 -> User: **When you set that the permission is user, the signers will only be able to carry out the transactions that you configured in the **operations** field.
+
+### Permission Name
+
+It is the name that you can put in the permission that you are configuring, just to facilitate identification and it is not mandatory to be passed.
+
+**Threshold**
+
+The minimum amount of signatures for the blockchain to accept a transaction.
+
+### Operations
+
+The operations that you want to allow users to be able to submit. It is necessary to pass in hexadecimal as below:
+
+**0000 0001 1010 1111 -> 01af**
+
+Each bit represents a type of contract and in this example, permission is being given on contracts of 0 - Transfer, 1 - CreateAsset, 2 - Create Validator, 3 - Config Validator, 5 - Unfreeze, 7 - Undelegate, 8 - Withdraw.
+
+With the **least significant bit** being the most to the right, the table below shows the order of contracts.
+
+```
+Transfer
+CreateAsset
+CreateValidator
+ValidatorConfig
+Freeze
+Unfreeze
+Delegate
+Undelegate
+Withdraw
+Claim
+Unjail
+AssetTrigger
+SetAccountName
+Proposal
+Vote
+ConfigITO
+SetITOPrices
+Buy
+Sell
+CancelMarketOrder
+CreateMarketplace
+ConfigMarketplace
+UpdateAccountPermission
+Deposit
+ITOTrigger
+```
+
+### Signers
+
+It is an array of objects that you define who will have permission and the weight of your signature for the transaction.
+
+The Transaction will only be submitted to the blockchain if the sum of the transaction signature weights is greater than the permission **threshold**.
+
+# Understanding PermID
+
+PermID, despite not being used in account permission transactions, is of paramount importance for users with account permission to perform transactions properly. Without mastering this concept, users may simply be unable to interact with the blockchain.
+
+An account that has never executed an account permission contract will have the following structure in the API:
+
+![](files/IVKAM0zwZd0kmiTdvW96.png)
+
+Notice that the permissions field is an empty array. In this case, the account permissions are default. Only the owner, klv1…wsjl, can perform all transactions without any restrictions. This means that when sending a transaction, this address does not need to worry about PermID, as it is default (PermID=0, and wsjl is the owner).
+
+However, when this account initiates an account permission transaction, everything can change. Consider another account that has granted user(1) permission to another address:
+
+![](files/wEq8sMwS8swnFwgdDs6n.png)
+
+The account permission transaction that modified the array was simply granting transfer permission and a few other contracts to the address wsjl. Thus, in the first position of the array, the address is present with a user type of 1. It can perform operations 0fff with a weight of 1, and the permission contract's threshold was set to 1.
+
+This was the object passed:
+
+```json
+{"type":1,
+"threshold": 1,
+"operations":"0fff",
+"signers":
+[{"address":"klv1nnu8d0mcqnxunqyy5tc7kj7vqtp4auy4a24gv35fn58n2qytl9xsx7wsjl","weight": 1}]}
+```
+
+However, there must be an owner on the account. So, the blockchain automatically adds an owner to the last position of the permissions array. Since no owner was specified in the contract, the blockchain designates the account owner as the owner, with a threshold of 1 and weight of 1. In this case, the owner can still do everything, but now they will need to pass PermID=1.
+
+**CAUTION**! When transferring ownership permission to another account, you lose your original permission if you do not also designate your address as the owner. Every account must have one owner, and it may not necessarily be the original owner of the account. It's as if, in the account permission type owner, you transfer ownership of the account to another. In the user type, it's as if you grant power of attorney.
+
+However, it may be desired for an account to have multiple owners, like a multi-property scenario. In this case, simply designate multiple addresses as owners, and none of them will have the threshold value individually. This results in a true multi-signature account where no one can sign alone.
+
+![](files/URxHrLeabtcsNtF1ReeZ.png)
+
+Now, take note of the id field. This field is created **after** the transaction occurs and is not a value the user sends in the transaction. However, it is the PermID, and it is essential to pass the PermID in all transactions made on an account that has undergone an account permission transaction. This is because the blockchain needs to identify the permissions associated with the account, and this is achieved through PermID or just id in the API.
+
+The id is created in the order of account permission transactions, with the first being 0, the second being 1, and so on. The issue that can arise here is the account owner wanting to grant a user permission without designating any owner. In this case, the owner will have to specify PermID 1 every time they make a transaction. However, this can be avoided by first sending the ownership permission to the account owner and then setting up other permissions. This way, they will have PermID 0, and 0 doesn't need to be specified because it's the first one.
+
+Finally, it's worth noting that PermID is passed when creating the transaction build. Therefore, in a multi-signature account, only the account that initiated the transaction needs to pass the PermID of the used account. This allows the blockchain to determine which of the account's permissions is being referred to and which addresses are authorized to sign for that permission.
+
+# How to send a AccountPermission transaction
+
+For you to create the permissions of your account it is necessary to carry out an UpdateAccountPermission transaction
+
+```bash
+docker run -it --rm --user "$(id -u):$(id -g)" \
+    -v $(pwd)/wallet:/opt/klever-blockchain \
+    --network=host \
+    --entrypoint=/usr/local/bin/operator \
+    kleverapp/klever-go:latest \
+    --key-file=./walletKey.pem \
+    --node=https://node.mainnet.klever.finance \
+    account permission --perm='your-permission-here'
+```
+
+Instead of putting **your-permission-here**, you should put your permissions based on the permission data shown above.
+
+```bash
+docker run -it --rm --user "$(id -u):$(id -g)" \
+    -v $(pwd)/wallet:/opt/klever-blockchain \
+    --network=host \
+    --entrypoint=/usr/local/bin/operator \
+    kleverapp/klever-go:latest \
+    --key-file=./walletKey.pem \
+    --node=https://node.mainnet.klever.finance \
+    account permission --perm='{"type":1,"threshold":2,"operations":"01af","permissionName": "Klever Permission!" "signers":[{"address":"Address-A","weight":1},{"address":"Address-B","weight":1},{"address":"Address-C","weight":2}]}'
+```
+
+if you want to see how account permission works in klever extension you can do it through the [link](https://www.youtube.com/watch?v=8J74KszeWKY).

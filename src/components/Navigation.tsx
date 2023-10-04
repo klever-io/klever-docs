@@ -255,6 +255,9 @@ export const navigation: Array<NavGroup> = [
   {
     title: 'Klever Finance',
     links: [
+      { title: 'Welcome to the Klever Blockchain documentation website!', href: '/welcome-to-the-Klever-Blockchain-documentation-website'},
+      {title: 'Getting started with Klever Blockchain', href: '/getting-started-with-klever-blockchain'},
+
       { title: 'About Our Technology', href: '/about-our-technology'},
       { title: 'All Cli Operations', href: '/all-cli-operations' },
       { title: 'Are You On Windows', href: '/are-you-on-windows' },
@@ -268,6 +271,7 @@ export const navigation: Array<NavGroup> = [
       { title: 'Operator Account Address', href: '/operator-account-address' },
       { title: 'Paying Fees With kdas', href: '/paying-fees-with-kdas' },
       { title: 'Websocket Reference', href: '/websocket-reference' },
+      {title: 'Account Permission', href: '/account-permission'}
     ],
   },
 ]
