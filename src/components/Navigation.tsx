@@ -255,23 +255,30 @@ export const navigation: Array<NavGroup> = [
   {
     title: 'Klever Finance',
     links: [
-      { title: 'Welcome to the Klever Blockchain documentation website!', href: '/welcome-to-the-Klever-Blockchain-documentation-website'},
-      {title: 'Getting started with Klever Blockchain', href: '/getting-started-with-klever-blockchain'},
-      {title: 'API & SDK', href: '/api-and-sdk'},
-      { title: 'About Our Technology', href: '/about-our-technology'},
+      {
+        title: 'Welcome to the Klever Blockchain documentation website!',
+        href: '/welcome-to-the-Klever-Blockchain-documentation-website',
+      },
+      {
+        title: 'Getting started with Klever Blockchain',
+        href: '/getting-started-with-klever-blockchain',
+      },
+      { title: 'API & SDK', href: '/api-and-sdk' },
+      { title: 'Become a validator', href: '/become-a-validator' },
+      { title: 'Staking', href: '/staking' },
+      { title: 'Delegation', href: '/delegation' },
+      { title: 'Account Permissions', href: '/account-permissions' },
+      { title: 'Multisignature', href: '/multisignature' },
       { title: 'All Cli Operations', href: '/all-cli-operations' },
       { title: 'Are You On Windows', href: '/are-you-on-windows' },
       { title: 'Chronology', href: '/chronology' },
       { title: 'Create a kda', href: '/create-a-kda' },
       { title: 'Create Account', href: '/create-account' },
       { title: 'Entities', href: '/entities' },
-      { title: 'How to Claim Rewards', href: '/how-to-claim-rewards' },
-      { title: 'How to Delegate Frozen KLV to Node', href: '/how-to-delegate-frozen-klv-to-node' },
-      { title: 'How to Delegate To Others', href: '/how-to-delegate-to-others' },
       { title: 'Operator Account Address', href: '/operator-account-address' },
       { title: 'Paying Fees With kdas', href: '/paying-fees-with-kdas' },
       { title: 'Websocket Reference', href: '/websocket-reference' },
-      {title: 'Account Permission', href: '/account-permission'}
+      { title: 'About Our Technology', href: '/about-our-technology' },
     ],
   },
 ]
