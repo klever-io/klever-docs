@@ -4,355 +4,37 @@ export const metadata = {'title': 'all-cli-operations', 'description': 'Content 
 
 Content for all-cli-operations
 
-## All Cli Operations
 
-If you are using your local node, you should use the regular command:
 
-```bash
-operator [command] [arguments] --[flags]
-```
 
-If you are using the docker image operator, use the generic command version:
 
-```bash
-docker run -it --rm --user "$(id -u):$(id -g)" \
-    -v $(pwd)/wallet:/opt/klever-blockchain \
-    --network=host \
-    --entrypoint=/usr/local/bin/operator \
-    kleverapp/klever-go:latest \
-    --key-file=./walletKey.pem \
-    --node=https://node.mainnet.klever.finance \
-    [command] [arguments] --[flags]
-```
 
 
 
-## How To Backup Db Folder
 
-First, you need to stop the node:
 
-```bash
-docker stop klever-node
-```
 
-Then compress the DB folder:
 
-```bash
-tar -czvf filename.tar.gz $(pwd)/node/db
-```
 
 
 
-## How To Create A Wallet
 
-To create a wallet, choosing the output folder, first create the output folder and then run the operator with `create-wallet` command:
 
-```bash
-mkdir wallet
-```
 
-```bash
-docker run -it --rm --user "$(id -u):$(id -g)" \
-    -v $(pwd)/wallet:/opt/klever-blockchain \
-    --entrypoint=/usr/local/bin/operator \
-    kleverapp/klever-go:latest account create
-```
 
-This will generate the wallet and return the address asociated with it, as seen below:
 
-![](files/undefined)
 
-If the output directory does not exist, it will be created but you may run into file permission issues.
 
-To check your wallet certificate and address, type:
 
-```bash
-docker run -it --rm --user "$(id -u):$(id -g)" \
-    -v $(pwd)/wallet:/opt/klever-blockchain \
-    --entrypoint=/usr/local/bin/operator \
-    kleverapp/klever-go:latest account address
-```
 
-This should show your address, as seen below:
 
-![](files/undefined)
 
 
 
 
 
-## How To Restart A Node
 
-Restart the node:
 
-```bash
-docker restart klever-node
-```
-
-
-
-## How To Run A Node
-
-Klever nodes run inside a docker container, check [System Requirements](undefined) section to download Klever Toolchain first.
-
-### Create statics directory
-
-Create a folder where all the data will be stored:
-
-```bash
-mkdir -p $(pwd)/node/config $(pwd)/node/db $(pwd)/node/logs
-```
-
-### Network genesis config
-
-Download latest config file and extract into your config directory
-
-_For MainNet_
-
-```bash
-curl -k https://backup.mainnet.klever.finance/config.mainnet.108.tar.gz \
-    | tar -xz -C ./node
-```
-
-_For TestNet_
-
-```bash
-curl -k https://backup.testnet.klever.finance/config.testnet.100420.tar.gz \
-    | tar -xz -C ./node
-```
-
-### Create your validator BLS Key
-
-Execute a command inside the docker container to create wallets for validators. The data is then forwarded to the directory created previously.
-
-```bash
-docker run -it --rm -v $(pwd)/node/config:/opt/klever-blockchain \
-    --user "$(id -u):$(id -g)" \
-    --entrypoint='' kleverapp/klever-go:latest keygenerator
-```
-
-### Run your node the first time
-
-The command for running a node comes with a few settings: it includes mappings for cryptographic keys, data directories and logs, as well as network ports, the application that will run when the docker image is executed and the file of node validators signature.
-
-_MainNet_
-
-```bash
-docker run -it --rm \
-    --user "$(id -u):$(id -g)" \
-    --name klever-node \
-    -v $(pwd)/node/config:/opt/klever-blockchain/config/node \
-    -v $(pwd)/node/db:/opt/klever-blockchain/db \
-    -v $(pwd)/node/logs:/opt/klever-blockchain/logs \
-    --network=host \
-    --entrypoint=/usr/local/bin/validator \
-    kleverapp/klever-go:latest \
-    '--log-save' '--rest-api-interface=0.0.0.0:8080'
-```
-
-The table below shows what each part of the command is supposed to do.
-
-Import genesis config and the generated .pem file (BLS Key).
-
--v $(pwd)/node/db:/opt/klever-blockchain/db
-
-Select the destination DB folder.
-
--v $(pwd)/node/logs:/opt/klever-blockchain/logs
-
-Save log files and set the log folders
-
--v $(pwd)/config:/opt/klever-blockchain/config/node
-
-If one wants to monitor the node using log files, the flag `--use-log-view` must be passed. Otherwise, the standard view is a visual interface as seen below.
-
-When you are done setting up and running your node, you are expected to see information about your node, the blockchain itself, as well as data from your own computer, just like the example below:
-
-![A node running, showing how many blocks were proposed and accepted, current blocks, slots and connected nodes, last generated hash, computational information, epoch and network processes and a basic log info segment.](files/undefined)
-
-### Run node in the background the first time
-
-When running in the background, add parameter `--use-log-view` and replace `--rm` for `-d`
-
-```bash
-docker run -it -d --restart unless-stopped \
-    --user "$(id -u):$(id -g)" \
-    --name klever-node \
-    -v $(pwd)/node/config:/opt/klever-blockchain/config/node \
-    -v $(pwd)/node/db:/opt/klever-blockchain/db \
-    -v $(pwd)/node/logs:/opt/klever-blockchain/logs \
-    --network=host \
-    --entrypoint=/usr/local/bin/validator \
-    kleverapp/klever-go:latest \
-    '--log-save' '--use-log-view' '--rest-api-interface=0.0.0.0:8080'
-```
-
-If you are running your node in the background, you can either verify logs in `./node/logs` folder or use the docker command:
-
-```bash
-docker logs -f --tail 5 klever-node
-```
-
-You can speed up your node's first synchronization by using the FullNode database backup
-
-_For MainNet_
-
-```bash
-curl -k https://backup.mainnet.klever.finance/kleverchain.mainnet.latest.tar.gz \
-    | tar -xz -C ./node
-```
-
-_For TestNet_
-
-```bash
-curl -k https://backup.testnet.klever.finance/kleverchain.testnet.latest.tar.gz   | tar -xz -C ./node
-```
-
-You can also opt for using fast sync with `--start-in-epoch` flag. This will indicate node to download last epoch only and start sync from there.
-
-After the first node run, the subsequent commands must remove the flag --start-in-epoch.
-
-This flag is only for node initialization without a db, if the node already has a db, you just need to sync from the last block saved or delete the database and start from the last epoch info.
-
-
-
-## How To Send Using Cli
-
-To use your wallet with Klever Toolchain, you will need to map your wallet private key (the .pem file created in the session [How to create a wallet](undefined)) into the toolchain by adding:
-
-`-v $(pwd)/wallet:/opt/klever-blockchain`
-
-Or if you are using a self-hosted node, use `--network=host` to access the local node API. You can also use a public node by adding an environment variable into the toolchain:
-
-`-e KLEVR_NODE=`https://`node.mainnet.klever.finance`
-
-Send tokens with the following code:
-
-```bash
-docker run -it --rm --user "$(id -u):$(id -g)" \
-    -v $(pwd)/wallet:/opt/klever-blockchain \
-    --network=host \
-    --entrypoint=/usr/local/bin/operator \
-    kleverapp/klever-go:latest \
-    --key-file=./walletKey.pem \
-    --node=https://node.mainnet.klever.finance \
-    account send klv1h7vx629mwuv4pnecn0k9clxp9rt7rquat3kvydgu8npt20e0ntjq3jhd40 137
-```
-
-On the last line, after the "send" command (`send klv1h7vx629mwuv4pnecn0k9clxp9rt7rquat3kvydgu8npt20e0ntjq3jhd40 137`), the code represents the following scheme: [TO] [AMOUNT].
-
-`[TO]` is the address to whom the tokens are being sent.
-
-`[AMOUNT]` is how much is being sent.
-
-`--kda` is the Asset ID.
-
-If no `--kda` is passed, as in the example above, the default KDA is KLV.
-
-Here is another example, sending KFI:
-
-```bash
-docker run -it --rm --user "$(id -u):$(id -g)" \
-    -v $(pwd)/wallet:/opt/klever-blockchain \
-    --network=host \
-    --entrypoint=/usr/local/bin/operator \
-    kleverapp/klever-go:latest \
-    --key-file=./walletKey.pem \
-    --node=https://node.mainnet.klever.finance \
-    account send klv1h7vx629mwuv4pnecn0k9clxp9rt7rquat3kvydgu8npt20e0ntjq3jhd40 \
-    137 --kda=KFI
-```
-
-
-
-
-
-## How To Stop A Node
-
-Stop a node with the following command:
-
-```bash
-docker stop klever-node
-```
-
-
-
-## How To Upgrade Node Docker Image Version
-
-First, stop the node:
-
-```bash
- docker stop klever-node
-```
-
-Upgrade image:
-
-```bash
-docker pull kleverapp/klever-go:latest
-```
-
-Then you can recreate the node with a new image. Don't forget to delete  the container if running in the background:
-
-```bash
-docker rm klever-node
-```
-
-
-
-
-
-
-
-
-
-## Klever Blockchain
-
-_Blockchain is difficult, but it shouldn't be._
-
-### 1. What is Klever
-
-Klever Finance is a trusted **permissionless **blockchain network for the emerging decentralized economy, providing **a safer, faster and smarter cryptocurrency experience** for all users globally to enter and thrive.
-
-A blockchain network does not have an intrinsic value in and of itself, but in fact is only as valuable as what the platform offers its users in terms of usable products and opportunities to participate in the network.
-
-With this in mind, we present **KleverChain** to allow users on a global scale to access indispensable services and products. These include market-leading **crypto wallet**, **crypto swap**, **web browser**, **exchange**, **staking**, **payment channels**, **loans**, **liquidity pools**, **decentralized finance**, **game assets**, **supply chains**, **logistic records**, **notary**, **stored value**, **gift cards**, **rewards**, **loyalty programs**, **collectibles**, **banking**, **ownership **and more.
-
-We strive to create a network where trustless technologies empower businesses and individuals in an open global economy using secure, fast and innovative on-chain peer-to-peer applications.
-
-
-### 2. **Architecture Overview**
-
-Building and deploying blockchain apps should be **simple**, **cheap**, and **easy** for all developers to do, and that is exactly what Klever Blockchain enables.
-
-Instead of being a smart-contracts platform, Klever Blockchain will provide **prebuilt and ready-to-use functionalities for developers to build decentralized applications.**
-
-Our goal is to have a secure and efficient blockchain coordinated by a **Proof of Stake** consensus mechanism composed of **21 validators**, which are randomly selected among the masternodes for the consensus group in each Epoch.
-
-Nodes will sign-off messages broadcasted to the network building a reliability rank of each operator. Nodes with bad behavior will be jailed. Until this jail time isn’t cleared, those ill-behaved nodes will not participate in the validators selection pool.
-
-On top of that, a customized version of the **Practical Byzantine Fault Tolerance algorithm (PBFT)** was implemented for network reliability and resilience, ensuring a fast full confirmation of blocks.
-
-
-
-## System Requirements
-
-To run a node on KleverChain, you need the following minimum setup:
-
-- A CPU with 4 cores.
-- A RAM with 8GB.
-- An SSD with 200 GB.
-- An internet connection speed of at least 100 Mbps.
-- Linux or MacOS.
-
-### To start with Klever blockchain, make sure you have Docker installed and download the latest Klever Toolchain image.
-
-Follow instructions on [https://docs.docker.com/engine/install](https://docs.docker.com/engine/install/) to install Docker.
-
-To download Klever Toolchain, type:
-
-```bash
-docker pull kleverapp/klever-go:latest
-```
 
 
 
