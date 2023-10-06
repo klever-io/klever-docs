@@ -275,18 +275,6 @@ export const navigation: Array<NavGroup> = [
       { title: 'Exchange Integration', href: '/exchange-integration' },
       { title: 'Node Operations', href: '/node-operations' },
       { title: 'About Our Technology', href: '/about-our-technology' },
-
-
-
-      // { title: 'All Cli Operations', href: '/all-cli-operations' },
-      // { title: 'Are You On Windows', href: '/are-you-on-windows' },
-      // { title: 'Chronology', href: '/chronology' },
-      // { title: 'Create a kda', href: '/create-a-kda' },
-      // { title: 'Create Account', href: '/create-account' },
-      // { title: 'Entities', href: '/entities' },
-      // { title: 'Operator Account Address', href: '/operator-account-address' },
-      // { title: 'Paying Fees With kdas', href: '/paying-fees-with-kdas' },
-      // { title: 'Websocket Reference', href: '/websocket-reference' },
     ],
   },
 ]
