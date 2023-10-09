@@ -1,0 +1,118 @@
+## Payload Parameters
+
+`string`
+
+Wallet address that will receive the currency
+
+kda
+
+`string`
+
+Target Asset
+
+maxAmount
+
+`number`
+
+Max amount of assets sold in the ITO (with [precision](undefined))
+
+status
+
+`number`
+
+See [Status](undefined)
+
+packInfo
+
+`{[assetID: string]: `[`Pack`](undefined)`[]}`
+
+Defines the currency in which the packs will be sold.
+
+receiverAddress
+
+defaultLimitPerAddress
+
+`number`
+
+Max amount of NFTs an address can buy, if specific amount is not provided.
+
+whitelistStatus
+
+`number`
+
+See [Status](undefined)
+
+whitelistInfo
+
+`{[address: string]: `[`WhiteListInfo`](undefined)`}`
+
+Defines specific NFT mint limit to given addresses
+
+whitelistStartTime
+
+`number`
+
+Whitelist start time (in UnixTime (seconds))
+
+whitelistEndTime
+
+`number`
+
+Whitelist end time (in UnixTime (seconds))
+
+startTime
+
+`number`
+
+ITO start time (in UnixTime (seconds))
+
+endTime
+
+`number`
+
+ITO end time (in UnixTime (seconds))
+
+## Pack structure
+
+`number`
+
+For NFTs: Amount sold;
+For token: Min amount for that price to be applied (with [precision](undefined))
+
+price
+
+`number`
+
+For NFTs: Price for each NFT;
+For Tokens: Price for that amount.
+
+amount
+
+## WhiteListInfo structure
+
+`number`
+
+Max amount of NFTs an address can buy.
+
+limit
+
+## Status
+
+DefaultITO
+
+Keeps previous status value
+
+1
+
+ActiveITO
+
+Enables ITO/Whitelist
+
+2
+
+PausedITO
+
+Pauses ITO/Whitelist
+
+0
+

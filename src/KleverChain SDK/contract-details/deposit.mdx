@@ -1,0 +1,17 @@
+# Deposit
+Deposits an asset into a FPR pool or into an auto-swapping fee system.
+
+## Payload Parameters
+|  Required  |      Parameter      |   Type   |               Description                |
+|:----------:|---------------------|----------|------------------------------------------|
+|   &#9744;  |     depositType     |  number  | 0: FPR Deposit, 1: KDA Pool, For more info, check #Deposit Type |
+|   &#9744;  |         kda         |  string  | Target Asset                            |
+|   &#9744;  |     currencyId      |  string  | Currency to be deposited                 |
+|   &#9744;  |       amount        |  number  | Amount of currency to be deposited      |
+
+
+## Deposit Type
+| Type ID |  Type Name  |                   Description                   |
+|:-------:|-------------|-------------------------------------------------|
+|    0    | FPR Deposit | Deposits an amount of currency to be distributed to all holders of target asset. |
+|    1    |   KDA Pool  | Deposits an amount of KLV to pay the fees of the target asset's transactions. |

@@ -1,0 +1,66 @@
+When using the SDK you may have the need to send more than one contract per transaction or to send metadata within the transaction.
+
+Both these things are achieved passing an additional param to either  `sendTransaction` or to the `account.send`Contract`` methods.
+
+The second parameter is a "props" object that contains these parameters:
+
+- **metadata**
+- **autobroadcast**
+- **previousTX**
+
+## Sending Metadata
+
+Sending metadata will cause additional fee charges to be applied for every byte.
+
+To add metadata to a transaction, just add a** **string to the metadata prop.
+
+Ex:
+
+```typescript
+const metadata = "this text will be sent in the blockchain transaction"
+
+await account.sendTransfer(payload, {metadata})
+```
+
+## Autobroadcast
+
+Autobroadcast is on by default, meaning that if you call a send transaction method, it will be sent to the blockchain with the parameters you called, but you can disable this option with the  autobroadcast prop.
+
+In this way, you can get the raw transaction and contracts info that are built inside the SDK before the transaction is sent to be processed by the blockchain. You can get some useful info, like the fees you/the user will be paying for that transaction.
+
+If you disable the autobroadcast, you can manually broadcast the transaction using the `broadcast()` method.
+Ex:
+
+```typescript
+const rawTransaction: ITransactionResponse = await account.sendTransfer(
+transferPayload, {
+    autobroadcast: false
+})
+
+console.log({rawTransaction})
+//insert any rawTX treatment, like confirming the fees
+
+const broadcastResponse: IBroadcastResponse = await broadcast(JSON.stringify(rawTransaction))
+
+```
+
+## Sending multiple contracts per transaction
+
+By default when you use a "send" method, it automatically broadcasts the transaction to the blockchain.
+
+So if you want to send multiple contracts, disable this option with the autobroadcast prop, then chain-build (using the previousTX prop) the contracts you want to broadcast. After that, broadcast the transaction containing all the contracts.
+
+Ex:
+
+```typescript
+const transferContract: ITransactionResponse = await account.sendTransfer(
+transferPayload, {
+    autobroadcast: false
+})
+
+const freezeAndTransferContract: IBroadcastResponse = await account.sendTransfer(
+freezePayload, {
+    previousTX: transferContract,
+}) // this will autobroadcast the multi-contract TX
+```
+

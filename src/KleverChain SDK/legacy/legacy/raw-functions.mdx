@@ -1,0 +1,131 @@
+The KleverChain SDK provides an easy way to interact with the blockchain by introducing a TypeScript interface to the webassembly(wasm) underlying functions, this functions, however, are still acessible via the global object interface, inside the kleverWeb object.
+
+Ex for using in the browser:
+
+```typescript
+window.kleverWeb.sendTransaction(transactionType, payload, props)
+```
+
+Ex for using in Node.js:
+
+```typescript
+globalThis.kleverWeb.sendTransaction(transactionType, payload, props)
+```
+
+Note that as you are calling raw wasm functions, there will be no type interface unless you enforce it in your own code.
+
+## Wasm Functions
+
+All the following functions that can be called this way:
+
+- getAccount(address)
+- createAccount()
+- getAddressFromPrivateKey(privateKey)
+- generateMnemonic()
+- parsePemFileData(pemString)
+- decodePEM(cipheredPem, password)
+- signMessage(JSON.stringify({message, privatekey}))
+- verifySignature(JSON.stringify({message, signature, publicKey}))
+- setApiUrl(newApiUrl)
+- setNodeUrl(newNodeUrl)
+- sendTransaction([transactionType](undefined), [payload, props](undefined))
+- signTx(JSON.stringify({ rawTx, privateKey }))
+- broadcast(JSON.stringify(signedTx))
+
+All the functions above return a promise, so be sure to use "await" or other promise treatment.
+
+## Raw Transaction Broadcast Flow
+
+This is automatically managed by the extension, but if you choose to use the raw functions, please note that there are some underlying steps.
+
+The base flow is sendTransaction -> signTx -> broadcast.
+
+"Send" in this case means converting the payload in a object that can be read by the blockchain, which we will call "raw TX"
+
+Example flow:
+
+```typescript
+
+const rawTx = await globalThis.kleverWeb.sendTransaction(
+    transactionType,
+    JSON.stringify(payload),
+    JSON.stringify(props)
+  );
+
+ const { signature } = await globalThis.kleverWeb.signTx(JSON.stringify({
+    rawTx,
+    privateKey
+}))
+
+const signedTx = { ...rawTx,
+    Signature: signature
+    }
+
+const broadcastResponse = await globalThis.kleverWeb.broadcast(JSON.stringify(signedTx))
+
+console.log(broadcastResponse)
+```
+
+## sendTransaction payload and props
+
+### payload:
+
+The payload is a stringified object that will always need a sender and nonce properties, and additional ones depending on the contract type.
+
+Ex:
+
+```typescript
+const payload = JSON.stringify({
+  receiver,
+  amount,
+  asset,
+  sender,
+  nonce
+})
+
+const rawTx = await globalThis.kleverWeb.sendTransaction(0,payload)
+// The first argument can be either 0, "0" or "TransferContractType"
+
+console.log(rawTx)
+```
+
+### props:
+
+The props is a stringified object that is optional, it has two independent properties: metadata and previousTX.
+
+Metadata can be any string that will be stored in the transaction when it is in the blockchain, notably used when storing metadata in a NFT through the update metadata asset trigger. If you store metadata in a transaction, be sure to store it's hash.
+
+Storing data in a TX will increase the bandwidth fee
+
+Ex:
+
+```typescript
+const props = JSON.stringify({
+    metadata: "this string will be stored in the blockchain upon broadcast"
+})
+
+const rawTx = await globalThis.kleverWeb.sendTransaction(0,payload, props)
+
+console.log(rawTx)
+```
+
+PreviousTX is a way of chaining transactions, so you can create a multi-contract transaction.
+
+Multi-contract flow: sendTransaction -> ... -> sendTransaction -> signTx -> broadcast
+
+Ex:
+
+```typescript
+const singleContractTx = await globalThis.kleverWeb.sendTransaction(0,payload)
+
+const props = JSON.stringify({
+    previousTX: singleContractTx[0],
+})
+
+const multiContractTx = await globalThis.kleverWeb.sendTransaction(2,payload2,props)
+
+console.log(multiContractTx)
+```
+
+If you want to chain contracts with metadata, use both props, each metadata will be assigned to the respective contract, they are related by the data array index.
+

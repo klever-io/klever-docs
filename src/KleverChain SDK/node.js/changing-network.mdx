@@ -1,0 +1,15 @@
+The default network is the Kleverchain Mainnet, but if you want to use the Kleverchain Testnet or a local version of the Kleverchain, you can change the provider object by setting it before calling other methods.
+
+
+```ts
+import { utils, IProvider } from "@klever/sdk-node";
+...
+  const provider: IProvider = {
+    api: "https://api.testnet.klever.finance",
+    node: "https://node.testnet.klever.finance",
+  };
+
+  utils.setProviders(provider);
+...
+```
+

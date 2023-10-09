@@ -1,0 +1,85 @@
+### src/components/ConnectButton.tsx
+
+```typescript
+import React from 'react';
+import { IProvider, web, ITransfer, TransactionType } from '@klever/sdk-web';
+const provider: IProvider = {
+  api: 'https://api.testnet.klever.finance',
+  node: 'https://node.testnet.klever.finance',
+};
+
+web.setProvider(provider);
+
+const connectWallet = async () => {
+  await web.initialize();
+};
+
+const ConnectButton: React.FC = () => {
+  return <button onClick={connectWallet}>Connect</button>;
+};
+
+export default ConnectButton;
+
+```
+
+### src/components/SendTXButton.tsx
+
+```tsx
+import React from 'react';
+import { web, ITransfer, TransactionType } from '@klever/sdk-web';
+
+const sendTransaction = async () => {
+  const payload: ITransfer = {
+    amount: 100 * 10 ** 6,
+    receiver: 'klv1fpwjz234gy8aaae3gx0e8q9f52vymzzn3z5q0s5h60pvktzx0n0qwvtux5',
+    kda: 'KLV',
+  };
+
+  try {
+    const unsignedTx = await web.buildTransaction([
+      {
+        payload,
+        type: TransactionType.Transfer,
+      },
+    ]);
+
+    const signedTx = await web.signTransaction(unsignedTx);
+
+    const response = await web.broadcastTransactions([signedTx]);
+    console.log(response);
+  } catch (error) {
+    console.log(error);
+  }
+};
+
+const SendTXButton: React.FC = () => {
+  return <button onClick={sendTransaction}>Send</button>;
+};
+
+export default SendTXButton;
+
+```
+
+### src/pages/SendPage.tsx
+
+```tsx
+import React from 'react';
+import SendTXButton from 'components/SendTXButton';
+import ConnectButton from 'components/ConnectButton';
+
+const SendPage: React.FC = () => {
+  return (
+    <main>
+      <ConnectButton />
+      <SendTXButton />
+    </main>
+  );
+};
+
+export default SendPage;
+
+
+```
+
+See [Changing Network](undefined) to more insights on how to better structure the `web.setProvider()`call in the project.
+

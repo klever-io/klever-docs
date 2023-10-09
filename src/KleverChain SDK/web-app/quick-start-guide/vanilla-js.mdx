@@ -1,0 +1,64 @@
+### connectAndSend.js
+
+```javascript
+import {
+  web,
+  TransactionType,
+} from "https://sdk.kleverscan.org/kleverchain-sdk-web-esm-1-0-x.js";
+
+const provider = {
+  api: "https://api.testnet.klever.finance",
+  node: "https://node.testnet.klever.finance",
+};
+
+web.setProvider(provider);
+
+const sendButton = document.getElementById("send-button");
+const connectButton = document.getElementById("connect-button");
+
+const connectWallet = async () => {
+  await web.initialize();
+};
+
+const sendTransaction = async () => {
+  const payload = {
+    amount: 100 * 10 ** 6,
+    receiver: "klv1fpwjz234gy8aaae3gx0e8q9f52vymzzn3z5q0s5h60pvktzx0n0qwvtux5",
+    kda: "KLV",
+  };
+
+  try {
+    const unsignedTx = await web.buildTransaction([
+      {
+        payload,
+        type: TransactionType.Transfer,
+      },
+    ]);
+
+    const signedTx = await web.signTransaction(unsignedTx);
+
+    const response = await web.broadcastTransactions([signedTx]);
+    console.log(response);
+  } catch (error) {
+    console.log(error);
+  }
+};
+
+sendButton.onclick = sendTransaction;
+connectButton.onclick = connectWallet;
+
+```
+
+### index.html
+
+```html
+<body>
+  <script type="module" src="./connectAndsend.js"></script>
+
+  <button id="connect-button">connect</button>
+  <button id="send-button">send</button>
+</body>
+```
+
+You can also [download the script](https://sdk.kleverscan.org/kleverchain-sdk-web-esm-1-0-x.js), and do a local import instead of fetching from the CDN at every import.
+

@@ -1,0 +1,34 @@
+This contract is deprecated, please use an [ITO Trigger](undefined) of type SetITOPrices.
+
+## Payload Parameters
+
+kda
+
+`string`
+
+Target Asset
+
+packInfo
+
+`{[assetID: string]: `[`Pack`](undefined)`[]}`
+
+Defines the currency in which the packs will be sold.
+
+## Pack structure
+
+`number`
+
+For NFTs: Amount sold;
+For token: Min amount for that price to be applied (with [precision](undefined)).
+
+price
+
+`number`
+
+For NFTs: Price for each NFT;
+For Tokens: Price for that amount.
+
+amount
+
+
+

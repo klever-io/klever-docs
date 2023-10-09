@@ -1,0 +1,96 @@
+getBalance
+
+`number`
+
+Gets that account instance's balance
+
+getNonce
+
+`number`
+
+Gets that account instance's nonce
+
+getAddress
+
+`string`
+
+Gets that account instance's address
+
+sync
+
+`Promise<void>`
+
+Syncs that account instance's balance and nonce with the provided node.
+
+getInfo
+
+`Promise<IAccountInfo>`
+
+Returns that address' info from the provided node.
+
+buildTransaction
+
+`Promise<`[`ITransaction`](undefined)`>`
+
+Builds a simplified transaction into a transaction ready to be signed.
+
+signMessage
+
+`Promise<string>`
+
+Uses the account instance private key to sign any message.
+
+signTransaction
+
+`Promise<`[`ITransaction`](undefined)`>`
+
+Uses the account instance private key to sign a transaction.
+
+quickSend
+
+`Promise<IBroadcastResponse>`
+
+Simplifies the build/sign/broadcast flow into a single method.
+
+downloadAsPem
+
+`Promise<void>`
+
+Saves the `.pem` file for that account instance private key and address.
+
+broadcastTransactions
+
+`Promise<IBroadcastResponse>`
+
+Broadcasts an array of transactions to the provided node.
+
+validateSignature
+
+`Promise<boolean>`
+
+Checks if a signature is compatible with a given address and message.
+
+`()`
+
+`()`
+
+`()`
+
+`()`
+
+`()`
+
+`(contracts: IContractRequest[], `[`txData`](undefined)`?: string[], `[`options`](undefined)`?: `[`ITxOptionsRequest`](undefined)`)`
+
+`(message: string)`
+
+`(tx: ITransaction)`
+
+`(contracts: `[`IContractRequest`](undefined)`[], txData?: string[], options?: `[`ITxOptionsRequest`](undefined)`)`
+
+`(path?: string)`
+
+`(txs: string[] | `[`ITransaction`](undefined)`[])`
+
+`(message: string, signature: string)`
+

@@ -1,0 +1,58 @@
+## Payload Parameters
+
+`number`
+
+0: Instant Sell,
+1: Auction
+
+marketplaceId
+
+`string`
+
+Maketplace ID in which the sell order will be created
+
+assetId
+
+`string`
+
+Asset to be sold
+
+currencyId
+
+`string`
+
+Transaction currency token
+
+price
+
+`number`
+
+Price for instant sell (with [precision](undefined))
+
+reservePrice
+
+`number`
+
+Minimum auction price (with [precision](undefined))
+
+endTime
+
+`number`
+
+Expiration sell time (in Unix Time).
+Max end time = 1 Year from creation date
+
+marketType
+
+`price `is required on `Instant Sell` Orders, but optional in `Auction `Orders. As explained below:
+
+Price for instant sell
+
+1 (Auction)
+
+Bids above this price instantly sell,  ending the auction.
+
+0 (Instant Sell)
+
+### **Obs: Javascript's Date.prototype.getTime() should be divided by 1000 for it to be converted to Unix Time (seconds)**
+
