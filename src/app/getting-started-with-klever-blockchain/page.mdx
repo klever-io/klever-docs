@@ -1,0 +1,125 @@
+export const metadata = {'title': 'getting-started-with-klever-blockchain', 'description': 'Content for getting-started-with-klever-blockchain'}
+
+# Getting Started with Klever Blockchain
+
+Getting started with the Klever Blockchain is easy and straightforward. Here are the steps you need to take to start building and deploying decentralized applications on our platform:
+
+1. Create an account: The first step is to create an account on the Klever Blockchain. You can do this by downloading the [Klever Wallet](https://klever.io/en-us), installing the[Klever Wallet Extension](https://klever.org/klever-extension/) on your Chrome browser, or using code to create an account. Be sure to keep your private key safe and secure. Make sure to create a backup to ensure the security of your account.
+
+2. Fund your account: Once you have created your account, you will need to fund it with KLV, the native cryptocurrency of the Klever Blockchain. It is used to pay for bandwidth fees. The fees for various types of transactions on the blockchain are determined by an on-chain voting mechanism.
+
+The following table lists the fees for different types of transactions on the Klever Blockchain:
+
+| Transaction Type          | Fee (KLV)  |
+|---------------------------|------------|
+| Transfer                  | 0.5        |
+| Create Asset              | 20,000     |
+| Create Validator          | 50,000     |
+| Validator Configuration   | 1,000      |
+| Freeze                    | 1          |
+| Unfreeze                  | 1          |
+| Delegate                  | 1          |
+| Undelegate                | 1          |
+| Claim                     | 1          |
+| Withdraw                  | 1          |
+| Unjail                    | 10,000     |
+| Vote                      | 1          |
+| Buy/Sell                  | 1          |
+| Config ITO                | 20,000     |
+| Create Marketplace        | 50,000     |
+| Config Marketplace        | 1,000      |
+| Update account permission | 1,000      |
+| Proposal                  | 500        |
+| Set ITO price             | 1          |
+| Cancel Market order       | 50         |
+| Set account name          | 100        |
+
+It's worth noting that fees on the blockchain can change depending on the on-chain voting mechanism, so the above table should be used as a rough guide only.
+
+You can fund your [account](https://docs.klever.finance/getting-started-with-klever-blockchain/create-account) by purchasing KLV on a cryptocurrency exchange or by receiving it from another user. It is highly recommended to never leave your funds on an exchange and always withdraw to your own personal wallet.
+
+Where to buy KLV?
+
+| Exchange          | Trading Pair | 
+|-------------------|--------------|
+| Huobi             | KLV/USDT     |
+| KuCoin            | KLV/BTC      |
+| KuCoin            | KLV/USDT     |
+| Klever Exchange   | KLV/USDT     |
+| Klever Exchange   | KFI/KLV      |
+| CoinEx            | KLV/USDT     |
+| Klever Exchange   | MANA/KLV     |
+| Klever Exchange   | CHZ/KLV      |
+| Klever Exchange   | APE/KLV      |
+| Klever Exchange   | KLV/TRX      |
+| Klever Exchange   | MATIC/KLV    |
+| Gate.io           | KLV/USDT     |
+| Klever Exchange   | KLV/BTC      |
+| Klever Exchange   | LTC/KLV      |
+| Klever Exchange   | ENJ/KLV      |
+| Klever Exchange   | DVK/KLV      |
+| MEXC Global       | KLV/USDT     |
+| Klever Exchange   | DOGE/KLV     |
+| Klever Exchange   | SAND/KLV     |
+| KuCoin            | KLV/TRX      |
+| Hotbit            | KLV/USDT     |
+| Gate.io           | KLV/ETH      |
+| Poloniex          | KLV/BTC      |
+| XT.COM            | KLV/USDT     |
+| HitBTC            | KLV/USDT     |
+| FMFW.io           | KLV/USDT     |
+| Klever Exchange   | KLV/ETH      |
+| SUN.io            | KLV/TRX      |
+| SUN.io            | KLV/WTRX     |
+| Klever Exchange   | BNB/KLV      |
+| Klever Exchange   | UNI/KLV      |
+| LATOKEN           | KLV/USDT     |
+| Bittrex           | KLV/BTC      |
+| Klever Exchange   | LINK/KLV     |
+| ProBit Global     | KLV/USDT     |
+| Bittrex           | KLV/USDT     |
+| Poloniex          | KLV/USDT     |
+| Poloniex          | KLV/TRX      |
+| Bitrue            | KLV/BTC      |
+| Bitrue            | KLV/XRP      |
+| XT.COM            | KLV/BTC      |
+
+
+3. Learn about the platform: Before you start building your decentralized application, it's a good idea to learn about the features and tools available on the Klever Blockchain. Our documentation website provides detailed guides and tutorials to help you get up to speed quickly.
+
+4. Build and deploy your application: With your account funded and your knowledge of the platform, you're ready to start building your decentralized application. You can use the Klever API and SDK to interact with the blockchain and build your application. Always make sure to thoroughly test your smart contract before deployment to avoid any potential vulnerabilities.
+
+5. Monitor and manage your application: Once your application is deployed, you can use the Klever Wallet or other tools to monitor and manage your application. You can also use our analytics tools to track the performance of your application and make any necessary adjustments. Regularly check for updates and security patches to ensure the continued safety of your application.
+
+By following these simple steps, you'll be able to quickly and easily get started with the Klever Blockchain and start building the decentralized applications of the future. Remember to always prioritize security and if you have any questions or need assistance, our community is always here to help you.
+
+
+## Create Account
+
+Creating an account on the Klever Blockchain is easy and can be done in three ways:
+
+1. Download the Klever Wallet from our website: [https://klever.finance/wallet/](https://klever.finance/wallet/) The Klever Wallet is a secure and user-friendly way to create and manage your Klever account. Simply download the wallet, install it on your device, and follow the prompts to create your account.
+2. Install the Klever Wallet extension on your Chrome browser: [https://klever.finance/klever-extension](https://klever.finance/klever-extension/)
+  1. The Klever Wallet extension allows you to create and manage your account directly from your Chrome browser. Simply install the extension and follow the prompts to create your account.
+
+3. You can also create an account on the Klever Blockchain by using code. You can use the Klever API or SDK to create an account and generate a private key. Please refer to our API documentation for more information on how to do this.
+
+```javascript
+//import the sdk
+var sdk = require("@klever/sdk");
+
+//create a new klever account for klv and kda tokens
+var klvAccount = await sdk.utils.generateKeyPair()
+
+//check your private key and address
+console.log(klvAccount)
+```
+
+[https://www.npmjs.com/package/@klever/sdk](https://www.npmjs.com/package/@klever/sdk)
+
+Whichever method you choose, be sure to keep your private key safe and secure. Your private key is used to access and manage your account, so it is important to store it in a safe place and never share it with anyone.
+
+Create your account today and start exploring the world of decentralized applications on the Klever Blockchain!
+
+
+
