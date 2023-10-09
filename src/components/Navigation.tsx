@@ -262,6 +262,33 @@ export const navigation: Array<NavGroup> = [
       { title: 'About Our Technology', href: '/about-our-technology' },
     ],
   },
+
+
+  {
+    title: 'KleverChain SDK',
+    links: [
+      {
+        title: 'Introduction to KleverChain SDK',
+        href: '/introduction-to-kleverchain-sdk',
+      },
+      {
+        title: 'Node.js',
+        href: '/node.js',
+      },
+      { title: 'Web App', href: '/web-app' },
+      { title: 'Unity', href: '/unity' },
+      { title: 'Available Transactions', href: '/available-transactions' },
+      { title: 'Contract Details', href: '/contract-details' },
+
+      //Relevant Info     
+      { title: 'Precision', href: '/precision' },
+      { title: 'KAPPS Flowcharts', href: '/kapps-flowcharts' },
+      { title: 'Types', href: '/types' },
+
+      //Legacy
+      { title: 'Legacy', href: '/legacy' },
+    ],
+  },
 ]
 
 export function Navigation(props: React.ComponentPropsWithoutRef<'nav'>) {
