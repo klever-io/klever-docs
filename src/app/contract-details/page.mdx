@@ -1,0 +1,363 @@
+# Contract Details
+
+Additional info on contract parameters and use cases
+
+The parameters are used in the [IPayload](undefined) in the contract
+
+E.g.:
+```tsx
+const payload: ITransfer = {
+  amount: 100 * 10 ** 6,
+  receiver: "receiverAddress",
+  kda: "KLV",
+};
+
+const Contract: IContract = {
+    type: TransactionType.Transfer,
+    payload,
+  }
+```
+
+## Transfer
+Transfer assets to another address.
+
+### Payload Parameters
+
+| Required | Parameter | Type   | Description                     |
+|----------|-----------|--------|---------------------------------|
+| &#9745;  | receiver  | string | Receiver address                |
+| &#9745;  | amount    | number | Amount to be sent (with precision) |
+| <input type="checkbox"  disabled/>  | kda       | string | AssetID. If empty, defaults to KLV |
+
+
+## Freeze
+Freezes a certain amount of a token for staking. This frozen amount will be referred as a "bucket".
+
+### Payload Parameters
+| Required | Parameter | Type   | Description                     |
+|----------|-----------|--------|---------------------------------|
+| &#9745;  | amount    | number | Amount to be frozen (with precision) |
+| <input type="checkbox"  disabled/>   | kda       | string | Defaults to KLV                  |
+
+
+## Unfreeze
+Unfreezes a bucket.
+
+### Payload Parameters
+| Required | Parameter | Type   | Description                   |
+|----------|-----------|--------|-------------------------------|
+| &#9745;  | bucketld  | string | Bucket to be unfrozen         |
+| <input type="checkbox"  disabled/>   | kda       | string | Unfrozen asset ID, defaults to KLV if empty |
+
+## Delegate
+Delegates a bucket to a validator.
+Buckets can only be delegated to a validator address.
+
+### Payload Parameters
+| Required | Parameter | Type   | Description            |
+|----------|-----------|--------|------------------------|
+| &#9745;  | receiver  | string | Address to be delegated to |
+| &#9745;  | bucketld  | string | Bucket to be delegated    |
+
+
+## Undelegate
+Removes the delegation of a bucket.
+
+### Payload Parameters
+| Required | Parameter | Type   | Description            |
+|----------|-----------|--------|------------------------|
+| &#9745;  | bucketld  | string | Bucket ID to be undelegated |
+
+
+## Claim
+Claim either staking rewards, delegation rewards or expired marketplace orders.
+
+### Payload Parameters
+| Required | Parameter  | Type   | Description          |
+|----------|------------|--------|----------------------|
+| &#9745;  | claimType | number | [Check list below](undefined)     |
+| &#9745;  | id         | string | [Check list below](undefined)     |
+
+### Claim types
+All claim types and your function and referral param
+
+| Type ID | Type            | ID Field Description              |
+|---------|-----------------|----------------------------------|
+| 0       | StakingClaim    | Asset ID to be claimed            |
+| 1       | AllowanceClaim  | Asset ID to be claimed            |
+| 2       | MarketClaim     | Order ID to be claimed            |
+
+
+
+## Withdraw
+Retrieves the assets from an unfrozen bucket or assets from KDAPool.
+
+### Payload Parameters
+| Required | Parameter     | Type   | Description                        |
+|----------|---------------|--------|------------------------------------|
+| &#9745;      | kda           | string | Asset ID to be withdrawn           |
+| <input type="checkbox"  disabled/>      | withdrawType  | number | 0: Staking, 1: KDAPool            |
+| <input type="checkbox"  disabled/>      | amount        | number | Amount to be withdrawn from pool   |
+| <input type="checkbox"  disabled/>      | currencyld    | string | Asset to be withdrawn from pool    |
+
+
+
+### Withdraw Type
+| Type ID | Type Name       | Description                                            |
+|---------|-----------------|--------------------------------------------------------|
+| 0       | Staking         | Withdraw all unstaked buckets from target asset      |
+| 1       | KDAPool         | Withdraws an amount from target asset KDAPool deposits |
+
+
+
+## Create Asset
+Creates a new fungible token or a NFT collection.
+
+### Payload Parameters
+|  Required  |    Parameter     |           Type           |               Description                |
+|:----------:|------------------|-------------------------|------------------------------------------|
+|   &#9745;  |       name       |         string          | Asset name                               |
+|   &#9745;  |      ticker      |         string          | Asset shorthand (ticker)                 |
+|   &#9745;  |   ownerAddress   |         string          | Owner address                            |
+|   &#9745;  |    precision     |         number          | Asset precision (0 to 8)                 |
+|   <input type="checkbox"  disabled/>    |       uris       | `{[label: string]: string}` | Relevant URI's                         |
+|   <input type="checkbox"  disabled/>    |       logo       |         string          | Logo URI                                 |
+|   <input type="checkbox"  disabled/>    |  initialSupply   |         number          | Initial minted supply (fungible only) (with precision) |
+|   <input type="checkbox"  disabled/>    |     maxSupply    |         number          | Maximum supply of the asset (with precision) |
+|   <input type="checkbox"  disabled/>    |       type       |         number          | 0: Fungible Token, 1: NFT               |
+|   <input type="checkbox"  disabled/>    |     staking      |     Staking object      | Staking info                             |
+|   &#9745;    |    royalties     |    Royalties object     | Royalties info                           |
+|   <input type="checkbox"  disabled/>    |      roles       | `{[label: string]: Role}` | Other addresses roles info               |
+|   <input type="checkbox"  disabled/>    |   properties     | Properties object      | Asset properties details                 |
+|   <input type="checkbox"  disabled/>    |    attributes    |  Attributes object      | Is paused/mint stopped?                  |
+
+
+# Staking Structure
+|  Required  |       Parameter       |    Type    |               Description                |
+|:----------:|-----------------------|------------|------------------------------------------|
+|   <input type="checkbox"  disabled/>  |      interestType     |   number   | 0: APR, 1: FPR                           |
+|   <input type="checkbox"  disabled/>  |          apr          |   number   | Percentage                               |
+|   <input type="checkbox"  disabled/>  |   minEpochsToClaim    |   number   | Minimum epochs to claim rewards         |
+|   <input type="checkbox"  disabled/>  |  minEpochsToUnstake   |   number   | Minimum epochs to unstake                |
+|   <input type="checkbox"  disabled/>  | minEpochsToWithdraw   |   number   | Minimum epochs to withdraw after unstake |
+
+
+### Royalties Structure
+|  Required  |       Parameter       |           Type           |               Description                |
+|:----------:|-----------------------|-------------------------|------------------------------------------|
+|   &#9745;  |        address        |         string          | Royalty receiver address                 |
+|   <input type="checkbox"  disabled/>  | transferPercentage    | RoyaltyInfo object array | Transfer fee for fungible tokens (precision 2) |
+|   <input type="checkbox"  disabled/>  |    transferFixed      |         number          | Transfer fee for non-fungible tokens     |
+|   <input type="checkbox"  disabled/>  | marketPercentage      |         number          | Market percentage fee details for non-fungible tokens (precision 2) |
+|   <input type="checkbox"  disabled/>  |    marketFixed        |         number          | Market fixed fee for non-fungible tokens |
+|   <input type="checkbox"  disabled/>  | itoPercentage         |         number          | ITO percentage fee (precision 2)         |
+|   <input type="checkbox"  disabled/>  |    itoFixed           |         number          | ITO fixed fee (in the currency asset precision) |
+|   <input type="checkbox"  disabled/>  | splitRoyalties        | `{[address: string]: RoyaltySplitInfo}` | Defines the percentage of the fees when multiple addresses receive royalties |
+
+### RoyaltySplitInfo Structure
+|  Required  |           Parameter            |    Type    |               Description                |
+|:----------:|---------------------------------|------------|------------------------------------------|
+|   <input type="checkbox"  disabled/>  | percentTransferPercentage       |   number   | Percentage that the given address will receive from transfer percentage (precision 2) |
+|   <input type="checkbox"  disabled/>  | percentTransferFixed            |   number   | Percentage that the given address will receive from transfer fixed (precision 2) |
+|   <input type="checkbox"  disabled/>  | percentMarketPercentage         |   number   | Percentage that the given address will receive from market percentage (precision 2) |
+|   <input type="checkbox"  disabled/>  | percentMarketFixed              |   number   | Percentage that the given address will receive from market fixed (precision 2) |
+|   <input type="checkbox"  disabled/>  | percentITOPercentage           |   number   | Percentage that the given address will receive from ito percentage (precision 2) |
+|   <input type="checkbox"  disabled/>  | percentITOFixed                |   number   | Percentage that the given address will receive from ito fixed (precision 2) |
+
+### RoyaltyInfo structure
+|  Required  |       Parameter       |    Type    |               Description                |
+|:----------:|-----------------------|------------|------------------------------------------|
+|   <input type="checkbox"  disabled/>  |        amount         |   number   | Max amount for that percentage           |
+|   <input type="checkbox"  disabled/>  |      percentage       |   number   | Fee % (precision 2)                     |
+
+
+### Role structure
+|  Required  |       Parameter       |    Type    |               Description                |
+|:----------:|-----------------------|------------|------------------------------------------|
+|   <input type="checkbox"  disabled/>  |        address        |   string   | Other wallet's address                  |
+|   <input type="checkbox"  disabled/>  |      hasRoleMint      |  boolean   | Should be able to mint?                  |
+|   <input type="checkbox"  disabled/>  | hasRoleSetITOPrices   |  boolean   | Should be able to set ITO prices?        |
+
+### Properties Structure
+|  Required  |      Parameter      |  Type  |       Description       |
+|:----------:|---------------------|-------|-------------------------|
+|   <input type="checkbox"  disabled/>  |      canFreeze      | boolean | Should be freezable?    |
+|   <input type="checkbox"  disabled/>  |       canWipe       | boolean | Should be wipeable?     |
+|   <input type="checkbox"  disabled/>  |      canPause       | boolean | Should be pausable?     |
+|   <input type="checkbox"  disabled/>  |       canMint       | boolean | Should be mintable?     |
+|   <input type="checkbox"  disabled/>  |       canBurn       | boolean | Should be burnable?     |
+|   <input type="checkbox"  disabled/>  |  canChangeOwner     | boolean | Should the owner be changeable? |
+|   <input type="checkbox"  disabled/>  |     canAddRoles     | boolean | Should roles be add-able?     |
+
+### Attributes structure
+|  Required  |     Parameter         |   Type   |           Description               |
+|:----------:|-----------------------|----------|-------------------------------------|
+|   <input type="checkbox"  disabled/>  |       isPaused        | boolean  | Should be currently paused?         |
+|   <input type="checkbox"  disabled/>  | isNFTMintStopped      | boolean  | Should be currently NFT mint stopped? |
+
+
+## Asset Trigger
+
+Updates the properties or trigger functionalities of a fungible token, NFT collection or a single NFT.
+
+**The required parameters will depend on the trigger type. Trigger Type and AssetID are required in all of them.**
+
+### Trigger Types:
+List with all trigger types values and its required payload fields. You can see more info about each field [here](https://klever.gitbook.io/kleverchain-sdk/contract-details/asset-trigger#payload-parameters). Any parameter you send beyond the required ones will be ignored.
+
+|   ID   |     Type     |                   Description                   |     Parameters     |
+|-------|--------------|-------------------------------------------------|--------------------|
+|   0    |     Mint     | Directly mint assets in the receiver, amount   | target account      |
+|   1    |     Burn     | Directly burn owned assets                      | amount             |
+|   2    |     Wipe     | Directly burn assets of the target account (asset owner only). Useful mostly for stable coins | receiver, amount |
+|   3    |     Pause    | Pauses all transactions of the target asset     | -                  |
+|   4    |    Resume    | Resumes all transactions of the target asset    | -                  |
+|   5    | ChangeOwner  | Changes the asset owner                        | receiver           |
+|   6    |    AddRole   | Add a permission role to the asset              | role               |
+|   7    |  RemoveRole  | Remove a permission role of the asset           | receiver           |
+|   8    |   UpdateMetadata | Update the metadata of a given NFT  | mime, receiver (you may want to send transaction as well) |
+|   9    |   StopNFTMint   | Stop all NFT mints for that asset (forever) | - |
+|   10   |   UpdateLogo     | Updates the asset's logo            | logo URI                |
+|   11   |   UpdateURIs     | Update the stored relevant URIs     | uris URIs                |
+|   12   | ChangeRoyaltiesReceiver | Changes the address that receives royalties | receiver |
+|   13   |   UpdateStaking  | Update staking params                | staking                 |
+|   14   |  UpdateRoyalties | Update royalties params              | royalties               |
+|   15   | UpdateKDAFeePool | Update KDA pool params              | kdaPool                |
+|   16   | StopRoyaltiesChange | Stop royalties changes from the asset |
+|   17   | StopNFTMetadataChange | Stop Metadata changes for a given NFT |
+
+
+### Payload Parameters
+
+|  Required  |      Parameter      |       Type       |               Description                |
+|:----------:|---------------------|------------------|------------------------------------------|
+|   &#9745;  |     triggerType     |      number      | Sets the trigger type (check list below) |
+|   &#9745;  |      assetId        |      string      | Target Asset                             |
+|   <input type="checkbox"  disabled/>  |      receiver       |      string      | Target address for transaction           |
+|   <input type="checkbox"  disabled/>  |       amount        |      number      | Amount (with precision)                  |
+|   <input type="checkbox"  disabled/>  |        uris         |      string      | Ex: `{"foo": { [key: string]: "http://bar.com" }}` |
+|   <input type="checkbox"  disabled/>  |        logo         |      string      | Logo image URL                           |
+|   <input type="checkbox"  disabled/>  |     The nature and    |          mime           | format of the metadata                  |
+|   <input type="checkbox"  disabled/>  |        Role for       |          role           | Add/Remove role                          |
+|   <input type="checkbox"  disabled/>  |       Role types      |   Role object array     | Used for updating staking                |
+|   <input type="checkbox"  disabled/>  |       staking         |        Staking object   | Staking params                           |
+|   <input type="checkbox"  disabled/>  |       royalties       |     Royalties object    | Used for updating royalties              |
+|   <input type="checkbox"  disabled/>  |       kdaPool         |      KDAPool object     | KDAPool params                           |
+
+
+### Royalties structure
+|  Required  |       Parameter       |           Type           |               Description                |
+|:----------:|-----------------------|-------------------------|------------------------------------------|
+|   &#9745;  |       address         |         string          | Royalty receiver address                |
+|   <input type="checkbox"  disabled/>  | transferPercentage    | RoyaltyInfo object array | Transfer fee for fungible tokens (precision 2) |
+|   <input type="checkbox"  disabled/>  |    transferFixed     |         number          | Transfer fee for non-fungible tokens    |
+|   <input type="checkbox"  disabled/>  | marketPercentage      |         number          | Market percentage fee details for non-fungible tokens (precision 2) |
+|   <input type="checkbox"  disabled/>  |    marketFixed       |         number          | Market fixed fee for non-fungible tokens |
+|   <input type="checkbox"  disabled/>  |    itoPercentage     |         number          | ITO percentage fee (precision 2)        |
+|   <input type="checkbox"  disabled/>  |       itoFixed       |         number          | ITO fixed fee (in the currency asset precision) |
+|   <input type="checkbox"  disabled/>  |  splitRoyalties      | `{[address:string]: RoyaltySplitInfo}` | Defines the percentage of the fees when multiple addresses receive royalties |
+
+### RoyaltySplitInfo structure
+|  Required  |       Parameter       |           Type           |               Description                |
+|:----------:|-----------------------|-------------------------|------------------------------------------|
+|   <input type="checkbox"  disabled/>  | percentTransferPercentage |         number        | Percentage that the given address will receive from transfer percentage (precision 2) |
+|   <input type="checkbox"  disabled/>  | percentTransferFixed   |         number          | Percentage that the given address will receive from transfer fixed (precision 2) |
+|   <input type="checkbox"  disabled/>  | percentMarketPercentage |         number          | Percentage that the given address will receive from market percentage (precision 2) |
+|   <input type="checkbox"  disabled/>  | percentMarketFixed     |         number          | Percentage that the given address will receive from market fixed (precision 2) |
+|   <input type="checkbox"  disabled/>  | percentITOPercentage   |         number          | Percentage that the given address will receive from ito percentage (precision 2) |
+|   <input type="checkbox"  disabled/>  | percentITOFixed       |         number          | Percentage that the given address will receive from ito fixed (precision 2) |
+
+### RoyaltyInfo structure
+|  Required  |       Parameter       |           Type           |               Description                |
+|:----------:|-----------------------|-------------------------|------------------------------------------|
+|   <input type="checkbox"  disabled/>  |       amount          |         number          | Max amount for that percentage           |
+|   <input type="checkbox"  disabled/>  |    percentage         |         number          | Fee % (precision 2)                     |
+
+
+### KDAPool
+|  Required  |    Parameter     |    Type    |           Description                |
+|:----------:|------------------|------------|--------------------------------------|
+|   &#9745;  |       kda        |   string   | Target Asset                         |
+|   &#9745;  |      active      |  boolean   | True if the pooling should be active |
+|   &#9745;  |  adminAddress    |   string   | Admin Address                        |
+|   &#9745;  |    fRatioKLV     |   number   | Fixed ratio for KLV                  |
+|   &#9745;  |    fRatioKDA     |   number   | Fixed ratio for KDA                  |
+
+Fixed Ratio calculation:
+
+### Role Structure
+List with all role values
+|  Required  |       Parameter           |    Type    |               Description                |
+|:----------:|---------------------------|------------|------------------------------------------|
+|   &#9745;  |         address           |   string   | Target Address                           |
+|   &#9745;  |       hasRoleMint         |  boolean   | Should be able to mint?                  |
+|   &#9745;  | hasRoleSetITOPrices       |  boolean   | Should be able to set ITO prices?        |
+
+
+### Staking Structure
+|  Required  |        Parameter        |    Type    |               Description                |
+|:----------:|--------------------------|------------|------------------------------------------|
+|   &#9745;  |      interestType        |   number   | 0: APR, 1: FPR                           |
+|   <input type="checkbox"  disabled/>  |           apr            |   number   | Percentage                               |
+|   <input type="checkbox"  disabled/>  |    minEpochsToClaim      |   number   | Minimum epochs to claim rewards         |
+|   <input type="checkbox"  disabled/>  |  minEpochsToUnstake      |   number   | Minimum epochs to unstake                |
+|   <input type="checkbox"  disabled/>  | minEpochsToWithdraw      |   number   | Minimum epochs to withdraw after unstake |
+
+
+## Deposit
+Deposits an asset into a FPR pool or into an auto-swapping fee system.
+
+### Payload Parameters
+|  Required  |      Parameter      |   Type   |               Description                |
+|:----------:|---------------------|----------|------------------------------------------|
+|   &#9745;  |     depositType     |  number  | 0: FPR Deposit, 1: KDA Pool, For more info, check #Deposit Type |
+|   &#9745;  |         kda         |  string  | Target Asset                            |
+|   &#9745;  |     currencyId      |  string  | Currency to be deposited                 |
+|   &#9745;  |       amount        |  number  | Amount of currency to be deposited      |
+
+
+### Deposit Type
+| Type ID |  Type Name  |                   Description                   |
+|:-------:|-------------|-------------------------------------------------|
+|    0    | FPR Deposit | Deposits an amount of currency to be distributed to all holders of target asset. |
+|    1    |   KDA Pool  | Deposits an amount of KLV to pay the fees of the target asset's transactions. |
+
+
+## Config ITO
+Sets up an Initial Token Offering for either a token or a NFT collection.
+
+### Payload Parameters
+| Required | Parameter        | Type   | Description                              |
+|----------|------------------|--------|------------------------------------------|
+| &#9745;  | receiverAddress  | string | Wallet address that will receive the currency |
+| &#9745;  | kda              | string | Target Asset                             |
+| <input type="checkbox"  disabled/>  | maxAmount     | number | Max amount of assets sold in the ITO (with precision) |
+| &#9745;  | status        | number | See Status                               |
+| &#9745;  | packInfo      | `{[assetID: string]: Pack[]}`  | Defines the currency in which the packs will be sold. |
+| <input type="checkbox"  disabled/> | defaultLimitPerAddress | number | Max amount of NFTs an address can buy, if specific amount is not provided. |
+<input type="checkbox"  disabled/> |whitelistStatus | number | See [Status](undefined)
+<input type="checkbox"  disabled/>  | whitelistInfo |`{[address: string]: WhiteListInfo}` | Defines specific NFT mint limit to given addresses |
+<input type="checkbox"  disabled/>  | whitelistStartTime | number | Whitelist start time (in UnixTime (seconds))|
+<input type="checkbox"  disabled/> | whitelistEndTime |  number | Whitelist end time (in UnixTime (seconds)) |
+<input type="checkbox"  disabled/> | startTime | number | ITO start time (in UnixTime (seconds))|
+<input type="checkbox"  disabled/> | endTime | number | ITO end time (in UnixTime (seconds))|
+
+### Pack structure
+| Required | Parameter | Type   | Description |
+|----------|-----------|--------|-------------|
+| &#9745;  | amount  | number | For NFTs: Amount sold; For tokens: Minimum amount for the price to be applied (with [precision](undefined)). |
+| &#9745;  | price              | number | For NFTs: Price for each NFT; For tokens: Price for that amount.                              |
+
+### WhiteListInfo structure
+| Required | Parameter | Type   | Description                            |
+|----------|-----------|--------|----------------------------------------|
+| &#9745;  | limit     | number |Max amount of NFTs an address can buy.  |
+
+### Status
+| Status Value | Status Name | Description              |
+|--------------|-------------|--------------------------|
+| 0            | DefaultITO  | Keeps previous status value |
+| 1            | ActiveITO   | Enables ITO/Whitelist   |
+| 2            | PausedITO   | Pauses ITO/Whitelist    |
+
+

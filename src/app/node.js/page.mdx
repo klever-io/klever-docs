@@ -148,3 +148,118 @@ All methods that can be called by an account instance.
 |   downloadAsPem      | (path?: string)  |   `Promise<void>`              | Saves the `.pem` file for that account instance private key and address. |
 | broadcastTransactions| `(txs: string[] \| ITransaction[])` | `Promise<IBroadcastResponse>` | Broadcasts an array of transactions to the provided node. |
 | validateSignature    | (message: string, signature: string) | `Promise<boolean>` | Checks if a signature is compatible with a given address and message. |
+
+## All utility methods
+All method packed into the utils object.
+
+|   Method             |    Parameters    |   Return   |                Description                |
+|----------------------|------------------|------------|-------------------------------------------|
+| getAddressFromPrivateKey | (privatekey: string) | `Promise<string>` | Gets the address for the given РК based on the ED25519 curve and bech32 address conversion. |
+| generateKeyPair      |       ()          | `Promise<{ privatekey: string; address: string; }>` | Generates a new private key/address pair, based on the ED25519 curve and bech32 address conversion. |
+| getProviders         |       ()  | IProvider  | Gets the current provider object. |
+| setProviders         | (providers: IProvider) | void      | Sets the provider object. |
+| broadcastTransactions | (txs: ITransaction[]) | `Promise<IBroadcastResponse>` | Broadcasts an array of transactions to the provided node. |
+| decodeTransaction         | (tx: ITransaction)        | `Promise<IDecodedTransaction>` | Decodes a built transaction to a more human-readable JSON.     |
+| transactionsProcessed     | (txs: Promise[], tries?: number) | `Promise<IDecodedTransaction[]>` | Resolves when all the broadcasted transactions are processed on chain, rejects when the try limit is reached. |
+| accountsReady            | (accounts: Account[])    | `Promise<void>`          | Resolves when all the accounts in the array are initialized.   |
+| validateSignature        | (message: string, signature: string, address: string) | `Promise<boolean>` | Checks if a signature is compatible with a given address and message. |
+| decodeAddress     | (address: string)         | `Promise<Uint8Array>` | Decodes an address to a Uint8Array.                            |
+| toHex             | (data: Uint8Array)        | string       | Helper method to convert Uint8Array to a hex string.          |
+
+
+## Auxiliary Scripts
+In this section, we provide scripts to automate the most commonly executed transaction patterns in KleverChain.
+
+### Mint + UpdateMetadata
+Each Update Metadata has a Kapp Fee of 2KLV, and the Bandwidth Fee depends on the size of the metadata
+
+**metadataScript.js**
+
+```tsx
+import { Account, utils, TransactionType } from "@klever/sdk-node";
+
+utils.setProviders({
+  api: "https://api.devnet.klever.finance",
+  node: "https://node.devnet.klever.finance",
+});
+
+const privateKey = "Your PrivateKey";
+const mainAccount = new Account(privateKey);
+await mainAccount.ready;
+const receiverAccount = mainAccount.getAddress(); // the account receiver of the NFTs
+
+const assetTriggerMint = {
+  amount: 50, // any amount you want, up to 50
+  assetId: "Your AssetId",
+  triggerType: 0, // Mint
+};
+
+const contracts = [
+  {
+    type: TransactionType.AssetTrigger,
+    payload: {
+      ...assetTriggerMint,
+      receiver: receiverAccount,
+    },
+  },
+];
+
+const transactionRes = [mainAccount.quickSend(contracts)];
+const result = await utils.transactionsProcessed(transactionRes);
+const arrayAssetId = [];
+
+if (result[0].transaction.status !== 'success') {
+  throw new Error(`Transaction failed: ${result[0].transaction.resultCode}`);
+}
+
+result[0].transaction.receipts.slice(2).forEach((element) => {
+  if (!element.assetId.includes('/')) {
+    throw new Error(`${element.assetId} is not a NFT. The amount was minted but the metadata can't be updated`);
+  }
+  arrayAssetId.push(element.assetId);
+});
+
+const updateMetaDataContracts = [];
+const updateMetaDataDatas = [];
+arrayAssetId.forEach((assetId) => {
+  updateMetaDataContracts.push({
+    type: TransactionType.AssetTrigger,
+    payload: {
+      triggerType: 8,
+      assetId: assetId,
+      mime: "application/json", // You can use any MIME type.
+      // Here is a list of the most common ones: 
+      // https://developer.mozilla.org/en-US/docs/Web/HTTP/Basics_of_HTTP/MIME_types/Common_types
+      receiver: receiverAccount,
+    },
+  });
+  updateMetaDataDatas.push(JSON.stringify({assetId})); // You can send any metadata for the given assetId here
+});
+
+const requestArray = [];
+for (
+  let index = 0;
+  index < updateMetaDataContracts.length;
+  index = index + 20 // The amount of contracts per transaction is limited to 20
+) {
+  const request = await mainAccount.quickSend(
+    updateMetaDataContracts.slice(
+      index,
+      index + 20 < updateMetaDataContracts.length
+        ? index + 20
+        : updateMetaDataContracts.length
+    ),
+    updateMetaDataDatas.slice(
+      index,
+      index + 20 < updateMetaDataContracts.length
+        ? index + 20
+        : updateMetaDataContracts.length
+    )
+  );
+  requestArray.push(request);
+}
+
+const resultUpdateMetaData = await utils.transactionsProcessed(requestArray);
+resultUpdateMetaData.forEach((element, index) => {
+  console.log(`Hash ${index}: ${element.transaction.hash}`)
+});

@@ -1,0 +1,255 @@
+# Web App
+Here are the articles in this section:
+**[Quick Start guide](undefined)**
+**[Changing network](undefined)**
+**[All web object methods](undefined)**
+
+## Quick start guide
+
+Getting started with the KleverChain SDK
+
+To use the KleverChain sdk in a web application, you must use the `web` object. It manages the window object to use the appropriate account manager (web extension or mobile wallet).
+
+You can see some examples by clicking in the link below.
+
+## Examples by framework:
+
+- [Vanilla JS](undefined)
+- [React TS](undefined)
+
+
+## Vanilla JS
+The following scripts are fully functional for implementing a send button that does a transfer.
+
+### connectAndSend.js
+
+```javascript
+import {
+  web,
+  TransactionType,
+} from "https://sdk.kleverscan.org/kleverchain-sdk-web-esm-1-0-x.js";
+
+const provider = {
+  api: "https://api.testnet.klever.finance",
+  node: "https://node.testnet.klever.finance",
+};
+
+web.setProvider(provider);
+
+const sendButton = document.getElementById("send-button");
+const connectButton = document.getElementById("connect-button");
+
+const connectWallet = async () => {
+  await web.initialize();
+};
+
+const sendTransaction = async () => {
+  const payload = {
+    amount: 100 * 10 ** 6,
+    receiver: "klv1fpwjz234gy8aaae3gx0e8q9f52vymzzn3z5q0s5h60pvktzx0n0qwvtux5",
+    kda: "KLV",
+  };
+
+  try {
+    const unsignedTx = await web.buildTransaction([
+      {
+        payload,
+        type: TransactionType.Transfer,
+      },
+    ]);
+
+    const signedTx = await web.signTransaction(unsignedTx);
+
+    const response = await web.broadcastTransactions([signedTx]);
+    console.log(response);
+  } catch (error) {
+    console.log(error);
+  }
+};
+
+sendButton.onclick = sendTransaction;
+connectButton.onclick = connectWallet;
+
+```
+
+### index.html
+
+```html
+<body>
+  <script type="module" src="./connectAndsend.js"></script>
+
+  <button id="connect-button">connect</button>
+  <button id="send-button">send</button>
+</body>
+```
+
+You can also [download the script](https://sdk.kleverscan.org/kleverchain-sdk-web-esm-1-0-x.js), and do a local import instead of fetching from the CDN at every import.
+
+
+## React TS
+The following scripts are fully functional for a send button component that does a transfer.
+
+### src/components/ConnectButton.tsx
+
+```typescript
+import React from 'react';
+import { IProvider, web, ITransfer, TransactionType } from '@klever/sdk-web';
+const provider: IProvider = {
+  api: 'https://api.testnet.klever.finance',
+  node: 'https://node.testnet.klever.finance',
+};
+
+web.setProvider(provider);
+
+const connectWallet = async () => {
+  await web.initialize();
+};
+
+const ConnectButton: React.FC = () => {
+  return <button onClick={connectWallet}>Connect</button>;
+};
+
+export default ConnectButton;
+
+```
+
+### src/components/SendTXButton.tsx
+
+```tsx
+import React from 'react';
+import { web, ITransfer, TransactionType } from '@klever/sdk-web';
+
+const sendTransaction = async () => {
+  const payload: ITransfer = {
+    amount: 100 * 10 ** 6,
+    receiver: 'klv1fpwjz234gy8aaae3gx0e8q9f52vymzzn3z5q0s5h60pvktzx0n0qwvtux5',
+    kda: 'KLV',
+  };
+
+  try {
+    const unsignedTx = await web.buildTransaction([
+      {
+        payload,
+        type: TransactionType.Transfer,
+      },
+    ]);
+
+    const signedTx = await web.signTransaction(unsignedTx);
+
+    const response = await web.broadcastTransactions([signedTx]);
+    console.log(response);
+  } catch (error) {
+    console.log(error);
+  }
+};
+
+const SendTXButton: React.FC = () => {
+  return <button onClick={sendTransaction}>Send</button>;
+};
+
+export default SendTXButton;
+
+```
+
+### src/pages/SendPage.tsx
+
+```tsx
+import React from 'react';
+import SendTXButton from 'components/SendTXButton';
+import ConnectButton from 'components/ConnectButton';
+
+const SendPage: React.FC = () => {
+  return (
+    <main>
+      <ConnectButton />
+      <SendTXButton />
+    </main>
+  );
+};
+
+export default SendPage;
+
+
+```
+
+See [Changing Network](undefined) to more insights on how to better structure the `web.setProvider()`call in the project.
+
+
+
+## Changing network
+
+The default network is the Kleverchain Mainnet, but if you want to use the Kleverchain Testnet or a local version of the Kleverchain, you can change the `kleverWeb` provider object by setting it before calling the initialize function.
+
+
+
+The providers should be set only once, possibly in the outermost scope of the application that need access to creating transactions, to avoid any conflicts.
+
+Eg: Set it inside a group of Routes, Context, or in the application entry point.
+
+
+
+```ts
+import { web, IProvider } from '@klever/sdk-web';
+...
+  const provider:IProvider = {
+      api: 'https://api.testnet.klever.finance',
+      node: 'https://node.testnet.klever.finance'
+  };
+
+  web.setProvider(provider);
+
+  web.initialize();
+...
+```
+
+## All web object methods
+
+All of the following methods are implemented by the account manager (web extension or mobile wallet), the sdk mostly provides ease of use and correct types.
+
+
+| Method             | Parameters                      | Return              | Description                                              |
+|--------------------|---------------------------------|---------------------|----------------------------------------------------------|
+| isKleverWebLoaded  | ()                               | boolean             | Checks if a Klever Web account manager is loaded.       |
+| isKleverWebActive  | ()                               | boolean             | Checks if the loaded account manager is initialized.     |
+| broadcastTransactions | (transactions: ITransaction[]) | `Promise<IBroadcastResponse>` | Broadcasts an array of transactions to the provided node. |
+| signMessage        | (message: string, privateKey: string) | `Promise<string>`  | Uses the account manager's internal signature method to sign any message. |
+| signTransaction           | (transaction: ITransaction)                       | `Promise<ITransaction>`   | Uses the account manager's internal signature method to sign a transaction. |
+| validateSignature         | (message: string, signature: string, publickey: string) | `Promise<boolean>` | Checks if the signature and signer are compatible. |
+| buildTransaction          | (contracts: IContractRequest[], txData?: string[], options?: ITxOptionsRequest) | `Promise<ITransaction>` | Builds a simplified transaction into a transaction ready to be signed. |
+| initialize          | (timeout?: number)              | `Promise<void>` | Initializes the account manager with the selected account in the wallet. Waits until the provider is injected on the window (default timeout: 5000ms). |
+| getWalletAddress   | ()                               | string     | Returns the selected account address.                |
+| getProvider        | ()                               | IProvider  | Gets the current provider object.                   |
+| setProvider        | (providers: IProvider)          | void       | Sets the provider object.                            |
+
+
+
+
+### Optional Build Params Usage
+
+To build a transaction you only need the contracts with the correct parameters, described in each [contract page](undefined), however you can pass [additional options](undefined) such as metadata and custom nonce or permission ID for the transaction.
+
+
+**Metadata**
+
+To send metadata, use the second parameter in `buildTransaction`, notice that it should be an array where each string corresponds to the metadata of the contract of the same index.
+E.g.:
+
+```typescript
+buildTransaction([transferContract, assetTriggerContract], ["metadata0", "metadata1"])
+```
+
+"metadata0" will be added to the transferContract, "metadata1" will be added to the assetTriggerContract.
+
+
+
+**Nonce and Permission ID**
+
+To change the nonce or the permission ID, use the third parameter.
+E.g.:
+
+```typescript
+buildTransaction([transferContract],, {
+    nonce:0,
+    permId:0
+})
+```
