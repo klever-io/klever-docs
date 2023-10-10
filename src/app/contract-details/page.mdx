@@ -25,8 +25,8 @@ Transfer assets to another address.
 
 | Required | Parameter | Type   | Description                     |
 |----------|-----------|--------|---------------------------------|
-| &#9745;  | receiver  | string | Receiver address                |
-| &#9745;  | amount    | number | Amount to be sent (with precision) |
+| ✅  | receiver  | string | Receiver address                |
+| ✅  | amount    | number | Amount to be sent (with precision) |
 | <input type="checkbox"  disabled/>  | kda       | string | AssetID. If empty, defaults to KLV |
 
 
@@ -36,7 +36,7 @@ Freezes a certain amount of a token for staking. This frozen amount will be refe
 ### Payload Parameters
 | Required | Parameter | Type   | Description                     |
 |----------|-----------|--------|---------------------------------|
-| &#9745;  | amount    | number | Amount to be frozen (with precision) |
+| ✅  | amount    | number | Amount to be frozen (with precision) |
 | <input type="checkbox"  disabled/>   | kda       | string | Defaults to KLV                  |
 
 
@@ -46,7 +46,7 @@ Unfreezes a bucket.
 ### Payload Parameters
 | Required | Parameter | Type   | Description                   |
 |----------|-----------|--------|-------------------------------|
-| &#9745;  | bucketld  | string | Bucket to be unfrozen         |
+| ✅  | bucketld  | string | Bucket to be unfrozen         |
 | <input type="checkbox"  disabled/>   | kda       | string | Unfrozen asset ID, defaults to KLV if empty |
 
 ## Delegate
@@ -56,8 +56,8 @@ Buckets can only be delegated to a validator address.
 ### Payload Parameters
 | Required | Parameter | Type   | Description            |
 |----------|-----------|--------|------------------------|
-| &#9745;  | receiver  | string | Address to be delegated to |
-| &#9745;  | bucketld  | string | Bucket to be delegated    |
+| ✅  | receiver  | string | Address to be delegated to |
+| ✅  | bucketld  | string | Bucket to be delegated    |
 
 
 ## Undelegate
@@ -66,7 +66,7 @@ Removes the delegation of a bucket.
 ### Payload Parameters
 | Required | Parameter | Type   | Description            |
 |----------|-----------|--------|------------------------|
-| &#9745;  | bucketld  | string | Bucket ID to be undelegated |
+| ✅  | bucketld  | string | Bucket ID to be undelegated |
 
 
 ## Claim
@@ -75,8 +75,8 @@ Claim either staking rewards, delegation rewards or expired marketplace orders.
 ### Payload Parameters
 | Required | Parameter  | Type   | Description          |
 |----------|------------|--------|----------------------|
-| &#9745;  | claimType | number | [Check list below](undefined)     |
-| &#9745;  | id         | string | [Check list below](undefined)     |
+| ✅  | claimType | number | [Check list below](undefined)     |
+| ✅  | id         | string | [Check list below](undefined)     |
 
 ### Claim types
 All claim types and your function and referral param
@@ -95,7 +95,7 @@ Retrieves the assets from an unfrozen bucket or assets from KDAPool.
 ### Payload Parameters
 | Required | Parameter     | Type   | Description                        |
 |----------|---------------|--------|------------------------------------|
-| &#9745;      | kda           | string | Asset ID to be withdrawn           |
+| ✅      | kda           | string | Asset ID to be withdrawn           |
 | <input type="checkbox"  disabled/>      | withdrawType  | number | 0: Staking, 1: KDAPool            |
 | <input type="checkbox"  disabled/>      | amount        | number | Amount to be withdrawn from pool   |
 | <input type="checkbox"  disabled/>      | currencyld    | string | Asset to be withdrawn from pool    |
@@ -116,17 +116,17 @@ Creates a new fungible token or a NFT collection.
 ### Payload Parameters
 |  Required  |    Parameter     |           Type           |               Description                |
 |:----------:|------------------|-------------------------|------------------------------------------|
-|   &#9745;  |       name       |         string          | Asset name                               |
-|   &#9745;  |      ticker      |         string          | Asset shorthand (ticker)                 |
-|   &#9745;  |   ownerAddress   |         string          | Owner address                            |
-|   &#9745;  |    precision     |         number          | Asset precision (0 to 8)                 |
+|   ✅  |       name       |         string          | Asset name                               |
+|   ✅  |      ticker      |         string          | Asset shorthand (ticker)                 |
+|   ✅  |   ownerAddress   |         string          | Owner address                            |
+|   ✅  |    precision     |         number          | Asset precision (0 to 8)                 |
 |   <input type="checkbox"  disabled/>    |       uris       | `{[label: string]: string}` | Relevant URI's                         |
 |   <input type="checkbox"  disabled/>    |       logo       |         string          | Logo URI                                 |
 |   <input type="checkbox"  disabled/>    |  initialSupply   |         number          | Initial minted supply (fungible only) (with precision) |
 |   <input type="checkbox"  disabled/>    |     maxSupply    |         number          | Maximum supply of the asset (with precision) |
 |   <input type="checkbox"  disabled/>    |       type       |         number          | 0: Fungible Token, 1: NFT               |
 |   <input type="checkbox"  disabled/>    |     staking      |     Staking object      | Staking info                             |
-|   &#9745;    |    royalties     |    Royalties object     | Royalties info                           |
+|   ✅    |    royalties     |    Royalties object     | Royalties info                           |
 |   <input type="checkbox"  disabled/>    |      roles       | `{[label: string]: Role}` | Other addresses roles info               |
 |   <input type="checkbox"  disabled/>    |   properties     | Properties object      | Asset properties details                 |
 |   <input type="checkbox"  disabled/>    |    attributes    |  Attributes object      | Is paused/mint stopped?                  |
@@ -145,7 +145,7 @@ Creates a new fungible token or a NFT collection.
 ### Royalties Structure
 |  Required  |       Parameter       |           Type           |               Description                |
 |:----------:|-----------------------|-------------------------|------------------------------------------|
-|   &#9745;  |        address        |         string          | Royalty receiver address                 |
+|   ✅  |        address        |         string          | Royalty receiver address                 |
 |   <input type="checkbox"  disabled/>  | transferPercentage    | RoyaltyInfo object array | Transfer fee for fungible tokens (precision 2) |
 |   <input type="checkbox"  disabled/>  |    transferFixed      |         number          | Transfer fee for non-fungible tokens     |
 |   <input type="checkbox"  disabled/>  | marketPercentage      |         number          | Market percentage fee details for non-fungible tokens (precision 2) |
@@ -231,8 +231,8 @@ List with all trigger types values and its required payload fields. You can see 
 
 |  Required  |      Parameter      |       Type       |               Description                |
 |:----------:|---------------------|------------------|------------------------------------------|
-|   &#9745;  |     triggerType     |      number      | Sets the trigger type (check list below) |
-|   &#9745;  |      assetId        |      string      | Target Asset                             |
+|   ✅  |     triggerType     |      number      | Sets the trigger type (check list below) |
+|   ✅  |      assetId        |      string      | Target Asset                             |
 |   <input type="checkbox"  disabled/>  |      receiver       |      string      | Target address for transaction           |
 |   <input type="checkbox"  disabled/>  |       amount        |      number      | Amount (with precision)                  |
 |   <input type="checkbox"  disabled/>  |        uris         |      string      | Ex: `{"foo": { [key: string]: "http://bar.com" }}` |
@@ -248,7 +248,7 @@ List with all trigger types values and its required payload fields. You can see 
 ### Royalties structure
 |  Required  |       Parameter       |           Type           |               Description                |
 |:----------:|-----------------------|-------------------------|------------------------------------------|
-|   &#9745;  |       address         |         string          | Royalty receiver address                |
+|   ✅  |       address         |         string          | Royalty receiver address                |
 |   <input type="checkbox"  disabled/>  | transferPercentage    | RoyaltyInfo object array | Transfer fee for fungible tokens (precision 2) |
 |   <input type="checkbox"  disabled/>  |    transferFixed     |         number          | Transfer fee for non-fungible tokens    |
 |   <input type="checkbox"  disabled/>  | marketPercentage      |         number          | Market percentage fee details for non-fungible tokens (precision 2) |
@@ -277,11 +277,11 @@ List with all trigger types values and its required payload fields. You can see 
 ### KDAPool
 |  Required  |    Parameter     |    Type    |           Description                |
 |:----------:|------------------|------------|--------------------------------------|
-|   &#9745;  |       kda        |   string   | Target Asset                         |
-|   &#9745;  |      active      |  boolean   | True if the pooling should be active |
-|   &#9745;  |  adminAddress    |   string   | Admin Address                        |
-|   &#9745;  |    fRatioKLV     |   number   | Fixed ratio for KLV                  |
-|   &#9745;  |    fRatioKDA     |   number   | Fixed ratio for KDA                  |
+|   ✅  |       kda        |   string   | Target Asset                         |
+|   ✅  |      active      |  boolean   | True if the pooling should be active |
+|   ✅  |  adminAddress    |   string   | Admin Address                        |
+|   ✅  |    fRatioKLV     |   number   | Fixed ratio for KLV                  |
+|   ✅  |    fRatioKDA     |   number   | Fixed ratio for KDA                  |
 
 Fixed Ratio calculation:
 
@@ -289,15 +289,15 @@ Fixed Ratio calculation:
 List with all role values
 |  Required  |       Parameter           |    Type    |               Description                |
 |:----------:|---------------------------|------------|------------------------------------------|
-|   &#9745;  |         address           |   string   | Target Address                           |
-|   &#9745;  |       hasRoleMint         |  boolean   | Should be able to mint?                  |
-|   &#9745;  | hasRoleSetITOPrices       |  boolean   | Should be able to set ITO prices?        |
+|   ✅  |         address           |   string   | Target Address                           |
+|   ✅  |       hasRoleMint         |  boolean   | Should be able to mint?                  |
+|   ✅  | hasRoleSetITOPrices       |  boolean   | Should be able to set ITO prices?        |
 
 
 ### Staking Structure
 |  Required  |        Parameter        |    Type    |               Description                |
 |:----------:|--------------------------|------------|------------------------------------------|
-|   &#9745;  |      interestType        |   number   | 0: APR, 1: FPR                           |
+|   ✅  |      interestType        |   number   | 0: APR, 1: FPR                           |
 |   <input type="checkbox"  disabled/>  |           apr            |   number   | Percentage                               |
 |   <input type="checkbox"  disabled/>  |    minEpochsToClaim      |   number   | Minimum epochs to claim rewards         |
 |   <input type="checkbox"  disabled/>  |  minEpochsToUnstake      |   number   | Minimum epochs to unstake                |
@@ -310,10 +310,10 @@ Deposits an asset into a FPR pool or into an auto-swapping fee system.
 ### Payload Parameters
 |  Required  |      Parameter      |   Type   |               Description                |
 |:----------:|---------------------|----------|------------------------------------------|
-|   &#9745;  |     depositType     |  number  | 0: FPR Deposit, 1: KDA Pool, For more info, check #Deposit Type |
-|   &#9745;  |         kda         |  string  | Target Asset                            |
-|   &#9745;  |     currencyId      |  string  | Currency to be deposited                 |
-|   &#9745;  |       amount        |  number  | Amount of currency to be deposited      |
+|   ✅  |     depositType     |  number  | 0: FPR Deposit, 1: KDA Pool, For more info, check #Deposit Type |
+|   ✅  |         kda         |  string  | Target Asset                            |
+|   ✅  |     currencyId      |  string  | Currency to be deposited                 |
+|   ✅  |       amount        |  number  | Amount of currency to be deposited      |
 
 
 ### Deposit Type
@@ -329,11 +329,11 @@ Sets up an Initial Token Offering for either a token or a NFT collection.
 ### Payload Parameters
 | Required | Parameter        | Type   | Description                              |
 |----------|------------------|--------|------------------------------------------|
-| &#9745;  | receiverAddress  | string | Wallet address that will receive the currency |
-| &#9745;  | kda              | string | Target Asset                             |
+| ✅  | receiverAddress  | string | Wallet address that will receive the currency |
+| ✅  | kda              | string | Target Asset                             |
 | <input type="checkbox"  disabled/>  | maxAmount     | number | Max amount of assets sold in the ITO (with precision) |
-| &#9745;  | status        | number | See Status                               |
-| &#9745;  | packInfo      | `{[assetID: string]: Pack[]}`  | Defines the currency in which the packs will be sold. |
+| ✅  | status        | number | See Status                               |
+| ✅  | packInfo      | `{[assetID: string]: Pack[]}`  | Defines the currency in which the packs will be sold. |
 | <input type="checkbox"  disabled/> | defaultLimitPerAddress | number | Max amount of NFTs an address can buy, if specific amount is not provided. |
 <input type="checkbox"  disabled/> |whitelistStatus | number | See [Status](undefined)
 <input type="checkbox"  disabled/>  | whitelistInfo |`{[address: string]: WhiteListInfo}` | Defines specific NFT mint limit to given addresses |
@@ -345,13 +345,13 @@ Sets up an Initial Token Offering for either a token or a NFT collection.
 ### Pack structure
 | Required | Parameter | Type   | Description |
 |----------|-----------|--------|-------------|
-| &#9745;  | amount  | number | For NFTs: Amount sold; For tokens: Minimum amount for the price to be applied (with [precision](undefined)). |
-| &#9745;  | price              | number | For NFTs: Price for each NFT; For tokens: Price for that amount.                              |
+| ✅  | amount  | number | For NFTs: Amount sold; For tokens: Minimum amount for the price to be applied (with [precision](undefined)). |
+| ✅  | price              | number | For NFTs: Price for each NFT; For tokens: Price for that amount.                              |
 
 ### WhiteListInfo structure
 | Required | Parameter | Type   | Description                            |
 |----------|-----------|--------|----------------------------------------|
-| &#9745;  | limit     | number |Max amount of NFTs an address can buy.  |
+| ✅  | limit     | number |Max amount of NFTs an address can buy.  |
 
 ### Status
 | Status Value | Status Name | Description              |
@@ -464,3 +464,39 @@ Changes the parameters of a marketplace
 | ✅        | marketplaceld      | string | Target Marketplace ID                   |
 | ✅        | referralPercentage | number | New referral percentage ([precision](undefined) 2)  |
 | <input type="checkbox"  disabled/>        | referralAddress    | string | New referral address                   |
+
+## Sell
+### Payload Parameters
+| Required | Parameter     | Type   | Description                                       |
+|----------|---------------|--------|---------------------------------------------------|
+| ✅       | marketType    | number | 0: Instant Sell, 1: Auction                       |
+| ✅       | marketplaceld | string | Maketplace ID in which the sell order will be created |
+| ✅       | assetid       | string | Asset to be sold                                  |
+| ✅       | currencyld    | string | Transaction currency token                        |
+| ✅       | price        | number | Price for instant sell (with [precision](undefined))      |
+| ✅       | reservePrice | number | Minimum auction price (with [precision](undefined))       |
+| ✅       | endTime      | number | Expiration sell time (in Unix Time). Max end time = 1 Year from creation date         |
+
+**price is required on Instant Sell Orders, but optional in Auction Orders. As explained below:**
+
+| Required | MarketType | Price | Meaning                                  |
+|----------|------------|-------|-----------------------------------------|
+| ✅       | 0 (Instant Sell) | Price for instant sell | Bids above this price instantly sell, ending the auction. |
+| <input type="checkbox"  disabled/>        | 1 (Auction) | Price | Auction start price.                   |
+
+***Obs: Javascript's Date.prototype.getTime() should be divided by 1000 for it to be converted to Unix Time (seconds)***
+
+
+## Buy
+Creates a buy (or bid) order for a given market sell order.
+
+### Payload Parameters
+| Required | Parameter | Type | Description                                  |
+|----------|------------|-------|-----------------------------------------|
+| ✅       |buyType     | number | 0: ITOBuy, 1: MarketBuy |
+| ✅       | id         | string | ITOBuy: ITO Asset ID, MarketBuy: order ID |
+| ✅       | currencyId | string | ID of the trade currency |
+| ✅       | amount     | number | ITOBuy: Amount to be bought, MarkeyBuy: item price / amount bidden(check [precision]()) |
+
+
+***Send the 'amount' parameter with the correct [precision]() based on the currency asset***
