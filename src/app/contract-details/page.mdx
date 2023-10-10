@@ -361,3 +361,106 @@ Sets up an Initial Token Offering for either a token or a NFT collection.
 | 2            | PausedITO   | Pauses ITO/Whitelist    |
 
 
+## ITO Trigger
+Updates the properties or trigger functionalities of a fungible token, NFT collection or a single NFT.
+
+**The required parameters will depend on the trigger type. Trigger Type and AssetID are required in all of them.**
+
+### Trigger Types
+List with all trigger types values and its required payload fields. You can see more info about each field [here](undefined). Any parameter you send beyond the required ones will be ignored.
+
+| ID  | Type           | Description                               | Parameters   |
+|----|----------------|-------------------------------------------|--------------|
+| 0   | SetITOPrices   | Update ITOs packs prices                | packInfo     |
+| 1   | UpdateStatus   | Update status                           | status       |
+| 2   | UpdateReceiverAddress |  Update receiver address | receiverAddress    |
+| 3   | UpdateMaxAmount    | Update max amount of minted NFTs    | maxAmount            |
+| 4   | UpdateDefaultLimitPerAddress | Update default limit per address | defaultLimitPerAddress            |
+| 5   | UpdateTimes            | Update start and end time of ITO | startTime, endTime                |
+| 6   | UpdateWhitelistStatus   | Update whitelist status          | whitelistStatus                   |
+| 7 | AddToWhitelist | Adds address to whitelist | whitelistInfo|
+8 |  RemoveFromWhitelist | Remove address from whitelist | whitelistInfo |
+9 | UpdateWhitelistTimes | Update start and end time of whitelist | whitelistStartTime, whilelistEndTime |
+
+
+### Payload Parameters
+| Required | Parameter        | Type   | Description                              |
+|----------|------------------|--------|------------------------------------------|
+| ✅        | triggerType      | number | Sets the trigger type (check [list above](undefined)) |
+| ✅      | kda              | string | Target Asset                             |
+| <input type="checkbox"  disabled/>        | receiverAddress  | string | Address that will receive the currency  |
+| <input type="checkbox"  disabled/>        | status           | number | See [Status](undefined)                               |
+| <input type="checkbox"  disabled/>        | maxAmount        | number | Maximum minted amount (with [precision](undefined))  |
+| <input type="checkbox"  disabled/>        | packInfo         | `{[assetID: string]: { Packs: Pack []}}` | Defines the currency in which the packs will be sold. |
+| <input type="checkbox"  disabled/> | defaultLimitPerAddr| number | Max amount of NFTs an address can buy, if not provided.     |
+| <input type="checkbox"  disabled/> | whitelistStatus     | number | See [Status](undefined)                                                   |
+| <input type="checkbox"  disabled/> | whitelistInfo       | `{[address: string]: WhiteListInfo }` | Defines specific NFT mint limit to given addresses |
+| <input type="checkbox"  disabled/> | whitelistStartTime  | number | Whitelist start time (in UnixTime (seconds))                |
+| <input type="checkbox"  disabled/> | whitelistEndTime    | number | Whitelist end time (in UnixTime (seconds))                  |
+| <input type="checkbox"  disabled/> | startTime       | number | ITO start time (in UnixTime (seconds))    |
+| <input type="checkbox"  disabled/> | endTime         | number | ITO end time (in UnixTime (seconds))      |
+
+***Obs: Javascript's Date.prototype.getTime() should be divided by 1000 for it to be converted to Unix Time (seconds)***
+
+### Status
+| Status Value | Status Name | Description                        |
+|--------------|-------------|------------------------------------|
+| 0            | DefaultITO  | Keeps previous status value       |
+| 1            | ActivelTO   | Enables ITO/Whitelist             |
+| 2            | PausedITO   | Pauses ITO/Whitelist              |
+
+
+### Pack structure
+| Required | Parameter | Type   | Description                                                   |
+|----------|-----------|--------|---------------------------------------------------------------|
+| ✅        | amount    | number | For NFTs: Amount sold; For token: Min amount for that price to be applied (with [precision](undefined)). |
+| ✅        | price     | number | For NFTs: Price for each NFT; For Tokens: Price for that amount. |
+
+
+### WhiteListInfo structure
+| Required | Parameter | Type   | Description                                                   |
+|----------|-----------|--------|---------------------------------------------------------------|
+| ✅        | limit    | number | Max amount of NFTs an address can buy. |
+
+
+## Set ITO Prices
+DEPRECATED: Updates the ITO prices, useful for ITO's that use an oracle-like pricing system.
+
+**This contract is deprecated, please use an [ITO Trigger](undefined) of type SetITOPrices.**
+
+
+### Payload Parameters
+| Required | Parameter | Type   | Description                                      |
+|----------|-----------|--------|--------------------------------------------------|
+| ✅         | kda       | string | Target Asset                                     |
+| ✅         | packinfo  | string | Defines the currency in which the packs will be sold. |
+
+
+### Pack structure
+| Required | Parameter | Type   | Description                                      |
+|----------|-----------|--------|--------------------------------------------------|
+| ✅        | amount    | number | For NFTs: Amount sold;  For token: Min amount for that price to be applied (with [precision](undefined)).                       |
+| ✅        | price     | number | For NFTs: Price for each NFT;  For Tokens: Price for that amount.                  |
+
+
+## Create Marketplace
+Creates a marketplace
+
+### Payload Parameters
+| Required | Parameter          | Type   | Description                                      |
+|----------|--------------------|--------|--------------------------------------------------|
+| ✅        | name               | string | Marketplace name                                 |
+| <input type="checkbox"  disabled/>         | referralAddress    | string | Royalties receiving address                     |
+| <input type="checkbox"  disabled/>         | referralPercentage | number | Royalties percentage ([precision](undefined) 2)              |
+
+
+## Config Marketplace
+Changes the parameters of a marketplace
+
+### Payload Parameters
+| Required | Parameter          | Type   | Description                            |
+|----------|--------------------|--------|----------------------------------------|
+| ✅        | name               | string | New marketplace name                   |
+| ✅        | marketplaceld      | string | Target Marketplace ID                   |
+| ✅        | referralPercentage | number | New referral percentage ([precision](undefined) 2)  |
+| <input type="checkbox"  disabled/>        | referralAddress    | string | New referral address                   |
