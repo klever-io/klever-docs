@@ -1,0 +1,25 @@
+## Precision
+
+### Definition
+
+The **number-type** values stored in the blockchain are **always integers**, because floating point values can lead to information loss.
+
+To keep the decimal places information, another integer field, called **precision**, is used to make the calculations necessary to show the 'real', human-readable value.
+
+The 'real' value can be computed though the following equation:
+
+***RealValue = StoredValue/(10**(Precision))***
+
+Where the ** operand is the JavaScript equivalent to exponentiation.
+
+All NFT's have precision **zero** since they can only exist within the whole numbers set.
+
+### Usage Guidelines
+
+- Always use `Storage-Ready` value when sending information to the blockchain.
+> Ex: KLV asset precision is 6. If you want to transfer 1,000 KLV, send 1,000 * 10⁶ in the amount field of the transfer method.
+>
+- When showing the value to the user, use the `Real` value
+> Ex: KLV asset precision is 6. If you get the amount as 1,000,000,000 from the blockchain API,
+> show it to the user as 1,000,000,000/10⁶ = 1,000 KLV
+>
