@@ -1,0 +1,84 @@
+# Create Asset
+Creates a new fungible token or a NFT collection.
+
+## Payload Parameters
+|  Required  |    Parameter     |           Type           |               Description                |
+|:----------:|------------------|-------------------------|------------------------------------------|
+|   &#9744;  |       name       |         string          | Asset name                               |
+|   &#9744;  |      ticker      |         string          | Asset shorthand (ticker)                 |
+|   &#9744;  |   ownerAddress   |         string          | Owner address                            |
+|   &#9744;  |    precision     |         number          | Asset precision (0 to 8)                 |
+|   &#9744;  |       uris       | {[label: string]: string} | Relevant URI's                         |
+|   &#9744;  |       logo       |         string          | Logo URI                                 |
+|   &#9744;  |  initialSupply   |         number          | Initial minted supply (fungible only) (with precision) |
+|   &#9744;  |     maxSupply    |         number          | Maximum supply of the asset (with precision) |
+|   &#9744;  |       type       |         number          | 0: Fungible Token, 1: NFT               |
+|   &#9744;  |     staking      |     Staking object      | Staking info                             |
+|   &#9744;  |    royalties     |    Royalties object     | Royalties info                           |
+|   &#9744;  |      roles       | {[label: string]: Role} | Other addresses roles info               |
+|   &#9744;  |   properties     | Properties object      | Asset properties details                 |
+|   &#9744;  |    attributes    |  Attributes object      | Is paused/mint stopped?                  |
+
+
+# Staking Structure
+|  Required  |       Parameter       |    Type    |               Description                |
+|:----------:|-----------------------|------------|------------------------------------------|
+|   &#9744;  |      interestType     |   number   | 0: APR, 1: FPR                           |
+|   &#9744;  |          apr          |   number   | Percentage                               |
+|   &#9744;  |   minEpochsToClaim    |   number   | Minimum epochs to claim rewards         |
+|   &#9744;  |  minEpochsToUnstake   |   number   | Minimum epochs to unstake                |
+|   &#9744;  | minEpochsToWithdraw   |   number   | Minimum epochs to withdraw after unstake |
+
+
+## Royalties Structure
+|  Required  |       Parameter       |           Type           |               Description                |
+|:----------:|-----------------------|-------------------------|------------------------------------------|
+|   &#9744;  |        address        |         string          | Royalty receiver address                 |
+|   &#9744;  | transferPercentage    | RoyaltyInfo object array | Transfer fee for fungible tokens (precision 2) |
+|   &#9744;  |    transferFixed      |         number          | Transfer fee for non-fungible tokens     |
+|   &#9744;  | marketPercentage      |         number          | Market percentage fee details for non-fungible tokens (precision 2) |
+|   &#9744;  |    marketFixed        |         number          | Market fixed fee for non-fungible tokens |
+|   &#9744;  | itoPercentage         |         number          | ITO percentage fee (precision 2)         |
+|   &#9744;  |    itoFixed           |         number          | ITO fixed fee (in the currency asset precision) |
+|   &#9744;  | splitRoyalties        | {[address: string]: RoyaltySplitInfo} | Defines the percentage of the fees when multiple addresses receive royalties |
+
+## RoyaltySplitInfo Structure
+|  Required  |           Parameter            |    Type    |               Description                |
+|:----------:|---------------------------------|------------|------------------------------------------|
+|   &#9744;  | percentTransferPercentage       |   number   | Percentage that the given address will receive from transfer percentage (precision 2) |
+|   &#9744;  | percentTransferFixed            |   number   | Percentage that the given address will receive from transfer fixed (precision 2) |
+|   &#9744;  | percentMarketPercentage         |   number   | Percentage that the given address will receive from market percentage (precision 2) |
+|   &#9744;  | percentMarketFixed              |   number   | Percentage that the given address will receive from market fixed (precision 2) |
+|   &#9744;  | percentITOPercentage           |   number   | Percentage that the given address will receive from ito percentage (precision 2) |
+|   &#9744;  | percentITOFixed                |   number   | Percentage that the given address will receive from ito fixed (precision 2) |
+
+## RoyaltyInfo structure
+|  Required  |       Parameter       |    Type    |               Description                |
+|:----------:|-----------------------|------------|------------------------------------------|
+|   &#9744;  |        amount         |   number   | Max amount for that percentage           |
+|   &#9744;  |      percentage       |   number   | Fee % (precision 2)                     |
+
+
+## Role structure
+|  Required  |       Parameter       |    Type    |               Description                |
+|:----------:|-----------------------|------------|------------------------------------------|
+|   &#9744;  |        address        |   string   | Other wallet's address                  |
+|   &#9744;  |      hasRoleMint      |  boolean   | Should be able to mint?                  |
+|   &#9744;  | hasRoleSetITOPrices   |  boolean   | Should be able to set ITO prices?        |
+
+## Properties Structure
+|  Required  |      Parameter      |  Type  |       Description       |
+|:----------:|---------------------|-------|-------------------------|
+|   &#9744;  |      canFreeze      | boolean | Should be freezable?    |
+|   &#9744;  |       canWipe       | boolean | Should be wipeable?     |
+|   &#9744;  |      canPause       | boolean | Should be pausable?     |
+|   &#9744;  |       canMint       | boolean | Should be mintable?     |
+|   &#9744;  |       canBurn       | boolean | Should be burnable?     |
+|   &#9744;  |  canChangeOwner     | boolean | Should the owner be changeable? |
+|   &#9744;  |     canAddRoles     | boolean | Should roles be add-able?     |
+
+## Attributes structure
+|  Required  |     Parameter         |   Type   |           Description               |
+|:----------:|-----------------------|----------|-------------------------------------|
+|   &#9744;  |       isPaused        | boolean  | Should be currently paused?         |
+|   &#9744;  | isNFTMintStopped      | boolean  | Should be currently NFT mint stopped? |

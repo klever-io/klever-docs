@@ -1,0 +1,60 @@
+## ITransaction
+
+```typescript
+interface ITransaction {
+    RawData: {
+        Sender: string;
+        Nonce: number;
+        Contract: IContract[];
+        Data: string[];
+        KAppFee: number;
+        BandwidthFee: number;
+        Version: number;
+        ChainID: string;
+        PermissionID: number;
+    };
+    Signature: string[];
+}
+```
+
+## IContract
+
+```typescript
+interface IContract {
+    Parameter: {
+        type_url: string;
+        value: string;
+    }
+}
+```
+
+## IContractRequest
+
+```typescript
+interface IContractRequest {
+    type: TransactionType; // Use the TransactionType enum. Ex: TransactionType.Transfer
+    payload: IPayload; // Depends on the transaction type, you can see more info in each contract page
+}
+```
+
+For more [info on IPayload usage see this page!](undefined)
+
+## IProvider
+
+```typescript
+interface IProvider {
+    node: string;
+    api: string;
+}
+```
+
+## ITxOptionsRequest
+
+```typescript
+interface ITxOptionsRequest {
+    nonce?: number; // Optional, if not passed, the next available nonce will be used
+    permID?: number; // Optional, used for accounts that share owners
+    kdaFee?: string; // Optional, used for setting a KDA for paying fees, use the asset ID
+}
+```
+

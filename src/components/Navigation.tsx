@@ -235,21 +235,6 @@ export const navigation: Array<NavGroup> = [
     links: [
       { title: 'Introduction', href: '/' },
       { title: 'Quickstart', href: '/quickstart' },
-      { title: 'SDKs', href: '/sdks' },
-      { title: 'Authentication', href: '/authentication' },
-      { title: 'Pagination', href: '/pagination' },
-      { title: 'Errors', href: '/errors' },
-      { title: 'Webhooks', href: '/webhooks' },
-    ],
-  },
-  {
-    title: 'Resources',
-    links: [
-      { title: 'Contacts', href: '/contacts' },
-      { title: 'Conversations', href: '/conversations' },
-      { title: 'Messages', href: '/messages' },
-      { title: 'Groups', href: '/groups' },
-      { title: 'Attachments', href: '/attachments' },
     ],
   },
   {
@@ -275,6 +260,33 @@ export const navigation: Array<NavGroup> = [
       { title: 'Exchange Integration', href: '/exchange-integration' },
       { title: 'Node Operations', href: '/node-operations' },
       { title: 'About Our Technology', href: '/about-our-technology' },
+    ],
+  },
+
+
+  {
+    title: 'KleverChain SDK',
+    links: [
+      {
+        title: 'Introduction to KleverChain SDK',
+        href: '/introduction-to-kleverchain-sdk',
+      },
+      {
+        title: 'Node.js',
+        href: '/node.js',
+      },
+      { title: 'Web App', href: '/web-app' },
+      { title: 'Unity', href: '/unity' },
+      { title: 'Available Transactions', href: '/available-transactions' },
+      { title: 'Contract Details', href: '/contract-details' },
+
+      //Relevant Info     
+      { title: 'Precision', href: '/precision' },
+      { title: 'KAPPS Flowcharts', href: '/kapps-flowcharts' },
+      { title: 'Types', href: '/types' },
+
+      //Legacy
+      { title: 'Legacy', href: '/legacy' },
     ],
   },
 ]

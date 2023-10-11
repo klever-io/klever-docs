@@ -1,0 +1,226 @@
+### The required parameters will depend on the trigger type. Trigger Type and AssetID are required in all of them.
+
+## Trigger Types:
+
+List with all trigger types values and its required payload fields. You can see more info about each field [here](undefined). Any parameter you send beyond the required ones will be ignored.
+
+SetITOPrices
+
+1
+
+UpdateStatus
+
+2
+
+UpdateReceiverAddress
+
+3
+
+UpdateMaxAmount
+
+4
+
+UpdateDefaultLimitPerAddress
+
+5
+
+UpdateTimes
+
+6
+
+UpdateWhitelistStatus
+
+7
+
+AddToWhitelist
+
+8
+
+RemoveFromWhitelist
+
+9
+
+UpdateWhitelistTimes
+
+Update ITOs packs prices
+
+Update status
+
+Update receiver address
+
+Update max amount of minted NFTs
+
+Update default limit per address
+
+Update start and end time of ITO
+
+Update whitelist status
+
+Adds address to whitelist
+
+Update start and end time of whitelist
+
+Remove address from whitelist
+
+packInfo
+
+status
+
+receiverAddress
+
+maxAmount
+
+defaultLimitPerAddress
+
+startTime, endTime
+
+whitelistStatus
+
+whitelistInfo
+
+whitelistInfo
+
+whitelistStartTime, whilelistEndTime
+
+0
+
+
+
+## Payload Parameters
+
+`number`
+
+Sets the trigger type
+
+(check [list above](undefined))
+
+kda
+
+`string`
+
+Target Asset
+
+receiverAddress
+
+`string`
+
+Address that will receive the currency
+
+maxAmount
+
+`number`
+
+Maximum minted amount (with [precision](undefined))
+
+packInfo
+
+`{[assetID: string]:{
+  packs: `[`Pack`](undefined)`[]}
+}`
+
+Defines the currency in which the packs will be sold.
+
+defaultLimitPerAddress
+
+`number`
+
+Max amount of NFTs an address can buy, if specific amount is not provided.
+
+whitelistStatus
+
+`number`
+
+See [Status](undefined)
+
+whitelistInfo
+
+`{[address: string]: `[`WhiteListInfo`](undefined)`}`
+
+Defines specific NFT mint limit to given addresses
+
+whitelistStartTime
+
+`number`
+
+Whitelist start time (in UnixTime (seconds))
+
+status
+
+`number`
+
+See [Status](undefined)
+
+whitelistEndTime
+
+`number`
+
+Whitelist end time (in UnixTime (seconds))
+
+startTime
+
+`number`
+
+ITO start time (in UnixTime (seconds))
+
+endTime
+
+`number`
+
+ITO end time (in UnixTime (seconds))
+
+triggerType
+
+### **Obs: Javascript's Date.prototype.getTime() should be divided by 1000 for it to be converted to Unix Time (seconds)**
+
+## Status
+
+DefaultITO
+
+Keeps previous status value
+
+1
+
+ActiveITO
+
+Enables ITO/Whitelist
+
+2
+
+PausedITO
+
+Pauses ITO/Whitelist
+
+0
+
+## Pack structure
+
+`number`
+
+For NFTs: Amount sold;
+For token: Min amount for that price to be applied (with [precision](undefined)).
+
+price
+
+`number`
+
+For NFTs: Price for each NFT;
+For Tokens: Price for that amount.
+
+amount
+
+## WhiteListInfo structure
+
+`number`
+
+Max amount of NFTs an address can buy.
+
+limit
+
+
+
+
+
+
+
+
+

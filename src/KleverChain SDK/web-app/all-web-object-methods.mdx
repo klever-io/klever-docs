@@ -1,0 +1,120 @@
+All of the following methods are implemented by the account manager (web extension or mobile wallet), the sdk mostly provides ease of use and correct types.
+
+isKleverWebLoaded
+
+Checks if an account manager is loaded on window.
+
+isKleverWebActive
+
+Checks if the loaded account manager is initialized.
+
+broadcastTransactions
+
+Broadcasts an array of transactions to the provided node.
+
+signMessage
+
+Uses the account manager's internal signature method to sign any message.
+
+signTransaction
+
+Uses the account manager's internal signature method to sign a transaction.
+
+validateSignature
+
+Checks if the signature, message and signer are compatible.
+
+buildTransaction
+
+Builds a simplified transaction into a transaction ready to be signed.
+
+initialize
+
+Initializes the account manager with the selected account in the wallet. Waits until the provider is injected on the window (default timeout: 5000ms).
+
+getWalletAddress
+
+Returns the selected account address.
+
+getProvider
+
+Gets the current provider object.
+
+setProvider
+
+Sets the provider object.
+
+`boolean`
+
+`boolean`
+
+`Promise<IBroadcastResponse>`
+
+`Promise<string>`
+
+`Promise<`[`ITransaction`](undefined)`>`
+
+`Promise<boolean>`
+
+`Promise<`[`ITransaction`](undefined)`>`
+
+`Promise<void>`
+
+`string`
+
+``[`IProvider`](undefined)``
+
+`void`
+
+`()`
+
+`()`
+
+`(transactions: `[`ITransaction`](undefined)`[])`
+
+`(message:string, privateKey:string)`
+
+`(transaction: `[`ITransaction)`](undefined)
+
+`( message: string, signature: string, publicKey: string )`
+
+`( contracts: `[`IContractRequest`](undefined)`[], `[`txData`](undefined)`?: string[], `[`options`](undefined)`?: `[`ITxOptionsRequest`](undefined)` )`
+
+`(timeout?: number)`
+
+`()`
+
+`()`
+
+`(providers: `[`IProvider`](undefined)`)`
+
+## Optional Build Params Usage
+
+To build a transaction you only need the contracts with the correct parameters, described in each [contract page](undefined), however you can pass [additional options](undefined) such as metadata and custom nonce or permission ID for the transaction.
+
+
+### Metadata:
+
+To send metadata, use the second parameter in `buildTransaction`, notice that it should be an array where each string corresponds to the metadata of the contract of the same index.
+E.g.:
+
+```typescript
+buildTransaction([transferContract, assetTriggerContract], ["metadata0", "metadata1"])
+```
+
+"metadata0" will be added to the transferContract, "metadata1" will be added to the assetTriggerContract.
+
+
+
+### Nonce and Permission ID
+
+To change the nonce or the permission ID, use the third parameter.
+E.g.:
+
+```typescript
+buildTransaction([transferContract],, {
+    nonce:0,
+    permId:0
+})
+```
+

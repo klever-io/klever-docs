@@ -1,0 +1,90 @@
+getAddressFromPrivateKey
+
+`Promise<string>`
+
+Gets the address for the given PK based on the ED25519 curve and bech32 address conversion.
+
+generateKeyPair
+
+`Promise<{ privateKey: string; address: string; }>`
+
+Generates a new privateKey/Address pair, based on the ED25519 curve and bech32 address conversion.
+
+getProviders
+
+[`IProvider`](undefined)
+
+Gets the current provider object.
+
+setProviders
+
+`void`
+
+Sets the provider object.
+
+broadcastTransactions
+
+`Promise<IBroadcastResponse>`
+
+Broadcasts an array of transactions to the provided node.
+
+decodeTransaction
+
+`Promise<IDecodedTransaction>`
+
+Decodes a built transaction to a more human readable json.
+
+transactionsProcessed
+
+`Promise<IDecodedTransaction[]>`
+
+Resolves when all the broadcasted transactions are on chain, rejects when the try limit is reached.
+
+accountsReady
+
+`Promise<void>`
+
+Resolves when all the accounts in the array are initialized.
+
+validateSignature
+
+`Promise<boolean>`
+
+Checks if a signature is compatible with a given address and message.
+
+decodeAddress
+
+`Promise<Uint8Array>`
+
+Decodes and address to an `Uint8Array` publicKey
+
+toHex
+
+`string`
+
+Helper method to convert `Uint8Array` to hex string.
+
+`(privateKey: string)`
+
+`()`
+
+`()`
+
+`(providers: `[`IProvider`](undefined)`)`
+
+`(txs: `[`ITransaction`](undefined)`[])`
+
+`(tx: `[`ITransaction`](undefined)`)`
+
+`(txs: Promise[], tries?: number)`
+
+`(accounts: Account[])`
+
+`(message: string, signature: string, address: string)`
+
+`(address: string)`
+
+`(data: Uint8Array)`
+
+
+
