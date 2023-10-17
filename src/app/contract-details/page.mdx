@@ -391,7 +391,7 @@ List with all trigger types values and its required payload fields. You can see 
 | <input type="checkbox"  disabled/>        | status           | number | See [Status](undefined)                               |
 | <input type="checkbox"  disabled/>        | maxAmount        | number | Maximum minted amount (with [precision](undefined))  |
 | <input type="checkbox"  disabled/>        | packInfo         | `{[assetID: string]: { Packs: Pack []}}` | Defines the currency in which the packs will be sold. |
-| <input type="checkbox"  disabled/> | defaultLimitPerAddr| number | Max amount of NFTs an address can buy, if not provided.     |
+| <input type="checkbox"  disabled/> | defaultLimitPerAddress| number | Max amount of NFTs an address can buy, if not provided.     |
 | <input type="checkbox"  disabled/> | whitelistStatus     | number | See [Status](undefined)                                                   |
 | <input type="checkbox"  disabled/> | whitelistInfo       | `{[address: string]: WhiteListInfo }` | Defines specific NFT mint limit to given addresses |
 | <input type="checkbox"  disabled/> | whitelistStartTime  | number | Whitelist start time (in UnixTime (seconds))                |
@@ -432,7 +432,7 @@ DEPRECATED: Updates the ITO prices, useful for ITO's that use an oracle-like pri
 | Required | Parameter | Type   | Description                                      |
 |----------|-----------|--------|--------------------------------------------------|
 | ✅         | kda       | string | Target Asset                                     |
-| ✅         | packinfo  | string | Defines the currency in which the packs will be sold. |
+| ✅         | packinfo  | `{[assetID: string]: Pack []}` | Defines the currency in which the packs will be sold. |
 
 
 ### Pack structure
@@ -469,11 +469,11 @@ Changes the parameters of a marketplace
 | Required | Parameter     | Type   | Description                                       |
 |----------|---------------|--------|---------------------------------------------------|
 | ✅       | marketType    | number | 0: Instant Sell, 1: Auction                       |
-| ✅       | marketplaceld | string | Maketplace ID in which the sell order will be created |
-| ✅       | assetid       | string | Asset to be sold                                  |
-| ✅       | currencyld    | string | Transaction currency token                        |
-| ✅       | price        | number | Price for instant sell (with [precision](undefined))      |
-| ✅       | reservePrice | number | Minimum auction price (with [precision](undefined))       |
+| ✅       | marketplaceId | string | Maketplace ID in which the sell order will be created |
+| ✅       | assetId       | string | Asset to be sold                                  |
+| ✅       | currencyId    | string | Transaction currency token                        |
+| <input type="checkbox"  disabled/>       | price        | number | Price for instant sell (with [precision](undefined))      |
+| <input type="checkbox"  disabled/>       | reservePrice | number | Minimum auction price (with [precision](undefined))       |
 | ✅       | endTime      | number | Expiration sell time (in Unix Time). Max end time = 1 Year from creation date         |
 
 **price is required on Instant Sell Orders, but optional in Auction Orders. As explained below:**
@@ -602,7 +602,7 @@ Changes the params of a given validator.
 | <input type="checkbox"  disabled/>      |rewardAddress    | string | Change rewards address    |
 | ✅     |blsPublicKey    | string | Change BLS public key    |
 | <input type="checkbox"  disabled/>      |canDelegate    | boolean | Change permission to delegate    |
-| <input type="checkbox"  disabled/>      |commission    | number | Change comission ([precision](undefined) 2)    |
+| <input type="checkbox"  disabled/>      |commission    | number | Change commission ([precision](undefined) 2)    |
 | <input type="checkbox"  disabled/>      |maxDelegationAmount    | number | Change max delegation amount |
 | <input type="checkbox"  disabled/>      |logo    | string |Change logo    |
 | <input type="checkbox"  disabled/>      |uris    | `{[key: string]: string}` **\***  | Change uris    |
@@ -641,13 +641,13 @@ Updates the permissions of an account, setting multi-signature permissions with 
 | ✅       |permissionName      | string   | Permission identifier             |
 | ✅       |threshold      | number   | Minimum sign amount to permit transaction             |
 | ✅       |operations      | string   | See [Operations](undefined)             |
-| ✅       |signers      |  [AccKey](undefined)object array   | Defines the weight of the accounts' votes |
+| ✅       |signers      |  [AccKey](undefined) object array   | Defines the weight of the accounts' votes |
 
 ### AccKey structure
 | Required | Parameter | Type   | Description                     |
 |----------|-----------|--------|---------------------------------|
 | ✅       |address      | string   | Target address             |
-| ✅       |weight      | number   | Target address' vote weight            |
+| ✅       |weight      | number   | Target address vote weight            |
 
 ### Operations
 
