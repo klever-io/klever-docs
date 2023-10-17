@@ -231,27 +231,26 @@ List with all trigger types values and its required payload fields. You can see 
 
 |  Required  |      Parameter      |       Type       |               Description                |
 |:----------:|---------------------|------------------|------------------------------------------|
-|   ✅  |     triggerType     |      number      | Sets the trigger type (check list below) |
+|   ✅  |     triggerType     |      number      | Sets the trigger type (check [list below](undefined)) |
 |   ✅  |      assetId        |      string      | Target Asset                             |
 |   <input type="checkbox"  disabled/>  |      receiver       |      string      | Target address for transaction           |
-|   <input type="checkbox"  disabled/>  |       amount        |      number      | Amount (with precision)                  |
-|   <input type="checkbox"  disabled/>  |        uris         |      string      | Ex: `{"foo": { [key: string]: "http://bar.com" }}` |
+|   <input type="checkbox"  disabled/>  |       amount        |      number      | Amount (with [precision](undefined))                  |
+|   <input type="checkbox"  disabled/>  |        uris         |      `{[key:string]: string}`      | Ex: `Ex: {"foo" : "http://bar.com"}` |
 |   <input type="checkbox"  disabled/>  |        logo         |      string      | Logo image URL                           |
-|   <input type="checkbox"  disabled/>  |     The nature and    |          mime           | format of the metadata                  |
-|   <input type="checkbox"  disabled/>  |        Role for       |          role           | Add/Remove role                          |
-|   <input type="checkbox"  disabled/>  |       Role types      |   Role object array     | Used for updating staking                |
-|   <input type="checkbox"  disabled/>  |       staking         |        Staking object   | Staking params                           |
-|   <input type="checkbox"  disabled/>  |       royalties       |     Royalties object    | Used for updating royalties              |
-|   <input type="checkbox"  disabled/>  |       kdaPool         |      KDAPool object     | KDAPool params                           |
+|   <input type="checkbox"  disabled/>  |     mime    |     string   | The nature and format of the metadata                  |
+|   <input type="checkbox"  disabled/>  |        role      |         [Role](undefined) object array          | Role for Add/Remove Role types    |
+|   <input type="checkbox"  disabled/>  |       staking         |        [Staking](undefined) object   | Used for updating staking params                           |
+|   <input type="checkbox"  disabled/>  |       royalties       |     [Royalties](undefined) object    | Used for updating royalties params            |
+|   <input type="checkbox"  disabled/>  |       kdaPool         |      [KDAPool](undefined) object     | Used for updating kdaPool params                           |
 
 
-### Royalties structure
+### RoyaltiesInfo structure
 |  Required  |       Parameter       |           Type           |               Description                |
 |:----------:|-----------------------|-------------------------|------------------------------------------|
 |   ✅  |       address         |         string          | Royalty receiver address                |
-|   <input type="checkbox"  disabled/>  | transferPercentage    | RoyaltyInfo object array | Transfer fee for fungible tokens (precision 2) |
+|   <input type="checkbox"  disabled/>  | transferPercentage    | [RoyaltyInfo](undefined) object array | Transfer fee for fungible tokens ([precision](undefined) 2) |
 |   <input type="checkbox"  disabled/>  |    transferFixed     |         number          | Transfer fee for non-fungible tokens    |
-|   <input type="checkbox"  disabled/>  | marketPercentage      |         number          | Market percentage fee details for non-fungible tokens (precision 2) |
+|   <input type="checkbox"  disabled/>  | marketPercentage      |         number          | Market percentage fee details for non-fungible tokens ([precision](undefined) 2) |
 |   <input type="checkbox"  disabled/>  |    marketFixed       |         number          | Market fixed fee for non-fungible tokens |
 |   <input type="checkbox"  disabled/>  |    itoPercentage     |         number          | ITO percentage fee (precision 2)        |
 |   <input type="checkbox"  disabled/>  |       itoFixed       |         number          | ITO fixed fee (in the currency asset precision) |
@@ -271,7 +270,7 @@ List with all trigger types values and its required payload fields. You can see 
 |  Required  |       Parameter       |           Type           |               Description                |
 |:----------:|-----------------------|-------------------------|------------------------------------------|
 |   <input type="checkbox"  disabled/>  |       amount          |         number          | Max amount for that percentage           |
-|   <input type="checkbox"  disabled/>  |    percentage         |         number          | Fee % (precision 2)                     |
+|   <input type="checkbox"  disabled/>  |    percentage         |         number          | Fee % ([precision](undefined) 2)                     |
 
 
 ### KDAPool
@@ -310,7 +309,7 @@ Deposits an asset into a FPR pool or into an auto-swapping fee system.
 ### Payload Parameters
 |  Required  |      Parameter      |   Type   |               Description                |
 |:----------:|---------------------|----------|------------------------------------------|
-|   ✅  |     depositType     |  number  | 0: FPR Deposit, 1: KDA Pool, For more info, check #Deposit Type |
+|   ✅  |     depositType     |  number  | 0: FPR Deposit, 1: KDA Pool, For more info, check #[Deposit Type](undefined) |
 |   ✅  |         kda         |  string  | Target Asset                            |
 |   ✅  |     currencyId      |  string  | Currency to be deposited                 |
 |   ✅  |       amount        |  number  | Amount of currency to be deposited      |
