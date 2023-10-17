@@ -46,7 +46,7 @@ Unfreezes a bucket.
 ### Payload Parameters
 | Required | Parameter | Type   | Description                   |
 |----------|-----------|--------|-------------------------------|
-| ✅  | bucketld  | string | Bucket to be unfrozen         |
+| ✅  | bucketId  | string | Bucket to be unfrozen         |
 | <input type="checkbox"  disabled/>   | kda       | string | Unfrozen asset ID, defaults to KLV if empty |
 
 ## Delegate
@@ -57,7 +57,7 @@ Buckets can only be delegated to a validator address.
 | Required | Parameter | Type   | Description            |
 |----------|-----------|--------|------------------------|
 | ✅  | receiver  | string | Address to be delegated to |
-| ✅  | bucketld  | string | Bucket to be delegated    |
+| ✅  | bucketId  | string | Bucket to be delegated    |
 
 
 ## Undelegate
@@ -66,7 +66,7 @@ Removes the delegation of a bucket.
 ### Payload Parameters
 | Required | Parameter | Type   | Description            |
 |----------|-----------|--------|------------------------|
-| ✅  | bucketld  | string | Bucket ID to be undelegated |
+| ✅  | bucketId  | string | Bucket ID to be undelegated |
 
 
 ## Claim
@@ -98,7 +98,7 @@ Retrieves the assets from an unfrozen bucket or assets from KDAPool.
 | ✅      | kda           | string | Asset ID to be withdrawn           |
 | <input type="checkbox"  disabled/>      | withdrawType  | number | 0: Staking, 1: KDAPool            |
 | <input type="checkbox"  disabled/>      | amount        | number | Amount to be withdrawn from pool   |
-| <input type="checkbox"  disabled/>      | currencyld    | string | Asset to be withdrawn from pool    |
+| <input type="checkbox"  disabled/>      | currencyID    | string | Asset to be withdrawn from pool    |
 
 
 
@@ -460,7 +460,7 @@ Changes the parameters of a marketplace
 | Required | Parameter          | Type   | Description                            |
 |----------|--------------------|--------|----------------------------------------|
 | ✅        | name               | string | New marketplace name                   |
-| ✅        | marketplaceld      | string | Target Marketplace ID                   |
+| ✅        | marketplaceId      | string | Target Marketplace ID                   |
 | ✅        | referralPercentage | number | New referral percentage ([precision](undefined) 2)  |
 | <input type="checkbox"  disabled/>        | referralAddress    | string | New referral address                   |
 
