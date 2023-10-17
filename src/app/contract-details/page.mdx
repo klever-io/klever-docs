@@ -276,7 +276,6 @@ List with all trigger types values and its required payload fields. You can see 
 ### KDAPool
 |  Required  |    Parameter     |    Type    |           Description                |
 |:----------:|------------------|------------|--------------------------------------|
-|   ✅  |       kda        |   string   | Target Asset                         |
 |   ✅  |      active      |  boolean   | True if the pooling should be active |
 |   ✅  |  adminAddress    |   string   | Admin Address                        |
 |   ✅  |    fRatioKLV     |   number   | Fixed ratio for KLV                  |
@@ -580,7 +579,7 @@ Creates a validator for an address, controlled by a BLS key.
 | Required | Parameter | Type   | Description                     |
 |----------|-----------|--------|---------------------------------|
 | ✅       |name    | string | Validator name    |
-| ✅       |address    | string | Owner address    |
+| ✅       |ownerAddress    | string | Owner address    |
 | ✅       |rewardAddress    | string | Rewards address   |
 | ✅       |blsPublicKey    | string | BLS public key    |
 | <input type="checkbox"  disabled/> | canDelegate | boolean | Permission to delegate|
