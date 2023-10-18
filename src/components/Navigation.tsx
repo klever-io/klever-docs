@@ -276,6 +276,7 @@ export const navigation: Array<NavGroup> = [
         title: 'Introduction to KleverChain SDK',
         href: '/introduction-to-kleverchain-sdk',
       },
+      {title: 'KleverChain SDKs', href: '/sdks'},
       {
         title: 'Node.js',
         href: '/node.js',
