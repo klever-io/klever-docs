@@ -2,47 +2,31 @@ import Image from 'next/image'
 
 import { Button } from '@/components/Button'
 import { Heading } from '@/components/Heading'
-import logoGo from '@/images/logos/go.svg'
-import logoNode from '@/images/logos/node.svg'
-import logoPhp from '@/images/logos/php.svg'
-import logoPython from '@/images/logos/python.svg'
-import logoRuby from '@/images/logos/ruby.svg'
+import logoNext from '@/images/logos/next-js.svg'
+import logoJs from '@/images/logos/js.svg'
+import logoSvelte from '@/images/logos/svelte.svg'
 
 const libraries = [
   {
-    href: '#',
-    name: 'PHP',
+    href: 'https://github.com/klever-io/klever-next-example',
+    name: 'Next',
     description:
-      'A popular general-purpose scripting language that is especially suited to web development.',
-    logo: logoPhp,
+      'A React framework for building server-rendered and static web applications with ease.',
+    logo: logoNext,
   },
   {
-    href: '#',
-    name: 'Ruby',
+    href: 'https://github.com/klever-io/klever-svelte-example',
+    name: 'Svelte',
     description:
-      'A dynamic, open source programming language with a focus on simplicity and productivity.',
-    logo: logoRuby,
+      'A lightweight JavaScript library for building web applications with a focus on simplicity and efficiency.',
+    logo: logoSvelte,
   },
   {
-    href: '#',
-    name: 'Node.js',
+    href: 'https://github.com/klever-io/klever-vanilla-example',
+    name: 'Vanilla JS',
     description:
-      'Node.js® is an open-source, cross-platform JavaScript runtime environment.',
-    logo: logoNode,
-  },
-  {
-    href: '#',
-    name: 'Python',
-    description:
-      'Python is a programming language that lets you work quickly and integrate systems more effectively.',
-    logo: logoPython,
-  },
-  {
-    href: '#',
-    name: 'Go',
-    description:
-      'An open-source programming language supported by Google with built-in concurrency.',
-    logo: logoGo,
+      'Pure JavaScript for web development without libraries or frameworks.',
+    logo: logoJs,
   },
 ]
 
@@ -64,7 +48,7 @@ export function Libraries() {
               </p>
               <p className="mt-4">
                 <Button href={library.href} variant="text" arrow="right">
-                  Read more
+                  {`Klever ${library.name} SDK`}
                 </Button>
               </p>
             </div>

@@ -26,20 +26,7 @@ const guides = [
   },
 ]
 
-// RESOURCES
-// Account Permission
-// Validator
-// Multisignature
-// Staking
 
-
-// página sdks colocar os nossos --> https://github.com/klever-io/klever-next-example  / https://github.com/klever-io/klever-svelte-example / https://github.com/klever-io/klever-vanilla-example
-// arrumar links internos
-// i18n depois
-
-
-// section KleverChain SDK --> Klever SDK
-// section Klever Finance --> Klever Blockchain
 
 export function Guides() {
   return (

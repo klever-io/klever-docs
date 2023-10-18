@@ -243,7 +243,7 @@ export const navigation: Array<NavGroup> = [
     ],
   },
   {
-    title: 'Klever Finance',
+    title: 'Klever Blockchain',
     links: [
       {
         title: 'Welcome to the Klever Blockchain documentation website!',
@@ -270,7 +270,7 @@ export const navigation: Array<NavGroup> = [
 
 
   {
-    title: 'KleverChain SDK',
+    title: 'Klever SDK',
     links: [
       {
         title: 'Introduction to KleverChain SDK',
