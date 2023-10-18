@@ -231,9 +231,14 @@ function NavigationGroup({
 
 export const navigation: Array<NavGroup> = [
   {
-    title: 'Guides',
+    title: "Klever Documentation",
+    links:[
+      {title: 'Introduction', href: '/'},
+    ]
+  },
+  {
+    title: 'Klever Wallet',
     links: [
-      { title: 'Introduction', href: '/' },
       { title: 'Quickstart', href: '/quickstart' },
     ],
   },

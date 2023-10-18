@@ -3,28 +3,43 @@ import { Heading } from '@/components/Heading'
 
 const guides = [
   {
-    href: '/authentication',
-    name: 'Authentication',
-    description: 'Learn how to authenticate your dApp with the provider.',
+    href: '/quickstart',
+    name: 'Klever Wallet',
+    description: 'How to integrate with Klever Wallet browser.',
   },
   {
     href: '/transfer',
     name: 'Transfer',
-    description: 'Understand how to send transfer across blockchain.',
+    description: 'How to transfer with Klever Blockchain.',
   },
   {
     href: '/errors',
-    name: 'Errors',
+    name: 'NFT',
     description:
-      'Read about the different types of errors returned by the API.',
+      'How to create a NFT.',
   },
   {
-    href: '/webhooks',
-    name: 'Webhooks',
+    href: '/create-token',
+    name: 'Create Token',
     description:
-      'Learn how to programmatically configure webhooks for your app.',
+      'How to create a token with Klever Blockchain.',
   },
 ]
+
+// RESOURCES
+// Account Permission
+// Validator
+// Multisignature
+// Staking
+
+
+// página sdks colocar os nossos --> https://github.com/klever-io/klever-next-example  / https://github.com/klever-io/klever-svelte-example / https://github.com/klever-io/klever-vanilla-example
+// arrumar links internos
+// i18n depois
+
+
+// section KleverChain SDK --> Klever SDK
+// section Klever Finance --> Klever Blockchain
 
 export function Guides() {
   return (
