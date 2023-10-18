@@ -8,18 +8,18 @@ const guides = [
     description: 'How to integrate with Klever Wallet browser.',
   },
   {
-    href: '/transfer',
+    href: '/contract-details#transfer',
     name: 'Transfer',
     description: 'How to transfer with Klever Blockchain.',
   },
   {
-    href: '/errors',
-    name: 'NFT',
+    href: '/contract-details#create-asset',
+    name: 'Create NFT',
     description:
-      'How to create a NFT.',
+      'How to create a NFT  with Klever Blockchain..',
   },
   {
-    href: '/create-token',
+    href: '/contract-details#create-asset',
     name: 'Create Token',
     description:
       'How to create a token with Klever Blockchain.',
