@@ -347,7 +347,7 @@ All the following functions that can be called this way:
 - verifySignature(JSON.stringify({message, signature, publicKey}))
 - setApiUrl(newApiUrl)
 - setNodeUrl(newNodeUrl)
-- sendTransaction([transactionType](undefined), [payload, props](undefined))
+- sendTransaction(transactionType, payload, props)
 - signTx(JSON.stringify({ rawTx, privateKey }))
 - broadcast(JSON.stringify(signedTx))
 ```
@@ -385,7 +385,8 @@ const broadcastResponse = await globalThis.kleverWeb.broadcast(JSON.stringify(si
 
 console.log(broadcastResponse)
 ```
-
+<div id="legacy-raw-functions-sendTransaction payload and props"/>
+<br/>
 ### sendTransaction payload and props
 
 ### payload:

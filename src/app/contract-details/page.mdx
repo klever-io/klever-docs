@@ -257,7 +257,7 @@ List with all trigger types values and its required payload fields. You can see 
 |  Required  |       Parameter       |           Type           |               Description                |
 |:----------:|-----------------------|-------------------------|------------------------------------------|
 |   ✅  |       address         |         string          | Royalty receiver address                |
-|   <input type="checkbox"  disabled/>  | transferPercentage    | [RoyaltyInfo](undefined) object array | Transfer fee for fungible tokens ([precision](/precision) 2) |
+|   <input type="checkbox"  disabled/>  | transferPercentage    | [RoyaltyInfo](#asset-trigger-royaltyinfo-structure) object array | Transfer fee for fungible tokens ([precision](/precision) 2) |
 |   <input type="checkbox"  disabled/>  |    transferFixed     |         number          | Transfer fee for non-fungible tokens    |
 |   <input type="checkbox"  disabled/>  | marketPercentage      |         number          | Market percentage fee details for non-fungible tokens ([precision](/precision) 2) |
 |   <input type="checkbox"  disabled/>  |    marketFixed       |         number          | Market fixed fee for non-fungible tokens |
@@ -275,6 +275,8 @@ List with all trigger types values and its required payload fields. You can see 
 |   <input type="checkbox"  disabled/>  | percentITOPercentage   |         number          | Percentage that the given address will receive from ito percentage [precision](/precision) 2 |
 |   <input type="checkbox"  disabled/>  | percentITOFixed       |         number          | Percentage that the given address will receive from ito fixed [precision](/precision) 2 |
 
+<div id="asset-trigger-royaltyinfo-structure"/>
+<br/>
 ### RoyaltyInfo structure
 |  Required  |       Parameter       |           Type           |               Description                |
 |:----------:|-----------------------|-------------------------|------------------------------------------|
