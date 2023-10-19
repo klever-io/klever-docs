@@ -70,7 +70,7 @@ const unsignedTransaction = await window.kleverWeb.buildTransaction([
 ]);
 ```
 
-Even though you can use the window kleverWeb object directly, we suggest you [use the Kleverchain JS SDK,](https://klever.gitbook.io/kleverchain-sdk/) if you are using javascript.
+Even though you can use the window kleverWeb object directly, we suggest you [use the Kleverchain JS SDK,](/sdks) if you are using javascript.
 
 
 Alternatively you can send the params [through the `send` endpoint](https://node.mainnet.klever.finance/swagger/index.html#/Transaction/post_transaction_send), and will receive an unsigned transaction as response.
@@ -85,7 +85,7 @@ const signedTransaction = await window.kleverWeb.signTransaction(unsignedTransac
 
 
 
-Alternatively, to sign the transaction, you will need to do it using a backend application, so you don't expose your private key. For instance, you can [use the GO SDK](https://github.com/klever-io/klever-go-sdk) or [the Kleverchain JS SDK](https://klever.gitbook.io/kleverchain-sdk/) with NodeJS.
+Alternatively, to sign the transaction, you will need to do it using a backend application, so you don't expose your private key. For instance, you can [use the GO SDK](https://github.com/klever-io/klever-go-sdk) or [the Kleverchain JS SDK](/node.js) with NodeJS.
 
 ### 3. Broadcast
 
