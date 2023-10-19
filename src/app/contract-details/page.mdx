@@ -2,7 +2,7 @@
 
 Additional info on contract parameters and use cases
 
-The parameters are used in the [IPayload](undefined) in the contract
+The parameters are used in the [IPayload](/types#types) in the contract
 
 E.g.:
 ```tsx
@@ -26,7 +26,7 @@ Transfer assets to another address.
 | Required | Parameter | Type   | Description                     |
 |----------|-----------|--------|---------------------------------|
 | ✅  | receiver  | string | Receiver address                |
-| ✅  | amount    | number | Amount to be sent (with precision) |
+| ✅  | amount    | number | Amount to be sent ([precision](/precision)) |
 | <input type="checkbox"  disabled/>  | kda       | string | AssetID. If empty, defaults to KLV |
 | <input type="checkbox"  disabled/>  | kdaRoyalties | number | Transfer royalties to pay if a fungible token has enabled the Transfer Percentage Royalties. See [Royalties](/royalties)  |
 
@@ -37,7 +37,7 @@ Freezes a certain amount of a token for staking. This frozen amount will be refe
 ### Payload Parameters
 | Required | Parameter | Type   | Description                     |
 |----------|-----------|--------|---------------------------------|
-| ✅  | amount    | number | Amount to be frozen (with precision) |
+| ✅  | amount    | number | Amount to be frozen (with [precision](/precision)) |
 | <input type="checkbox"  disabled/>   | kda       | string | Defaults to KLV                  |
 
 
@@ -73,12 +73,18 @@ Removes the delegation of a bucket.
 ## Claim
 Claim either staking rewards, delegation rewards or expired marketplace orders.
 
+
 ### Payload Parameters
 | Required | Parameter  | Type   | Description          |
 |----------|------------|--------|----------------------|
-| ✅  | claimType | number | [Check list below](undefined)     |
-| ✅  | id         | string | [Check list below](undefined)     |
+| ✅  | claimType | number | [Check list below](#claimType-section)     |
+| ✅  | id         | string | [Check list below](#claimType-section)     |
 
+
+
+
+<div id="claimType-section"/>
+<br/>
 ### Claim types
 All claim types and your function and referral param
 
@@ -123,8 +129,8 @@ Creates a new fungible token or a NFT collection.
 |   ✅  |    precision     |         number          | Asset precision (0 to 8)                 |
 |   <input type="checkbox"  disabled/>    |       uris       | `{[label: string]: string}` | Relevant URI's                         |
 |   <input type="checkbox"  disabled/>    |       logo       |         string          | Logo URI                                 |
-|   <input type="checkbox"  disabled/>    |  initialSupply   |         number          | Initial minted supply (fungible only) (with precision) |
-|   <input type="checkbox"  disabled/>    |     maxSupply    |         number          | Maximum supply of the asset (with precision) |
+|   <input type="checkbox"  disabled/>    |  initialSupply   |         number          | Initial minted supply (fungible only) (with [precision](/precision)) |
+|   <input type="checkbox"  disabled/>    |     maxSupply    |         number          | Maximum supply of the asset (with [precision](/precision)) |
 |   <input type="checkbox"  disabled/>    |       type       |         number          | 0: Fungible Token, 1: NFT               |
 |   <input type="checkbox"  disabled/>    |     staking      |     Staking object      | Staking info                             |
 |   ✅    |    royalties     |    Royalties object     | Royalties info                           |
@@ -142,34 +148,33 @@ Creates a new fungible token or a NFT collection.
 |   <input type="checkbox"  disabled/>  |  minEpochsToUnstake   |   number   | Minimum epochs to unstake                |
 |   <input type="checkbox"  disabled/>  | minEpochsToWithdraw   |   number   | Minimum epochs to withdraw after unstake |
 
-
 ### Royalties Structure
 |  Required  |       Parameter       |           Type           |               Description                |
 |:----------:|-----------------------|-------------------------|------------------------------------------|
 |   ✅  |        address        |         string          | Royalty receiver address                 |
-|   <input type="checkbox"  disabled/>  | transferPercentage    | RoyaltyInfo object array | Transfer fee for fungible tokens (precision 2) |
+|   <input type="checkbox"  disabled/>  | transferPercentage    | RoyaltyInfo object array | Transfer fee for fungible tokens ([precision](/precision) 2) |
 |   <input type="checkbox"  disabled/>  |    transferFixed      |         number          | Transfer fee for non-fungible tokens     |
-|   <input type="checkbox"  disabled/>  | marketPercentage      |         number          | Market percentage fee details for non-fungible tokens (precision 2) |
+|   <input type="checkbox"  disabled/>  | marketPercentage      |         number          | Market percentage fee details for non-fungible tokens ([precision](/precision) 2) |
 |   <input type="checkbox"  disabled/>  |    marketFixed        |         number          | Market fixed fee for non-fungible tokens |
-|   <input type="checkbox"  disabled/>  | itoPercentage         |         number          | ITO percentage fee (precision 2)         |
+|   <input type="checkbox"  disabled/>  | itoPercentage         |         number          | ITO percentage fee [precision](/precision) 2         |
 |   <input type="checkbox"  disabled/>  |    itoFixed           |         number          | ITO fixed fee (in the currency asset precision) |
 |   <input type="checkbox"  disabled/>  | splitRoyalties        | `{[address: string]: RoyaltySplitInfo}` | Defines the percentage of the fees when multiple addresses receive royalties |
 
 ### RoyaltySplitInfo Structure
 |  Required  |           Parameter            |    Type    |               Description                |
 |:----------:|---------------------------------|------------|------------------------------------------|
-|   <input type="checkbox"  disabled/>  | percentTransferPercentage       |   number   | Percentage that the given address will receive from transfer percentage (precision 2) |
-|   <input type="checkbox"  disabled/>  | percentTransferFixed            |   number   | Percentage that the given address will receive from transfer fixed (precision 2) |
-|   <input type="checkbox"  disabled/>  | percentMarketPercentage         |   number   | Percentage that the given address will receive from market percentage (precision 2) |
-|   <input type="checkbox"  disabled/>  | percentMarketFixed              |   number   | Percentage that the given address will receive from market fixed (precision 2) |
-|   <input type="checkbox"  disabled/>  | percentITOPercentage           |   number   | Percentage that the given address will receive from ito percentage (precision 2) |
-|   <input type="checkbox"  disabled/>  | percentITOFixed                |   number   | Percentage that the given address will receive from ito fixed (precision 2) |
+|   <input type="checkbox"  disabled/>  | percentTransferPercentage       |   number   | Percentage that the given address will receive from transfer percentage [precision](/precision) 2 |
+|   <input type="checkbox"  disabled/>  | percentTransferFixed            |   number   | Percentage that the given address will receive from transfer fixed [precision](/precision) 2 |
+|   <input type="checkbox"  disabled/>  | percentMarketPercentage         |   number   | Percentage that the given address will receive from market percentage [precision](/precision) 2 |
+|   <input type="checkbox"  disabled/>  | percentMarketFixed              |   number   | Percentage that the given address will receive from market fixed [precision](/precision) 2 |
+|   <input type="checkbox"  disabled/>  | percentITOPercentage           |   number   | Percentage that the given address will receive from ito percentage [precision](/precision) 2 |
+|   <input type="checkbox"  disabled/>  | percentITOFixed                |   number   | Percentage that the given address will receive from ito fixed [precision](/precision) 2 |
 
 ### RoyaltyInfo structure
 |  Required  |       Parameter       |    Type    |               Description                |
 |:----------:|-----------------------|------------|------------------------------------------|
 |   <input type="checkbox"  disabled/>  |        amount         |   number   | Max amount for that percentage           |
-|   <input type="checkbox"  disabled/>  |      percentage       |   number   | Fee % (precision 2)                     |
+|   <input type="checkbox"  disabled/>  |      percentage       |   number   | Fee % ([precision](/precision) 2)                  |
 
 
 ### Role structure
@@ -202,9 +207,10 @@ Creates a new fungible token or a NFT collection.
 Updates the properties or trigger functionalities of a fungible token, NFT collection or a single NFT.
 
 **The required parameters will depend on the trigger type. Trigger Type and AssetID are required in all of them.**
-
+<div id="asset-trigger-types"/>
+<br/>
 ### Trigger Types:
-List with all trigger types values and its required payload fields. You can see more info about each field [here](https://klever.gitbook.io/kleverchain-sdk/contract-details/asset-trigger#payload-parameters). Any parameter you send beyond the required ones will be ignored.
+List with all trigger types values and its required payload fields. You can see more info about each field [here](#asset-trigger-payload-parameters). Any parameter you send beyond the required ones will be ignored.
 
 |   ID   |     Type     |                   Description                   |     Parameters     |
 |-------|--------------|-------------------------------------------------|--------------------|
@@ -227,53 +233,56 @@ List with all trigger types values and its required payload fields. You can see 
 |   16   | StopRoyaltiesChange | Stop royalties changes from the asset |
 |   17   | StopNFTMetadataChange | Stop Metadata changes for a given NFT |
 
-
+<div id="asset-trigger-payload-parameters"/>
+<br/>
 ### Payload Parameters
 
 |  Required  |      Parameter      |       Type       |               Description                |
 |:----------:|---------------------|------------------|------------------------------------------|
-|   ✅  |     triggerType     |      number      | Sets the trigger type (check [list below](undefined)) |
+|   ✅  |     triggerType     |      number      | Sets the trigger type (check [here](#asset-trigger-types)) |
 |   ✅  |      assetId        |      string      | Target Asset                             |
 |   <input type="checkbox"  disabled/>  |      receiver       |      string      | Target address for transaction           |
-|   <input type="checkbox"  disabled/>  |       amount        |      number      | Amount (with [precision](undefined))                  |
+|   <input type="checkbox"  disabled/>  |       amount        |      number      | Amount (with [precision](/precision))                  |
 |   <input type="checkbox"  disabled/>  |        uris         |      `{[key:string]: string}`      | Ex: `Ex: {"foo" : "http://bar.com"}` |
 |   <input type="checkbox"  disabled/>  |        logo         |      string      | Logo image URL                           |
 |   <input type="checkbox"  disabled/>  |     mime    |     string   | The nature and format of the metadata                  |
-|   <input type="checkbox"  disabled/>  |        role      |         [Role](undefined) object array          | Role for Add/Remove Role types    |
-|   <input type="checkbox"  disabled/>  |       staking         |        [Staking](undefined) object   | Used for updating staking params                           |
-|   <input type="checkbox"  disabled/>  |       royalties       |     [Royalties](undefined) object    | Used for updating royalties params            |
-|   <input type="checkbox"  disabled/>  |       kdaPool         |      [KDAPool](undefined) object     | Used for updating kdaPool params                           |
+|   <input type="checkbox"  disabled/>  |        role      |         [Role](#asset-trigger-role-structure) object array          | Role for Add/Remove Role types    |
+|   <input type="checkbox"  disabled/>  |       staking         |        [Staking](#asset-trigger-staking-structure) object   | Used for updating staking params                           |
+|   <input type="checkbox"  disabled/>  |       royalties       |     [Royalties](#asset-trigger-royalties-structure) object    | Used for updating royalties params            |
+|   <input type="checkbox"  disabled/>  |       kdaPool         |      [KDAPool](#asset-trigger-kdapool) object     | Used for updating kdaPool params                           |
 
-
-### RoyaltiesInfo structure
+<div id="asset-trigger-royalties-structure"/>
+<br/>
+### Royalties structure
 |  Required  |       Parameter       |           Type           |               Description                |
 |:----------:|-----------------------|-------------------------|------------------------------------------|
 |   ✅  |       address         |         string          | Royalty receiver address                |
-|   <input type="checkbox"  disabled/>  | transferPercentage    | [RoyaltyInfo](undefined) object array | Transfer fee for fungible tokens ([precision](undefined) 2) |
+|   <input type="checkbox"  disabled/>  | transferPercentage    | [RoyaltyInfo](undefined) object array | Transfer fee for fungible tokens ([precision](/precision) 2) |
 |   <input type="checkbox"  disabled/>  |    transferFixed     |         number          | Transfer fee for non-fungible tokens    |
-|   <input type="checkbox"  disabled/>  | marketPercentage      |         number          | Market percentage fee details for non-fungible tokens ([precision](undefined) 2) |
+|   <input type="checkbox"  disabled/>  | marketPercentage      |         number          | Market percentage fee details for non-fungible tokens ([precision](/precision) 2) |
 |   <input type="checkbox"  disabled/>  |    marketFixed       |         number          | Market fixed fee for non-fungible tokens |
-|   <input type="checkbox"  disabled/>  |    itoPercentage     |         number          | ITO percentage fee (precision 2)        |
+|   <input type="checkbox"  disabled/>  |    itoPercentage     |         number          | ITO percentage fee [precision](/precision) 2        |
 |   <input type="checkbox"  disabled/>  |       itoFixed       |         number          | ITO fixed fee (in the currency asset precision) |
 |   <input type="checkbox"  disabled/>  |  splitRoyalties      | `{[address:string]: RoyaltySplitInfo}` | Defines the percentage of the fees when multiple addresses receive royalties |
 
 ### RoyaltySplitInfo structure
 |  Required  |       Parameter       |           Type           |               Description                |
 |:----------:|-----------------------|-------------------------|------------------------------------------|
-|   <input type="checkbox"  disabled/>  | percentTransferPercentage |         number        | Percentage that the given address will receive from transfer percentage (precision 2) |
-|   <input type="checkbox"  disabled/>  | percentTransferFixed   |         number          | Percentage that the given address will receive from transfer fixed (precision 2) |
-|   <input type="checkbox"  disabled/>  | percentMarketPercentage |         number          | Percentage that the given address will receive from market percentage (precision 2) |
-|   <input type="checkbox"  disabled/>  | percentMarketFixed     |         number          | Percentage that the given address will receive from market fixed (precision 2) |
-|   <input type="checkbox"  disabled/>  | percentITOPercentage   |         number          | Percentage that the given address will receive from ito percentage (precision 2) |
-|   <input type="checkbox"  disabled/>  | percentITOFixed       |         number          | Percentage that the given address will receive from ito fixed (precision 2) |
+|   <input type="checkbox"  disabled/>  | percentTransferPercentage |         number        | Percentage that the given address will receive from transfer percentage [precision](/precision) 2 |
+|   <input type="checkbox"  disabled/>  | percentTransferFixed   |         number          | Percentage that the given address will receive from transfer fixed [precision](/precision) 2 |
+|   <input type="checkbox"  disabled/>  | percentMarketPercentage |         number          | Percentage that the given address will receive from market percentage [precision](/precision) 2 |
+|   <input type="checkbox"  disabled/>  | percentMarketFixed     |         number          | Percentage that the given address will receive from market fixed [precision](/precision) 2 |
+|   <input type="checkbox"  disabled/>  | percentITOPercentage   |         number          | Percentage that the given address will receive from ito percentage [precision](/precision) 2 |
+|   <input type="checkbox"  disabled/>  | percentITOFixed       |         number          | Percentage that the given address will receive from ito fixed [precision](/precision) 2 |
 
 ### RoyaltyInfo structure
 |  Required  |       Parameter       |           Type           |               Description                |
 |:----------:|-----------------------|-------------------------|------------------------------------------|
 |   <input type="checkbox"  disabled/>  |       amount          |         number          | Max amount for that percentage           |
-|   <input type="checkbox"  disabled/>  |    percentage         |         number          | Fee % ([precision](undefined) 2)                     |
+|   <input type="checkbox"  disabled/>  |    percentage         |         number          | Fee % ([precision](/precision) 2)                     |
 
-
+<div id="asset-trigger-kdapool"/>
+<br/>
 ### KDAPool
 |  Required  |    Parameter     |    Type    |           Description                |
 |:----------:|------------------|------------|--------------------------------------|
@@ -284,6 +293,8 @@ List with all trigger types values and its required payload fields. You can see 
 
 Fixed Ratio calculation:
 
+<div id="asset-trigger-role-structure"/>
+<br/>
 ### Role Structure
 List with all role values
 |  Required  |       Parameter           |    Type    |               Description                |
@@ -292,7 +303,8 @@ List with all role values
 |   ✅  |       hasRoleMint         |  boolean   | Should be able to mint?                  |
 |   ✅  | hasRoleSetITOPrices       |  boolean   | Should be able to set ITO prices?        |
 
-
+<div id="asset-trigger-staking-structure"/>
+<br/>
 ### Staking Structure
 |  Required  |        Parameter        |    Type    |               Description                |
 |:----------:|--------------------------|------------|------------------------------------------|
@@ -309,12 +321,13 @@ Deposits an asset into a FPR pool or into an auto-swapping fee system.
 ### Payload Parameters
 |  Required  |      Parameter      |   Type   |               Description                |
 |:----------:|---------------------|----------|------------------------------------------|
-|   ✅  |     depositType     |  number  | 0: FPR Deposit, 1: KDA Pool, For more info, check #[Deposit Type](undefined) |
+|   ✅  |     depositType     |  number  | 0: FPR Deposit, 1: KDA Pool, For more info, check [Deposit Type](#deposit-type) |
 |   ✅  |         kda         |  string  | Target Asset                            |
 |   ✅  |     currencyId      |  string  | Currency to be deposited                 |
 |   ✅  |       amount        |  number  | Amount of currency to be deposited      |
 
-
+<div id="deposit-type"/>
+<br/>
 ### Deposit Type
 | Type ID |  Type Name  |                   Description                   |
 |:-------:|-------------|-------------------------------------------------|
@@ -330,11 +343,11 @@ Sets up an Initial Token Offering for either a token or a NFT collection.
 |----------|------------------|--------|------------------------------------------|
 | ✅  | receiverAddress  | string | Wallet address that will receive the currency |
 | ✅  | kda              | string | Target Asset                             |
-| <input type="checkbox"  disabled/>  | maxAmount     | number | Max amount of assets sold in the ITO (with precision) |
+| <input type="checkbox"  disabled/>  | maxAmount     | number | Max amount of assets sold in the ITO ([precision](/precision)) |
 | ✅  | status        | number | See Status                               |
 | ✅  | packInfo      | `{[assetID: string]: Pack[]}`  | Defines the currency in which the packs will be sold. |
 | <input type="checkbox"  disabled/> | defaultLimitPerAddress | number | Max amount of NFTs an address can buy, if specific amount is not provided. |
-<input type="checkbox"  disabled/> |whitelistStatus | number | See [Status](undefined)
+<input type="checkbox"  disabled/> |whitelistStatus | number | See [Status](#deposit-status)
 <input type="checkbox"  disabled/>  | whitelistInfo |`{[address: string]: WhiteListInfo}` | Defines specific NFT mint limit to given addresses |
 <input type="checkbox"  disabled/>  | whitelistStartTime | number | Whitelist start time (in UnixTime (seconds))|
 <input type="checkbox"  disabled/> | whitelistEndTime |  number | Whitelist end time (in UnixTime (seconds)) |
@@ -344,7 +357,7 @@ Sets up an Initial Token Offering for either a token or a NFT collection.
 ### Pack structure
 | Required | Parameter | Type   | Description |
 |----------|-----------|--------|-------------|
-| ✅  | amount  | number | For NFTs: Amount sold; For tokens: Minimum amount for the price to be applied (with [precision](undefined)). |
+| ✅  | amount  | number | For NFTs: Amount sold; For tokens: Minimum amount for the price to be applied (with [precision](/precision)). |
 | ✅  | price              | number | For NFTs: Price for each NFT; For tokens: Price for that amount.                              |
 
 ### WhiteListInfo structure
@@ -352,6 +365,8 @@ Sets up an Initial Token Offering for either a token or a NFT collection.
 |----------|-----------|--------|----------------------------------------|
 | ✅  | limit     | number |Max amount of NFTs an address can buy.  |
 
+<div id="deposit-status"/>
+<br/>
 ### Status
 | Status Value | Status Name | Description              |
 |--------------|-------------|--------------------------|
@@ -364,9 +379,10 @@ Sets up an Initial Token Offering for either a token or a NFT collection.
 Updates the properties or trigger functionalities of a fungible token, NFT collection or a single NFT.
 
 **The required parameters will depend on the trigger type. Trigger Type and AssetID are required in all of them.**
-
+<div id="ito-trigger-types"/>
+<br/>
 ### Trigger Types
-List with all trigger types values and its required payload fields. You can see more info about each field [here](undefined). Any parameter you send beyond the required ones will be ignored.
+List with all trigger types values and its required payload fields. You can see more info about each field [here](#ito-trigger-payload-parameters). Any parameter you send beyond the required ones will be ignored.
 
 | ID  | Type           | Description                               | Parameters   |
 |----|----------------|-------------------------------------------|--------------|
@@ -381,18 +397,19 @@ List with all trigger types values and its required payload fields. You can see 
 8 |  RemoveFromWhitelist | Remove address from whitelist | whitelistInfo |
 9 | UpdateWhitelistTimes | Update start and end time of whitelist | whitelistStartTime, whilelistEndTime |
 
-
+<div id="ito-trigger-payload-parameters"/>
+<br/>
 ### Payload Parameters
 | Required | Parameter        | Type   | Description                              |
 |----------|------------------|--------|------------------------------------------|
-| ✅        | triggerType      | number | Sets the trigger type (check [list above](undefined)) |
+| ✅        | triggerType      | number | Sets the trigger type (check [list above](#ito-trigger-types)) |
 | ✅      | kda              | string | Target Asset                             |
 | <input type="checkbox"  disabled/>        | receiverAddress  | string | Address that will receive the currency  |
-| <input type="checkbox"  disabled/>        | status           | number | See [Status](undefined)                               |
-| <input type="checkbox"  disabled/>        | maxAmount        | number | Maximum minted amount (with [precision](undefined))  |
+| <input type="checkbox"  disabled/>        | status           | number | See [Status](#ito-trigger-status)                               |
+| <input type="checkbox"  disabled/>        | maxAmount        | number | Maximum minted amount (with [precision](/precision))  |
 | <input type="checkbox"  disabled/>        | packInfo         | `{[assetID: string]: { Packs: Pack []}}` | Defines the currency in which the packs will be sold. |
 | <input type="checkbox"  disabled/> | defaultLimitPerAddress| number | Max amount of NFTs an address can buy, if not provided.     |
-| <input type="checkbox"  disabled/> | whitelistStatus     | number | See [Status](undefined)                                                   |
+| <input type="checkbox"  disabled/> | whitelistStatus     | number | See [Status](#ito-trigger-status)                                                   |
 | <input type="checkbox"  disabled/> | whitelistInfo       | `{[address: string]: WhiteListInfo }` | Defines specific NFT mint limit to given addresses |
 | <input type="checkbox"  disabled/> | whitelistStartTime  | number | Whitelist start time (in UnixTime (seconds))                |
 | <input type="checkbox"  disabled/> | whitelistEndTime    | number | Whitelist end time (in UnixTime (seconds))                  |
@@ -401,6 +418,8 @@ List with all trigger types values and its required payload fields. You can see 
 
 ***Obs: Javascript's Date.prototype.getTime() should be divided by 1000 for it to be converted to Unix Time (seconds)***
 
+<div id="ito-trigger-status"/>
+<br/>
 ### Status
 | Status Value | Status Name | Description                        |
 |--------------|-------------|------------------------------------|
@@ -412,7 +431,7 @@ List with all trigger types values and its required payload fields. You can see 
 ### Pack structure
 | Required | Parameter | Type   | Description                                                   |
 |----------|-----------|--------|---------------------------------------------------------------|
-| ✅        | amount    | number | For NFTs: Amount sold; For token: Min amount for that price to be applied (with [precision](undefined)). |
+| ✅        | amount    | number | For NFTs: Amount sold; For token: Min amount for that price to be applied (with [precision](/precision)). |
 | ✅        | price     | number | For NFTs: Price for each NFT; For Tokens: Price for that amount. |
 
 
@@ -425,7 +444,7 @@ List with all trigger types values and its required payload fields. You can see 
 ## Set ITO Prices
 DEPRECATED: Updates the ITO prices, useful for ITO's that use an oracle-like pricing system.
 
-**This contract is deprecated, please use an [ITO Trigger](undefined) of type SetITOPrices.**
+**This contract is deprecated, please use an [ITO Trigger](/contract-details#ito-trigger) of type SetITOPrices.**
 
 
 ### Payload Parameters
@@ -438,7 +457,7 @@ DEPRECATED: Updates the ITO prices, useful for ITO's that use an oracle-like pri
 ### Pack structure
 | Required | Parameter | Type   | Description                                      |
 |----------|-----------|--------|--------------------------------------------------|
-| ✅        | amount    | number | For NFTs: Amount sold;  For token: Min amount for that price to be applied (with [precision](undefined)).                       |
+| ✅        | amount    | number | For NFTs: Amount sold;  For token: Min amount for that price to be applied (with [precision](/precision)).                       |
 | ✅        | price     | number | For NFTs: Price for each NFT;  For Tokens: Price for that amount.                  |
 
 
@@ -450,7 +469,7 @@ Creates a marketplace
 |----------|--------------------|--------|--------------------------------------------------|
 | ✅        | name               | string | Marketplace name                                 |
 | <input type="checkbox"  disabled/>         | referralAddress    | string | Royalties receiving address                     |
-| <input type="checkbox"  disabled/>         | referralPercentage | number | Royalties percentage ([precision](undefined) 2)              |
+| <input type="checkbox"  disabled/>         | referralPercentage | number | Royalties percentage ([precision](/precision) 2)              |
 
 
 ## Config Marketplace
@@ -461,7 +480,7 @@ Changes the parameters of a marketplace
 |----------|--------------------|--------|----------------------------------------|
 | ✅        | name               | string | New marketplace name                   |
 | ✅        | marketplaceId      | string | Target Marketplace ID                   |
-| ✅        | referralPercentage | number | New referral percentage ([precision](undefined) 2)  |
+| ✅        | referralPercentage | number | New referral percentage ([precision](/precision) 2)  |
 | <input type="checkbox"  disabled/>        | referralAddress    | string | New referral address                   |
 
 ## Sell
@@ -472,8 +491,8 @@ Changes the parameters of a marketplace
 | ✅       | marketplaceId | string | Maketplace ID in which the sell order will be created |
 | ✅       | assetId       | string | Asset to be sold                                  |
 | ✅       | currencyId    | string | Transaction currency token                        |
-| <input type="checkbox"  disabled/>       | price        | number | Price for instant sell (with [precision](undefined))      |
-| <input type="checkbox"  disabled/>       | reservePrice | number | Minimum auction price (with [precision](undefined))       |
+| <input type="checkbox"  disabled/>       | price        | number | Price for instant sell (with [precision](/precision))      |
+| <input type="checkbox"  disabled/>       | reservePrice | number | Minimum auction price (with [precision](/precision))       |
 | ✅       | endTime      | number | Expiration sell time (in Unix Time). Max end time = 1 Year from creation date         |
 
 **price is required on Instant Sell Orders, but optional in Auction Orders. As explained below:**
@@ -495,10 +514,10 @@ Creates a buy (or bid) order for a given market sell order.
 | ✅       |buyType     | number | 0: ITOBuy, 1: MarketBuy |
 | ✅       | id         | string | ITOBuy: ITO Asset ID, MarketBuy: order ID |
 | ✅       | currencyId | string | ID of the trade currency |
-| ✅       | amount     | number | ITOBuy: Amount to be bought, MarkeyBuy: item price / amount bidden(check [precision]()) |
+| ✅       | amount     | number | ITOBuy: Amount to be bought, MarkeyBuy: item price / amount bidden(check [precision](/precision)) |
 
 
-***Send the 'amount' parameter with the correct [precision]() based on the currency asset***
+***Send the 'amount' parameter with the correct [precision](/precision) based on the currency asset***
 
 
 ## Cancel Market Order
@@ -516,11 +535,12 @@ Creates a proposal to change the chain network parameters.
 ### Payload Parameters
 | Required | Parameter | Type                     | Description                     |
 |----------|------------|-------------------------|---------------------------------|
-| ✅       | parameters | `{[paramKeyID:number]: string}` | A object that includes all chain parameters you would like to propose a change. (The value will most likely be a numeric string for current parameters) [See parameter list below for correct key input](undefined) |
+| ✅       | parameters | `{[paramKeyID:number]: string}` | A object that includes all chain parameters you would like to propose a change. (The value will most likely be a numeric string for current parameters) [See parameter list below for correct key input](#proposal-parameter-keys) |
 | ✅       | epochsDuration | number | Proposal epochs duration |
 | <input type="checkbox"  disabled/> | description | string | Proposal description|
 
-
+<div id="proposal-parameter-keys"/>
+<br/>
 ### Parameter key
 | ID | Type                      | Description                               |
 | -- | ------------------------- | ----------------------------------------- |
@@ -585,7 +605,7 @@ Creates a validator for an address, controlled by a BLS key.
 | ✅       |blsPublicKey    | string | BLS public key    |
 | <input type="checkbox"  disabled/> | canDelegate | boolean | Permission to delegate|
 | <input type="checkbox"  disabled/> | maxDelegationAmount | number | Max delegation amount|
-| <input type="checkbox"  disabled/> | commission | number | Validation commission ([precision](undefined) 2)|
+| <input type="checkbox"  disabled/> | commission | number | Validation commission ([precision](/precision) 2)|
 | <input type="checkbox"  disabled/> | logo | string |Logo URI|
 | <input type="checkbox"  disabled/> | uris | `{[key: string]: string}` **\*** | Relevant URI's|
 
@@ -602,7 +622,7 @@ Changes the params of a given validator.
 | <input type="checkbox"  disabled/>      |rewardAddress    | string | Change rewards address    |
 | ✅     |blsPublicKey    | string | Change BLS public key    |
 | <input type="checkbox"  disabled/>      |canDelegate    | boolean | Change permission to delegate    |
-| <input type="checkbox"  disabled/>      |commission    | number | Change commission ([precision](undefined) 2)    |
+| <input type="checkbox"  disabled/>      |commission    | number | Change commission ([precision](/precision) 2)    |
 | <input type="checkbox"  disabled/>      |maxDelegationAmount    | number | Change max delegation amount |
 | <input type="checkbox"  disabled/>      |logo    | string |Change logo    |
 | <input type="checkbox"  disabled/>      |uris    | `{[key: string]: string}` **\***  | Change uris    |
@@ -632,23 +652,29 @@ Updates the permissions of an account, setting multi-signature permissions with 
 ### Payload Parameters
 | Required | Parameter | Type   | Description                     |
 |----------|-----------|--------|---------------------------------|
-| ✅       |permissions    | Array of [AccPermission](undefined) Object  | Set sender account's name    |
+| ✅       |permissions    | Array of [AccPermission](#update-account-permission-structure) Object  | Set sender account's name    |
 
+<div id="update-account-permission-structure"/>
+<br/>
 ### AccPermission structure
 | Required | Parameter | Type   | Description                     |
 |----------|-----------|--------|---------------------------------|
 | ✅       |type      | number   | 0: Owner, 1: User             |
 | ✅       |permissionName      | string   | Permission identifier             |
 | ✅       |threshold      | number   | Minimum sign amount to permit transaction             |
-| ✅       |operations      | string   | See [Operations](undefined)             |
-| ✅       |signers      |  [AccKey](undefined) object array   | Defines the weight of the accounts' votes |
+| ✅       |operations      | string   | See [Operations](#update-account-permission-operations)             |
+| ✅       |signers      |  [AccKey](#update-account-permission-acckey-structure) object array   | Defines the weight of the accounts' votes |
 
+<div id="update-account-permission-acckey-structure"/>
+<br/>
 ### AccKey structure
 | Required | Parameter | Type   | Description                     |
 |----------|-----------|--------|---------------------------------|
 | ✅       |address      | string   | Target address             |
 | ✅       |weight      | number   | Target address vote weight            |
 
+<div id="update-account-permission-operations"/>
+<br/>
 ### Operations
 
 The `operations` property defines which operations the account should be able to do.
@@ -659,7 +685,7 @@ Ex:
 
 "01af" is the hexadecimal to 000110101111.
 
-The 1's represent the contracts it should be able to do (following [this table](undefined))
+The 1's represent the contracts it should be able to do (following [this table](/available-transactions))
 
 This account will be able to do contracts of type 0, 1, 2, 3, 5, 7, 8 (Transfer, Create Asset, Create Validator, Config Validator, Unfreeze, Undelegate, Withdraw).
 
