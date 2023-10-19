@@ -10,7 +10,7 @@ Here is the place to understand better KleverChain's concepts and processes.
 
 Each **account** has a pair of keys, **one private and one public**, that are used to control and represent the account respectively. The private key holder of an account can sign transactions to the network.
 
-The **public key is a 65-byte-long piece of information** derived from the private key by an elliptic curve. The public key information can be encoded using the** Bech32 human-readable representation format** in order to create the Account Address. **Klever’s Bech32 HRP is **`klv`.
+The **public key is a 65-byte-long piece of information** derived from the private key by an elliptic curve. The public key information can be encoded using the** Bech32 human-readable representation format** in order to create the Account Address. **Klever’s Bech32 HRP** is `klv`.
 
 An account holds information on the amount of **KLV** (Klever network main asset), **KFI** (Klever finance governance asset) and any other token deployed on Klever’s blockchain. A mapping storage is also associated with any Klever Account which can hold any binary value.
 
@@ -44,7 +44,8 @@ The PBFT algorithm consists of a three-phased protocol: **Pre-Prepare, Prepare**
 
 
 
-![PBFT process](files/undefined)
+![](/img4.png)
+*PBFT process*
 
 If you want more details about the PBFT consensus algorithm, check [this link](http://pmg.csail.mit.edu/papers/osdi99.pdf). This algorithm will also be used as a way to evaluate and grant bonuses to masternodes.
 
@@ -218,7 +219,7 @@ To become a masternode, a user must apply as a candidate.  A fee of **50,000 KLV
 - The delegation cap can be increased at any time, but only reduced to the current staked amount.
 - Masternodes can set a commission fee for the delegated staking on their node (if the pool is open)
 
-![](files/undefined)
+![](/img5.png)
 
 ### Masternode Rewards
 
