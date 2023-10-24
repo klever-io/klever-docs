@@ -15,16 +15,16 @@ _Blockchain is difficult, but it shouldn't be._
 
 ### 1. What is Klever
 
-Klever Finance is a trusted **permissionless **blockchain network for the emerging decentralized economy, providing **a safer, faster and smarter cryptocurrency experience** for all users globally to enter and thrive.
+Klever Finance is a trusted **permissionless** blockchain network for the emerging decentralized economy, providing **a safer, faster and smarter cryptocurrency experience** for all users globally to enter and thrive.
 
 A blockchain network does not have an intrinsic value in and of itself, but in fact is only as valuable as what the platform offers its users in terms of usable products and opportunities to participate in the network.
 
-With this in mind, we present **KleverChain** to allow users on a global scale to access indispensable services and products. These include market-leading **crypto wallet**, **crypto swap**, **web browser**, **exchange**, **staking**, **payment channels**, **loans**, **liquidity pools**, **decentralized finance**, **game assets**, **supply chains**, **logistic records**, **notary**, **stored value**, **gift cards**, **rewards**, **loyalty programs**, **collectibles**, **banking**, **ownership **and more.
+With this in mind, we present **KleverChain** to allow users on a global scale to access indispensable services and products. These include market-leading **crypto wallet**, **crypto swap**, **web browser**, **exchange**, **staking**, **payment channels**, **loans**, **liquidity pools**, **decentralized finance**, **game assets**, **supply chains**, **logistic records**, **notary**, **stored value**, **gift cards**, **rewards**, **loyalty programs**, **collectibles**, **banking**, **ownership** and more.
 
 We strive to create a network where trustless technologies empower businesses and individuals in an open global economy using secure, fast and innovative on-chain peer-to-peer applications.
 
 
-### 2. **Architecture Overview**
+### 2. Architecture Overview
 
 Building and deploying blockchain apps should be **simple**, **cheap**, and **easy** for all developers to do, and that is exactly what Klever Blockchain enables.
 
@@ -76,7 +76,7 @@ docker run -it --rm --user "$(id -u):$(id -g)" \
 
 This will generate the wallet and return the address asociated with it, as seen below:
 
-![](files/undefined)
+![](/img1.png)
 
 If the output directory does not exist, it will be created but you may run into file permission issues.
 
@@ -91,7 +91,7 @@ docker run -it --rm --user "$(id -u):$(id -g)" \
 
 This should show your address, as seen below:
 
-![](files/undefined)
+![](/img2.png)
 
 
 
@@ -99,7 +99,7 @@ This should show your address, as seen below:
 
 Commands to run a node
 
-Klever nodes run inside a docker container, check [System Requirements](undefined) section to download Klever Toolchain first.
+Klever nodes run inside a docker container, check [System Requirements](/node-operations#system-requirements) section to download Klever Toolchain first.
 
 ### Create statics directory
 
@@ -174,7 +174,8 @@ If one wants to monitor the node using log files, the flag `--use-log-view` must
 
 When you are done setting up and running your node, you are expected to see information about your node, the blockchain itself, as well as data from your own computer, just like the example below:
 
-![A node running, showing how many blocks were proposed and accepted, current blocks, slots and connected nodes, last generated hash, computational information, epoch and network processes and a basic log info segment.](files/undefined)
+![](/img3.png)
+*A node running, showing how many blocks were proposed and accepted, current blocks, slots and connected nodes, last generated hash, computational information, epoch and network processes and a basic log info segment.*
 
 ### Run node in the background the first time
 
@@ -225,11 +226,11 @@ This flag is only for node initialization without a db, if the node already has 
 
 If you're using **Windows OS**, there a few steps before running your node.
 
-First of all, you need to **install **[**WSL**](https://docs.microsoft.com/en-us/windows/wsl/install), which is a way of using Linux inside your windows system. Make sure you have the 2.0 version.
+First of all, you need to **install** [**WSL**](https://docs.microsoft.com/en-us/windows/wsl/install), which is a way of using Linux inside your windows system. Make sure you have the 2.0 version.
 
 Then, you should install a **Linux distribution** of your preference through the Microsoft Store app, which comes with Microsoft Windows (you could just type 'store' on the search bar).
 
-And finally, you need to** install **[**Docker**](https://www.docker.com/) and enable the integration with WSL, on the settings menu.
+And finally, you need to **install** [**Docker**](https://www.docker.com/) and enable the integration with WSL, on the settings menu.
 
 Now, you are good to go. You can use the following instructions on the Linux environment to run your node, being attentive to user permission (typing 'sudo' before the following commands will mostly solve any problems).
 
@@ -275,10 +276,10 @@ docker run -it --rm \
     kleverapp/klever-go-testnet:latest \
     '--log-save' '--rest-api-interface=0.0.0.0:8080'
 ```
-
 When you are done setting up and running your node, you are expected to see information about your node, the blockchain itself, as well as data from your own computer, just like the example below:
 
-![A node running, showing how many blocks were proposed and accepted, current blocks, slots and connected nodes, last generated hash, computational information, epoch and network processes and a basic log info segment.](files/undefined)
+![](/img3.png)
+*A node running, showing how many blocks were proposed and accepted, current blocks, slots and connected nodes, last generated hash, computational information, epoch and network processes and a basic log info segment.*
 
 
 
@@ -338,7 +339,7 @@ docker rm klever-node
 
 ## How To Send Using Cli
 
-To use your wallet with Klever Toolchain, you will need to map your wallet private key (the .pem file created in the session [How to create a wallet](undefined)) into the toolchain by adding:
+To use your wallet with Klever Toolchain, you will need to map your wallet private key (the .pem file created in the session [How to create a wallet](/node-operations#how-to-create-a-wallet)) into the toolchain by adding:
 
 `-v $(pwd)/wallet:/opt/klever-blockchain`
 
@@ -415,7 +416,8 @@ Klever Operator
 
 OPERATOR interface to Klever Blockchain
 
-[32mtype 'operator --help' for details[0m
+<span style={{color: "#008000"}}>Type 'operator --help' for details</span>
+
 
 ```
 operator [flags]
@@ -440,16 +442,16 @@ operator [flags]
 
 ### SEE ALSO
 
-- [operator account](undefined) - account actions
-- [operator broadcast](undefined) - broadcast a transaction
-- [operator fb](undefined) -
-- [operator gov](undefined) - governance actions
-- [operator kapps](undefined) - kapps actions
-- [operator kda](undefined) - kda actions
-- [operator sign](undefined) - sign a transaction
-- [operator tx-by-id](undefined) - get transaction by id
-- [operator validator](undefined) - validator actions
-- [operator version](undefined) - Show version
+- [operator account](/node-operations#operator-account) - account actions
+- [operator broadcast](/node-operations#operator-broadcast) - broadcast a transaction
+- [operator fb](/node-operations#operator-fb) -
+- [operator gov](/node-operations#operator-gov) - governance actions
+- [operator kapps](/node-operations#operator-kapps) - kapps actions
+- [operator kda](/node-operations#operator-kda) - kda actions
+- [operator sign](/node-operations#operator-sign) - sign a transaction
+- [operator tx-by-id](/node-operations#operator-tx-by-id) - get transaction by id
+- [operator validator](/node-operations#operator-validator) - validator actions
+- [operator version](/node-operations#operator-version) - Show version
 
 **Auto generated by spf13/cobra on 6-Mar-2023**
 
@@ -486,25 +488,25 @@ operator account [flags]
 ```
 
 ### SEE ALSO
-- [operator](undefined) - Klever Operator
-- [operator account address](undefined) - returns wallet address
-- [operator account allowance](undefined) - return account allowance on a given KDA
-- [operator account balance](undefined) - returns wallet balance
-- [operator account batchsend](undefined) - create several transfer transactions: batchsend --values Addr1=Val1 Addr2=Val2...
-- [operator account claim](undefined) - claim transaction
-- [operator account create](undefined) - create a new wallet PEM file
-- [operator account CSV](undefined) - send transactions based on a CSV file
-- [operator account delegate](undefined) - delegate a bucket to a validator
-- [operator account export-sk](undefined) - export-sk: print hex-encoded private key from a PEM file
-- [operator account freeze](undefined) - freeze an asset
-- [operator account import-sk](undefined) - import-sk: creates a PEM file from a hex-encoded secret key
-- [operator account info](undefined) - returns account details
-- [operator account permission](undefined) - set wallet permission
-- [operator account send](undefined) - create a transfer transaction: send [TO][AMOUNT]
-- [operator account set-name](undefined) - set an account name
-- [operator account undelegate](undefined) - undelegate bucket id
-- [operator account unfreeze](undefined) - unfreeze asset bucket
-- [operator account withdraw](undefined) - withdraw asset
+- [operator](/node-operations#operator) - Klever Operator
+- [operator account address](/node-operations#operator-account-address) - returns wallet address
+- [operator account allowance](/node-operations#operator-account-allowance) - return account allowance on a given KDA
+- [operator account balance](/node-operations#operator-account-balance) - returns wallet balance
+- [operator account batchsend](/node-operations#operator-account-batchsend) - create several transfer transactions: batchsend --values Addr1=Val1 Addr2=Val2...
+- [operator account claim](/node-operations#operator-account-claim) - claim transaction
+- [operator account create](/node-operations#operator-account-create) - create a new wallet PEM file
+- [operator account CSV](/node-operations#operator-account-csv) - send transactions based on a CSV file
+- [operator account delegate](/node-operations#operator-account-delegate) - delegate a bucket to a validator
+- [operator account export-sk](/node-operations#operator-account-export-sk) - export-sk: print hex-encoded private key from a PEM file
+- [operator account freeze](/node-operations#operator-account-freeze) - freeze an asset
+- [operator account import-sk](/node-operations#operator-account-import-sk) - import-sk: creates a PEM file from a hex-encoded secret key
+- [operator account info](/node-operations#operator-account-info) - returns account details
+- [operator account permission](/node-operations#operator-account-permission) - set wallet permission
+- [operator account send](/node-operations#operator-account-send) - create a transfer transaction: send [TO][AMOUNT]
+- [operator account set-name](/node-operations#operator-account-set-name) - set an account name
+- [operator account undelegate](/node-operations#operator-account-undelegate) - undelegate bucket id
+- [operator account unfreeze](/node-operations#operator-account-unfreeze) - unfreeze asset bucket
+- [operator account withdraw](/node-operations#operator-account-withdraw) - withdraw asset
 
 Auto generated by spf13/cobra on 6-Mar-2023
 
@@ -541,7 +543,7 @@ operator account address [flags]
 
 ### SEE ALSO
 
-- [operator account](undefined) - account actions
+- [operator account](/node-operations#operator-account) - account actions
 
 **Auto generated by spf13/cobra on 6-Mar-2023**
 
@@ -579,7 +581,7 @@ operator account allowance <kdaID> [flags]
 
 ### SEE ALSO
 
-- [operator account](undefined) - account actions
+- [operator account](/node-operations#operator-account) - account actions
 
 **Auto generated by spf13/cobra on 6-Mar-2023**
 
@@ -617,7 +619,7 @@ operator account balance <address> [flags]
 
 ### SEE ALSO
 
-- [operator account](undefined) - account actions
+- [operator account](/node-operations#operator-account) - account actions
 
 **Auto generated by spf13/cobra on 6-Mar-2023**
 
@@ -657,7 +659,7 @@ operator account batchsend [flags]
 
 ### SEE ALSO
 
-- [operator account](undefined) - account actions
+- [operator account](/node-operations#operator-account) - account actions
 
 **Auto generated by spf13/cobra on 6-Mar-2023**
 
@@ -696,7 +698,7 @@ operator account claim <CLAIM_TYPE> [flags]
 
 ### SEE ALSO
 
-- [operator account](undefined) - account actions
+- [operator account](/node-operations#operator-account) - account actions
 
 **Auto generated by spf13/cobra on 6-Mar-2023**
 
@@ -734,7 +736,7 @@ operator account create [flags]
 
 ### SEE ALSO
 
-- [operator account](undefined) - account actions
+- [operator account](/node-operations#operator-account) - account actions
 
 **Auto generated by spf13/cobra on 6-Mar-2023**
 
@@ -772,7 +774,7 @@ operator account csv FILENAME [flags]
 
 ### SEE ALSO
 
-- [operator account](undefined) - account actions
+- [operator account](/node-operations#operator-account) - account actions
 
 **Auto generated by spf13/cobra on 6-Mar-2023**
 
@@ -811,7 +813,7 @@ operator account delegate [TO] [flags]
 
 ### SEE ALSO
 
-- [operator account](undefined) - account actions
+- [operator account](/node-operations#operator-account) - account actions
 
 **Auto generated by spf13/cobra on 6-Mar-2023**
 
@@ -849,7 +851,7 @@ operator account export-sk [flags]
 
 ### SEE ALSO
 
-- [operator account](undefined) - account actions
+- [operator account](/node-operations#operator-account) - account actions
 
 **Auto generated by spf13/cobra on 6-Mar-2023**
 
@@ -887,7 +889,7 @@ operator account export-sk [flags]
 
 ### SEE ALSO
 
-- [operator account](undefined) - account actions
+- [operator account](/node-operations#operator-account) - account actions
 
 **Auto generated by spf13/cobra on 6-Mar-2023**
 
@@ -926,7 +928,7 @@ operator account freeze [AMOUNT] [flags]
 
 ### SEE ALSO
 
-- [operator account](undefined) - account actions
+- [operator account](/node-operations#operator-account) - account actions
 
 **Auto generated by spf13/cobra on 6-Mar-2023**
 
@@ -965,7 +967,7 @@ operator account import-sk [flags]
 
 ### SEE ALSO
 
-- [operator account](undefined) - account actions
+- [operator account](/node-operations#operator-account) - account actions
 
 **Auto generated by spf13/cobra on 6-Mar-2023**
 
@@ -1003,7 +1005,7 @@ operator account info <address> [flags]
 
 ### SEE ALSO
 
-- [operator account](undefined) - account actions
+- [operator account](/node-operations#operator-account) - account actions
 
 **Auto generated by spf13/cobra on 6-Mar-2023**
 
@@ -1042,7 +1044,7 @@ operator account permission [flags]
 
 ### SEE ALSO
 
-- [operator account](undefined) - account actions
+- [operator account](/node-operations#operator-account) - account actions
 
 **Auto generated by spf13/cobra on 6-Mar-2023**
 
@@ -1081,7 +1083,7 @@ operator account send [TO] [AMOUNT] [flags]
 
 ### SEE ALSO
 
-- [operator account](undefined) - account actions
+- [operator account](/node-operations#operator-account) - account actions
 
 **Auto generated by spf13/cobra on 6-Mar-2023**
 
@@ -1119,7 +1121,7 @@ operator account set-name [NAME] [flags]
 
 ### SEE ALSO
 
-- [operator account](undefined) - account actions
+- [operator account](/node-operations#operator-account) - account actions
 
 **Auto generated by spf13/cobra on 6-Mar-2023**
 
@@ -1158,7 +1160,7 @@ operator account undelegate [flags]
 
 ### SEE ALSO
 
-- [operator account](undefined) - account actions
+- [operator account](/node-operations#operator-account) - account actions
 
 **Auto generated by spf13/cobra on 6-Mar-2023**
 
@@ -1198,7 +1200,7 @@ operator account unfreeze [flags]
 
 ### SEE ALSO
 
-- [operator account](undefined) - account actions
+- [operator account](/node-operations#operator-account) - account actions
 
 **Auto generated by spf13/cobra on 6-Mar-2023**
 
@@ -1237,7 +1239,7 @@ operator account withdraw [flags]
 
 ### SEE ALSO
 
-- [operator account](undefined) - account actions
+- [operator account](/node-operations#operator-account) - account actions
 
 **Auto generated by spf13/cobra on 6-Mar-2023**
 
@@ -1275,25 +1277,25 @@ operator account [flags]
 
 ### SEE ALSO
 
-- [operator](undefined) - Klever Operator
-- [operator account address](undefined) - returns wallet address
-- [operator account allowance](undefined) - return account allowance on a given KDA
-- [operator account balance](undefined) - returns wallet balance
-- [operator account batchsend](undefined) - create several transfer transactions: batchsend --values Addr1=Val1 Addr2=Val2 ...
-- [operator account claim](undefined) - claim transaction
-- [operator account create](undefined) - create new wallet pem file
-- [operator account csv](undefined) - send transactions based on CSV file
-- [operator account delegate](undefined) - delegate bucket to validator
-- [operator account export-sk](undefined) - export-sk print hex encoded private key from pem file
-- [operator account freeze](undefined) - freeze asset
-- [operator account import-sk](undefined) - import-sk creates pem file from hex encoded secret key
-- [operator account info](undefined) - returns account details
-- [operator account permission](undefined) - set wallet permission
-- [operator account send](undefined) - create a transfer transaction: send [TO] [AMOUNT]
-- [operator account set-name](undefined) - set an account name
-- [operator account undelegate](undefined) - undelegate bucket id
-- [operator account unfreeze](undefined) - unfreeze asset bucket
-- [operator account withdraw](undefined) - withdraw asset
+- [operator](/node-operations#operator) - Klever Operator
+- [operator account address](/node-operations#operator-account-address) - returns wallet address
+- [operator account allowance](/node-operations#operator-account-allowance) - return account allowance on a given KDA
+- [operator account balance](/node-operations#operator-account-balance) - returns wallet balance
+- [operator account batchsend](/node-operations#operator-account-batchsend) - create several transfer transactions: batchsend --values Addr1=Val1 Addr2=Val2...
+- [operator account claim](/node-operations#operator-account-claim) - claim transaction
+- [operator account create](/node-operations#operator-account-create) - create a new wallet PEM file
+- [operator account CSV](/node-operations#operator-account-csv) - send transactions based on a CSV file
+- [operator account delegate](/node-operations#operator-account-delegate) - delegate a bucket to a validator
+- [operator account export-sk](/node-operations#operator-account-export-sk) - export-sk: print hex-encoded private key from a PEM file
+- [operator account freeze](/node-operations#operator-account-freeze) - freeze an asset
+- [operator account import-sk](/node-operations#operator-account-import-sk) - import-sk: creates a PEM file from a hex-encoded secret key
+- [operator account info](/node-operations#operator-account-info) - returns account details
+- [operator account permission](/node-operations#operator-account-permission) - set wallet permission
+- [operator account send](/node-operations#operator-account-send) - create a transfer transaction: send [TO][AMOUNT]
+- [operator account set-name](/node-operations#operator-account-set-name) - set an account name
+- [operator account undelegate](/node-operations#operator-account-undelegate) - undelegate bucket id
+- [operator account unfreeze](/node-operations#operator-account-unfreeze) - unfreeze asset bucket
+- [operator account withdraw](/node-operations#operator-account-withdraw) - withdraw asset
 
 **Auto generated by spf13/cobra on 6-Mar-2023**
 
@@ -1331,7 +1333,7 @@ operator broadcast [Transaction] [flags]
 
 ### SEE ALSO
 
-- [operator](undefined) - Klever Operator
+- [operator](/node-operations#operator) - Klever Operator
 
 **Auto generated by spf13/cobra on 6-Mar-2023**
 
@@ -1368,7 +1370,7 @@ operator fb [Address/TXHASH] [flags]
 
 ### SEE ALSO
 
-- [operator](undefined) - Klever Operator
+- [operator](/node-operations#operator) - Klever Operator
 
 **Auto generated by spf13/cobra on 6-Mar-2023**
 
@@ -1409,7 +1411,7 @@ operator gov create-proposal [flags]
 
 ### SEE ALSO
 
-- [operator gov](undefined) - governance actions
+- [operator gov](/node-operations#operator-gov) - governance actions
 
 **Auto generated by spf13/cobra on 6-Mar-2023**
 
@@ -1447,7 +1449,7 @@ operator gov vote [PROPOSAL_ID] [VOTE_AMOUNT] [VOTE_TYPE] [flags]
 
 ### SEE ALSO
 
-- [operator gov](undefined) - governance actions
+- [operator gov](/node-operations#operator-gov) - governance actions
 
 **Auto generated by spf13/cobra on 6-Mar-2023**
 
@@ -1485,9 +1487,9 @@ operator gov [flags]
 
 ### SEE ALSO
 
-- [operator](undefined) - Klever Operator
-- [operator gov create-proposal ](undefined)- create a network proposal upgrade
-- [operator gov vote](undefined) - vote for network proposal
+- [operator](/node-operations#operator) - Klever Operator
+- [operator gov create-proposal ](/node-operations#operator-gov-create-proposal)- create a network proposal upgrade
+- [operator gov vote](/node-operations#operator-gov-vote) - vote for network proposal
 
 **Auto generated by spf13/cobra on 6-Mar-2023**
 
@@ -1529,7 +1531,7 @@ operator kapps buy [flags]
 
 ### SEE ALSO
 
-- [operator kapps](undefined) - kapps actions
+- [operator kapps](/node-operations#operator-kapps) - kapps actions
 
 **Auto generated by spf13/cobra on 6-Mar-2023**
 
@@ -1567,7 +1569,7 @@ operator kapps cancel-market [MARKET_ID] [flags]
 
 ### SEE ALSO
 
-- [operator kapps](undefined) - kapps actions
+- [operator kapps](/node-operations#operator-kapps) - kapps actions
 
 **Auto generated by spf13/cobra on 6-Mar-2023**
 
@@ -1617,7 +1619,7 @@ operator kapps config-ito [flags]
 
 ### SEE ALSO
 
-- [operator kapps](undefined) - kapps actions
+- [operator kapps](/node-operations#operator-kapps) - kapps actions
 
 **Auto generated by spf13/cobra on 6-Mar-2023**
 
@@ -1659,7 +1661,7 @@ operator kapps config-marketplace [flags]
 
 ### SEE ALSO
 
-- [operator kapps](undefined) - kapps actions
+- [operator kapps](/node-operations#operator-kapps) - kapps actions
 
 **Auto generated by spf13/cobra on 6-Mar-2023**
 
@@ -1700,7 +1702,7 @@ operator kapps create-marketplace [flags]
 
 ### SEE ALSO
 
-- [operator kapps](undefined) - kapps actions
+- [operator kapps](/node-operations#operator-kapps) - kapps actions
 
 **Auto generated by spf13/cobra on 6-Mar-2023**
 
@@ -1745,7 +1747,7 @@ operator kapps sell [flags]
 
 ### SEE ALSO
 
-- [operator kapps](undefined) - kapps actions
+- [operator kapps](/node-operations#operator-kapps) - kapps actions
 
 **Auto generated by spf13/cobra on 6-Mar-2023**
 
@@ -1785,7 +1787,7 @@ operator kapps set-ito-prices [flags]
 
 ### SEE ALSO
 
-- [operator kapps](undefined) - kapps actions
+- [operator kapps](/node-operations#operator-kapps) - kapps actions
 
 **Auto generated by spf13/cobra on 6-Mar-2023**
 
@@ -1835,7 +1837,7 @@ operator kapps trigger-ito [TRIGGER_TYPE] [flags]
 
 ### SEE ALSO
 
-- [operator kapps](undefined) - kapps actions
+- [operator kapps](/node-operations#operator-kapps) - kapps actions
 
 **Auto generated by spf13/cobra on 6-Mar-2023**
 
@@ -1873,15 +1875,15 @@ operator kapps [flags]
 
 ### SEE ALSO
 
-- [operator](undefined) - Klever Operator
-- [operator kapps buy](undefined) - buy transaction
-- [operator kapps cancel-market](undefined) - cancel-market transaction
-- [operator kapps config-ito](undefined) - config an ITO transaction
-- [operator kapps config-marketplace](undefined) - config marketplace transaction
-- [operator kapps create-marketplace](undefined) - create marketplace transaction
-- [operator kapps sell](undefined) - sell transaction
-- [operator kapps set-ito-prices](undefined) - set ITO prices transaction
-- [operator kapps trigger-ito](undefined) - trigger an ITO
+- [operator](/node-operations#operator) - Klever Operator
+- [operator kapps buy](/node-operations#operator-kapps-buy) - buy transaction
+- [operator kapps cancel-market](/node-operations#operator-kapps-cancel-market) - cancel-market transaction
+- [operator kapps config-ito](/node-operations#operator-kapps-config-ito) - config an ITO transaction
+- [operator kapps config-marketplace](/node-operations#operator-kapps-config-marketplace) - config marketplace transaction
+- [operator kapps create-marketplace](/node-operations#operator-kapps-create-marketplace) - create marketplace transaction
+- [operator kapps sell](/node-operations#operator-kapps-sell) - sell transaction
+- [operator kapps set-ito-prices](/node-operations#operator-kapps-set-ito-prices) - set ITO prices transaction
+- [operator kapps trigger-ito](/node-operations#operator-kapps-trigger-ito) - trigger an ITO
 
 **Auto generated by spf13/cobra on 6-Mar-2023**
 
@@ -1952,7 +1954,7 @@ operator kda create [KDA_TYPE] [flags]
 
 ### SEE ALSO
 
-- [operator kda](undefined) - kda actions
+- [operator kda](/node-operations#operator-kda) - kda actions
 
 **Auto generated by spf13/cobra on 6-Mar-2023**
 
@@ -1993,7 +1995,7 @@ operator kda deposit [amount] [flags]
 
 ### SEE ALSO
 
-- [operator kda](undefined) - kda actions
+- [operator kda](/node-operations#operator-kda) - kda actions
 
 **Auto generated by spf13/cobra on 6-Mar-2023**
 
@@ -2050,7 +2052,7 @@ operator kda trigger [TRIGGER_TYPE] [flags]
 
 ### SEE ALSO
 
-- [operator kda](undefined) - kda actions
+- [operator kda](/node-operations#operator-kda) - kda actions
 
 **Auto generated by spf13/cobra on 6-Mar-2023**
 
@@ -2090,7 +2092,7 @@ operator kda withdraw [amount] [flags]
 
 ### SEE ALSO
 
-- [operator kda](undefined) - kda actions
+- [operator kda](/node-operations#operator-kda) - kda actions
 
 **Auto generated by spf13/cobra on 6-Mar-2023**
 
@@ -2128,11 +2130,11 @@ operator kda [flags]
 
 ### SEE ALSO
 
-- [operator](undefined) - Klever Operator
-- [operator kda create](undefined) - create a new KDA
-- [operator kda deposit](undefined) - Trigger a deposit request on KDA
-- [operator kda trigger](undefined) - trigger a KDA
-- [operator kda withdraw](undefined) - Trigger a withdraw request on KDA Pool
+- [operator](/node-operations#operator) - Klever Operator
+- [operator kda create](/node-operations#operator-kda-create) - create a new KDA
+- [operator kda deposit](/node-operations#operator-kda-deposit) - Trigger a deposit request on KDA
+- [operator kda trigger](/node-operations#operator-kda-trigger) - trigger a KDA
+- [operator kda withdraw](/node-operations#operator-kda-withdraw) - Trigger a withdraw request on KDA Pool
 
 **Auto generated by spf13/cobra on 6-Mar-2023**
 
@@ -2170,7 +2172,7 @@ operator sign [Transaction] [flags]
 
 ### SEE ALSO
 
-- [operator](undefined) - Klever Operator
+- [operator](/node-operations#operator) - Klever Operator
 
 **Auto generated by spf13/cobra on 6-Mar-2023**
 
@@ -2208,7 +2210,7 @@ operator tx-by-id [HASH] [flags]
 
 ### SEE ALSO
 
-- [operator](undefined) - Klever Operator
+- [operator](/node-operations#operator) - Klever Operator
 
 **Auto generated by spf13/cobra on 6-Mar-2023**
 
@@ -2254,7 +2256,7 @@ operator validator config [OWNER_ADDRESS] [flags]
 
 ### SEE ALSO
 
-- [operator validator](undefined) - validator actions
+- [operator validator](/node-operations#operator-validator) - validator actions
 
 **Auto generated by spf13/cobra on 6-Mar-2023**
 
@@ -2300,7 +2302,7 @@ operator validator create [OWNER_ADDRESS] [flags]
 
 ### SEE ALSO
 
-- [operator validator](undefined) - validator actions
+- [operator validator](/node-operations#operator-validator) - validator actions
 
 **Auto generated by spf13/cobra on 6-Mar-2023**
 
@@ -2338,7 +2340,7 @@ operator validator unjail [OWNER_ADDRESS] [flags]
 
 ### SEE ALSO
 
-- [operator validator](undefined) - validator actions
+- [operator validator](/node-operations#operator-validator) - validator actions
 
 **Auto generated by spf13/cobra on 6-Mar-2023**
 
@@ -2376,10 +2378,10 @@ operator validator [flags]
 
 ### SEE ALSO
 
-- [operator](undefined) - Klever Operator
-- [operator validator config](undefined) - config a validator
-- [operator validator create](undefined) - create a validator
-- [operator validator unjail](undefined) - unjail validator
+- [operator](/node-operations#operator) - Klever Operator
+- [operator validator config](/node-operations#operator-validator-config) - config a validator
+- [operator validator create](/node-operations#operator-validator-create) - create a validator
+- [operator validator unjail](/node-operations#operator-validator-unjail) - unjail validator
 
 **Auto generated by spf13/cobra on 6-Mar-2023**
 
@@ -2417,7 +2419,7 @@ operator version [flags]
 
 ### SEE ALSO
 
-- [operator](undefined) - Klever Operator
+- [operator](/node-operations#operator) - Klever Operator
 
 **Auto generated by spf13/cobra on 6-Mar-2023**
 

@@ -28,10 +28,10 @@ interface Resource {
 
 const resources: Array<Resource> = [
   {
-    href: '/contacts',
-    name: 'Contacts',
+    href: '/staking',
+    name: 'Staking',
     description:
-      'Learn about the contact model and how to create, retrieve, update, delete, and list contacts.',
+      'Learn about the KleverChain staking model and how to freeze, delegate, claim and withdraw your staking rewards.',
     icon: UserIcon,
     pattern: {
       y: 16,
@@ -42,10 +42,10 @@ const resources: Array<Resource> = [
     },
   },
   {
-    href: '/conversations',
-    name: 'Conversations',
+    href: '/become-a-validator',
+    name: 'Validator',
     description:
-      'Learn about the conversation model and how to create, retrieve, update, delete, and list conversations.',
+      'Learn about KleverChain validating process and how to become a validator in your ecosystem.',
     icon: ChatBubbleIcon,
     pattern: {
       y: -6,
@@ -56,10 +56,10 @@ const resources: Array<Resource> = [
     },
   },
   {
-    href: '/messages',
-    name: 'Messages',
+    href: '/account-permissions',
+    name: 'Account Permission',
     description:
-      'Learn about the message model and how to create, retrieve, update, delete, and list messages.',
+      'Learn about the permissions of an account and how to set up a secure shared account.',
     icon: EnvelopeIcon,
     pattern: {
       y: 32,
@@ -70,10 +70,10 @@ const resources: Array<Resource> = [
     },
   },
   {
-    href: '/groups',
-    name: 'Groups',
+    href: '/multisignature',
+    name: 'Multisignature',
     description:
-      'Learn about the group model and how to create, retrieve, update, delete, and list groups.',
+      'Learn about the KleverChain multisignature feature and how to sign transactions on shared accounts.',
     icon: UsersIcon,
     pattern: {
       y: 22,

@@ -231,14 +231,19 @@ function NavigationGroup({
 
 export const navigation: Array<NavGroup> = [
   {
-    title: 'Guides',
+    title: "Klever Documentation",
+    links:[
+      {title: 'Introduction', href: '/'},
+    ]
+  },
+  {
+    title: 'Klever Wallet',
     links: [
-      { title: 'Introduction', href: '/' },
       { title: 'Quickstart', href: '/quickstart' },
     ],
   },
   {
-    title: 'Klever Finance',
+    title: 'Klever Blockchain',
     links: [
       {
         title: 'Welcome to the Klever Blockchain documentation website!',
@@ -265,12 +270,13 @@ export const navigation: Array<NavGroup> = [
 
 
   {
-    title: 'KleverChain SDK',
+    title: 'Klever SDK',
     links: [
       {
         title: 'Introduction to KleverChain SDK',
         href: '/introduction-to-kleverchain-sdk',
       },
+      {title: 'KleverChain SDKs', href: '/sdks'},
       {
         title: 'Node.js',
         href: '/node.js',
