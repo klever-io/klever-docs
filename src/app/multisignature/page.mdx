@@ -1,0 +1,72 @@
+export const metadata = {'title': 'multisignature', 'description': 'Content for multisignature'}
+
+## Multisignature
+
+**Want to know more about Multisignature?**
+
+Multisignature, often abbreviated as multisig, is a security feature used in blockchain and cryptocurrency systems to enhance the security and control over digital assets. It requires multiple private keys to authorize and execute transactions, as opposed to the traditional single-key systems where a single private key is sufficient to authorize transactions.
+
+**How Multisignature Works:**
+
+1. **Key Generation:** In a multisignature setup, multiple participants or parties generate their own unique public-private key pairs. Each participant holds their private key securely.
+2. **Creation of a Multisig Address:** There are a few ways you can do that:
+  - You can create a new address that will be the one used to do the transactions.
+  - You can use an existing one.
+
+Both ways, you need to add permissions to allow other participants to send transactions, and the remaining participants can sign if they agree with it. You can read more about on [Account Permissions section](/account-permissions).
+
+This address is associated with a specific number of thresholds, often denoted as "m of n," where "m" represents the minimum number of signatures required to authorize a transaction, and "n" represents the total number of participants or addresses involved.
+
+3. **Transaction Authorization:** When someone wants to send funds from the multisignature address, they create a transaction and specify that it requires the signatures of at least "m" out of the "n" participants to be valid. This ensures that no single individual can unilaterally move the funds. When the threshold is reached, any participant can broadcast the transaction to kleverchain.
+
+4. **Signature Collection:** Each participant in the multisignature setup reviews the transaction and, if they agree with it, signs it with their private key. These signatures are then combined and attached to the transaction.
+
+5. **Transaction Execution:** Once the required number of participants have signed the transaction, it becomes valid and any participant can broadcast, and the kleverchain network processes it, transferring the funds as specified.
+
+**How to Create a Multisignature Transaction:**
+
+After you've created the address that will be used for transactions and requires multiple signatures, you need to configure the permissions on that address. You can read more about on [Account Permissions section](/account-permissions).
+
+- Once on [Klever Explorer](https://kleverscan.org/), enter the "create transaction" page through the navbar or directly access [https://kleverscan.org/create-transaction](https://kleverscan.org/create-transaction).
+
+
+
+![Create Transaction through navbar](/create-tx-navbar.png)
+
+- Once you've added all the necessary permissions and participants/addresses needed, you can create the transaction. On the _**create transactions**_ page, you can select any contract and fill it as you wish. Then, in 'Advanced Options,' change the option _**Does your account need multiple signatures?**_ to _**Yes.**_
+
+![Enable Multisign](/enable-multisig.png)
+
+- If you're in the account that is the one used for multisigning, you don't need to change the Sender; only change the permission to be the one that other participants must sign too.
+
+![Change Sender](/change-perm.png)
+
+- But if you're in another address, then you need to:
+  1. Change the Sender by selecting the option **Do you want to use the current account as the sender?** to **No**.
+  2. Fill the **Sender Account Address**'with the address of the multisignature.
+  3. Change to the correct permission for that transaction.
+
+
+![Change sender and permission](/diff-sender.png)
+
+You can sign the transaction now or not, changing the option _**Do you want to sign the transaction now?**_ as you wish.
+
+When all fields are filled correctly, click _**Create Transaction**_, and the transaction will be added to our API for the other participants to sign. Keep in mind that the transaction is not on the kleverchain network yet; it must reach the threshold and then be broadcasted.
+
+
+
+**Checking and Signing the Transaction:**
+
+Once the transaction is created, you can check it by accessing [Klever Explorer Multisign](https://kleverscan.org/multisign) page or through the navbar. Here, you can view information about the transaction, including the number of signatures obtained and the number still required to reach the threshold, among other details. Furthermore, if you agree with the transaction and have not yet signed it, you have the option to do so.
+
+![Access Multisign Page](/access-multisig-page.png)
+
+![](/multisig-page.png)
+
+**Broadcasting the Transaction:**
+
+After the threshold is reached, any participants can broadcast it to the kleverchain network clicking on _**Broadcast Transaction**_.
+
+**Additional Option: Importing and Signing with JSON:**
+
+You can also download the JSON file of the transaction using the _**Download JSON file**_, send it to other participants, and they can sign the transaction using [Klever Explorer](https://kleverscan.org/multisign) through the _**Import Signed JSON file**_.

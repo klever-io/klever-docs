@@ -3,28 +3,30 @@ import { Heading } from '@/components/Heading'
 
 const guides = [
   {
-    href: '/authentication',
-    name: 'Authentication',
-    description: 'Learn how to authenticate your dApp with the provider.',
+    href: '/quickstart',
+    name: 'Klever Wallet',
+    description: 'How to integrate with Klever Wallet browser.',
   },
   {
-    href: '/transfer',
+    href: '/contract-details#transfer',
     name: 'Transfer',
-    description: 'Understand how to send transfer across blockchain.',
+    description: 'How to transfer with Klever Blockchain.',
   },
   {
-    href: '/errors',
-    name: 'Errors',
+    href: '/contract-details#create-asset',
+    name: 'Create NFT',
     description:
-      'Read about the different types of errors returned by the API.',
+      'How to create a NFT  with Klever Blockchain..',
   },
   {
-    href: '/webhooks',
-    name: 'Webhooks',
+    href: '/contract-details#create-asset',
+    name: 'Create Token',
     description:
-      'Learn how to programmatically configure webhooks for your app.',
+      'How to create a token with Klever Blockchain.',
   },
 ]
+
+
 
 export function Guides() {
   return (

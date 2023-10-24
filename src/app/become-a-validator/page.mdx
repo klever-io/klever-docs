@@ -1,0 +1,148 @@
+# Become A Validator
+
+What you need to become a validator and what you can do
+
+To become a Klever Validator Node you will need 10M KLV staked, from that, at least 1.5M must be self-staked, the remaining amount can be from delegation.
+
+## How To Register A Validator Using Cli
+
+Registering a validator is done in this way:
+
+```bash
+docker run -it --rm --user "$(id -u):$(id -g)" \
+    -v $(pwd)/wallet:/opt/klever-blockchain \
+    --network=host \
+    --entrypoint=/usr/local/bin/operator \
+    kleverapp/klever-go:latest \
+    --key-file=./walletKey.pem \
+    --node=https://node.mainnet.klever.finance \
+    validator create \
+    klv1h7vx629mwuv4pnecn0k9clxp9rt7rquat3kvydgu8npt20e0ntjq3jhd40 \
+    --bls=ce3aa977d1028e2a91730259c4b66cd862b77c63253fa12932012288108a0b7f110da4a2e3e1c15cc94802a79afef418f9a724a1ebe1423c0fa897bae669f1735b082ff3f19b3e00acc76a2bb0f31b1856e3e55952655386fbedad9c55322b81 \
+    --rewards=klv1h7vx629mwuv4pnecn0k9clxp9rt7rquat3kvydgu8npt20e0ntjq3jhd40 \
+    --name=MyValidatorName \
+    --logo="https://klever.finance/wp-content/uploads/2021/09/logo.svg" \
+    --commission=5 \
+    --maxDelegation=12000000 \
+    --uris="github=github.com/klever-io"
+```
+
+The command follows this pattern:`[OWNER_ADDR].`
+
+where:
+
+`--bls` is the BLS key
+`--rewards` is the address to whom the rewards are given.
+`--name` represents the Node name.
+`--logo` is the URL for the validator's image.
+`--commission` is the commission of the validator.
+`--maxDelegation` is the max amount of delegation the validator can receive.
+`--uris` is a key=value list of URIS.
+
+
+
+- Make sure you have entered the **correct BLS** pub key
+- Same as for [send from CLI](/node-operations#how-to-send-using-cli), one can also use public node to send the transaction
+
+
+
+## How To Freeze Klv For Staking
+
+In order to freeze KLV, you should type the following code:
+
+```bash
+docker run -it --rm --user "$(id -u):$(id -g)" \
+    -v $(pwd)/wallet:/opt/klever-blockchain \
+    --network=host \
+    --entrypoint=/usr/local/bin/operator \
+    kleverapp/klever-go:latest \
+    --key-file=./walletKey.pem \
+    --node=https://node.mainnet.klever.finance account freeze 10000000
+```
+
+After the "freeze" instruction, there is this structure: [AMOUNT].
+
+[AMOUNT] for how much is being frozen.
+
+--kda is the Asset ID.
+
+The minimum amount allowed to stake KLV is 1000 KLV.
+
+
+## How To Delegate Frozen Klv To Node
+
+Delegate to an address [TO], pointing to the bucket [BUCKET_ID] where the frozen KLV is located.
+
+```bash
+docker run -it --rm --user "$(id -u):$(id -g)" \
+    -v $(pwd)/wallet:/opt/klever-blockchain \
+    --network=host \
+    --entrypoint=/usr/local/bin/operator \
+    kleverapp/klever-go:latest \
+    --key-file=./walletKey.pem \
+    --node=https://node.mainnet.klever.finance \
+    account delegate \
+    klv186vg5k3pqetmfuy04620htcvz3krugu7hqe4ukczdy48r222j78q9y8vm5 \
+    --bucketID=db0748c562c413a68b21a75249e1b936339fc03513e0bf076d3850b7a81113d2
+```
+
+
+
+It's important to know that there's a minimum self-staking amount for the validator. The structure for delegate command is:
+
+[DELEGATE TO ADDRESS].
+
+`[DELEGATE TO ADDRESS]` is the address you want to delegate the frozen bucket power (in this case your validator address)
+
+`--bucketID` is the bucket hash, which can be found in the frozen TX ID or in Klever testnet explorer.
+
+WIth the operator CLI, you can check the bucket ID with the command `tx-by-id` followed by the hash of the freeze transaction:
+
+```bash
+docker run -it --rm --user "$(id -u):$(id -g)" \
+    -v $(pwd)/wallet:/opt/klever-blockchain \
+    --network=host \
+    --entrypoint=/usr/local/bin/operator \
+    kleverapp/klever-go-testnet:latest \
+    --key-file=./walletKey.pem \
+    tx-by-id \
+    45db3a993b64323df2d9841c0ac9a78c8a1760804557a65ca866163e64138bbf
+```
+
+ The Bucket ID can be found in the TX Receipt.
+
+
+
+
+## Edit The Validator Settings Change Node Bls Pubkey And Commission
+
+You can change the validator configuration using this command:
+
+```bash
+docker run -it --rm --user "$(id -u):$(id -g)" \
+    -v $(pwd)/wallet:/opt/klever-blockchain \
+    --network=host \
+    --entrypoint=/usr/local/bin/operator \
+    kleverapp/klever-go:latest \
+    --key-file=./walletKey.pem \
+    --node=https://node.mainnet.klever.finance \
+    validator config \
+    klv1h7vx629mwuv4pnecn0k9clxp9rt7rquat3kvydgu8npt20e0ntjq3jhd40 \
+    --bls=ce3aa977d1028e2a91730259c4b66cd862b77c63253fa12932012288108a0b7f110da4a2e3e1c15cc94802a79afef418f9a724a1ebe1423c0fa897bae669f1735b082ff3f19b3e00acc76a2bb0f31b1856e3e55952655386fbedad9c55322b81 \
+    --rewards=klv1h7vx629mwuv4pnecn0k9clxp9rt7rquat3kvydgu8npt20e0ntjq3jhd40 \
+    --name=MyValidatorName \
+    --logo="https://klever.finance/wp-content/uploads/2021/09/logo.svg" \
+    --commission=5 \
+    --maxDelegation=12000000 \
+    --uris="github=github.com/klever-io"
+```
+
+Here's the structure: [OWNER_ADDRESS], where:
+
+`--bls` is the BLS key
+`--rewards` is the address to whom the rewards are given.
+`--name` represents the Node name.
+`--logo` is the URL for the validator's image.
+`--commission` is the commission of the validator.
+`--maxDelegation` is the max amount of delegation the validator can receive.
+`--uris` is a key=value list of URIS.
