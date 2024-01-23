@@ -1,0 +1,31 @@
+# Memory Allocation
+
+Klever smart contracts are compiled into WebAssembly (Wasm), which does not inherently provide memory allocation capabilities. Typically, WebAssembly programs require specialized memory allocation functionality to work with the heap.
+
+However, using traditional memory allocation methods is strongly discouraged on Klever for several reasons:
+
+1. **Managed Types**: Klever introduces "managed types" that are handled by the VM, offering a more efficient and reliable alternative to traditional memory allocation.
+
+2. **Memory Growth Operations**: Memory growth operations in WebAssembly can be both costly and unpredictable. To ensure the stability of the blockchain, Klever has chosen to limit these operations significantly.
+
+3. **Contract Code Bloating**: Memory allocators can add unnecessary bulk to smart contract code, introducing elements unrelated to the contract's specifications, which goes against Klever's design philosophy.
+
+Despite these reasons, it is not entirely reasonable to prohibit the use of allocators altogether, as the decision should ultimately be left to developers. Before framework version 0.41.0, the only allocator solution available was `wee_alloc`. Unfortunately, this allocator had not been maintained for a few years and had known vulnerabilities. It also triggered critical warnings from GitHub's Dependabot for all contract projects, even when most of them did not actively use it.
+
+To address these concerns, Klever implemented the following changes:
+
+1. **Configurable Allocators**: Developers can now configure allocators from the `multicontract.toml` file, which serves as the main source of contract build specifications. This provides flexibility and choice to developers.
+
+2. **New Allocators**: Klever introduced new allocators in the framework, offering alternatives to `wee_alloc`. These allocators are:
+
+   - `FailAllocator` (Default): This allocator simply crashes whenever any memory allocation or deallocation is attempted. It effectively prevents accidental memory allocation and enforces strict memory management.
+
+   - `StaticAllocator64k`: This allocator pre-allocates a static 2-page buffer where all memory is allocated. It never calls memory.grow and crashes when the buffer is full. This allocator may be suitable for small contracts with limited data processing needs, aiming to avoid the complexities of memory growth.
+
+   - `LeakingAllocator`: This allocator uses memory.grow to obtain memory pages and, like the others, never deallocates memory. This is because contracts typically do not consume excessive memory, and all memory is cleared at the end of execution. It is suitable for contracts with slightly larger data requirements.
+
+   - `wee_alloc` (Still Supported): While not included in the framework by default, `wee_alloc` is still supported. Contracts can explicitly import it if needed.
+
+|                                                                                                                                                                                                                                         |
+| --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 🚨 While these allocators are functional, they should be avoided in most contract scenarios. Consider using them only when absolutely necessary, in highly specialized situations, or when dealing with older code that relies on them. |

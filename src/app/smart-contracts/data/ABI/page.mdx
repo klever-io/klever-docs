@@ -1,0 +1,495 @@
+# ABI
+
+## ABI Overview
+
+To interact with a smart contract, it is essential to understand its inputs and outputs. This is valid both for on-chain calls and off-chain tools, and it can provide valuable insights into what the smart contract does and how it functions.
+
+For this reason, blockchain smart contracts have ABIs (Application Binary Interfaces), expressed in a platform-agnostic language, which in our case is JSON.
+
+Please note that the term "ABI" is short for "Application Binary Interface," a concept borrowed from low-level and systems programming. The word "binary" does not refer to its representation but rather to the fact that it describes the binary encoding of inputs and outputs.
+
+---
+
+## Minimal Example
+
+At its most basic, an ABI contains:
+
+- General build information, primarily for human reference:
+  - Compiler version.
+  - Name and version of the contract crate.
+  - Framework version used.
+- The name of the contract crate and associated Rust documentation (primarily for documentation purposes).
+- A list of all endpoints, each with:
+  - Rust documentation.
+  - Mutability (indicating whether or not the endpoint can modify the smart contract state; this is currently cosmetic but may evolve into a hard guarantee in the future).
+  - Payability (whether the endpoint can receive funds).
+  - A list of all inputs, with their names and types.
+  - A list of all outputs, with their types. Rarely, but possibly, there can be more than one declared output value, and outputs can also be named.
+
+```json
+{
+  "buildInfo": {
+    "rustc": {
+      "version": "1.71.0-nightly",
+      "commitHash": "a2b1646c597329d0a25efa3889b66650f65de1de",
+      "commitDate": "2023-05-25",
+      "channel": "Nightly",
+      "short": "rustc 1.71.0-nightly (a2b1646c5 2023-05-25)"
+    },
+    "contractCrate": {
+      "name": "adder",
+      "version": "0.0.0",
+      "gitVersion": "v0.43.2-5-gfe62c37d2"
+    },
+    "framework": {
+      "name": "klever-sc",
+      "version": "0.43.2"
+    }
+  },
+  "docs": [
+    "One of the simplest smart contracts possible,",
+    "it holds a single variable in storage, which anyone can increment."
+  ],
+  "name": "Adder",
+  "constructor": {
+    "inputs": [
+      {
+        "name": "initial_value",
+        "type": "BigUint"
+      }
+    ],
+    "outputs": []
+  },
+  "endpoints": [
+    {
+      "name": "getSum",
+      "mutability": "readonly",
+      "inputs": [],
+      "outputs": [
+        {
+          "type": "BigUint"
+        }
+      ]
+    },
+    {
+      "docs": ["Add desired amount to the storage variable."],
+      "name": "add",
+      "mutability": "mutable",
+      "inputs": [
+        {
+          "name": "value",
+          "type": "BigUint"
+        }
+      ],
+      "outputs": []
+    }
+  ],
+  "events": [],
+  "kdaAttributes": [],
+  "types": {}
+}
+```
+
+---
+
+## Data Types
+
+Smart contract inputs and outputs almost universally use the [standard Klever serialization format](/developers/data/serialization-overview).
+
+The ABI is designed to provide enough information so that developers, familiar with this standard, can write encoders or decoders for smart contract data in any programming language.
+
+|                                                                                                                                                  |
+| ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 🚨 **Please note that the type names are not necessarily the same as those used in Rust. We aim to keep this language-agnostic to some extent.** |
+|                                                                                                                                                  |
+
+### Basic Types
+
+Firstly, there are several [basic types](/developers/data/simple-values) with universal representations:
+
+- Numerical types: `BigUint`, `BigInt`, `u64`, `i32`, etc.
+- Booleans: `bool`.
+- Raw byte arrays are all specified as `bytes`, regardless of their underlying implementation in the contract. For external interactions, it doesn't matter whether the contract uses `ManagedBuffer`, `Vec<u8>`, or any other representation; it all appears as `bytes`.
+- Text: `utf-8 string`.
+- 32-byte account address: `Address`.
+- KDA token identifier: `TokenIdentifier`. Encoded similarly to `bytes` but with specific semantics.
+
+### Composite Types
+
+Secondly, there are various standard [composite types](/developers/data/composite-values) with type arguments specifying their content:
+
+- Variable-length lists: `List<T>`, where `T` can be any type (e.g., `List<u32>`).
+- Fixed-length arrays: `arrayN<T>`, where `N` is a number, and `T` can be any type (e.g., `array5<u8>` represents 5 bytes).
+- Heterogeneous fixed-length tuples: `tuple<T1, T2, ..., TN>`, with `T1`, `T2`, ..., `TN` representing different types (e.g., `tuple<i16, bytes>`).
+
+- Optional data: `Option<T>`, where `T` can be any type. It can be represented as either nothing or as a byte of `0x01` followed by the serialized contents.
+
+### Custom Types: Overview
+
+The types mentioned above are standard and expected to be known to any project using the ABI. However, the ABI must also describe types defined within the smart contract itself.
+
+Since there's not enough space to define these types inline with the arguments, a separate section is needed. This section is called `"types"`, and it can describe `struct` and `enum` types.
+
+Here's how custom types are defined.
+
+Consider the following `enum` and `struct`:
+
+```rust
+#[derive(TypeAbi)]
+pub struct MyAbiStruct<M: ManagedTypeApi> {
+    pub field1: BigUint<M>,
+    pub field2: ManagedVec<M, Option<u32>>,
+    pub field3: (bool, i32)
+}
+
+#[derive(TypeAbi)]
+pub enum MyAbiEnum<M: ManagedTypeApi> {
+        Nothing,
+        Something(i32),
+        SomethingMore(u8, MyAbiStruct<M>),
+}
+```
+
+Their JSON representation would look like this:
+
+```json
+{
+  "buildInfo": {},
+  "docs": ["Struct & Enum example"],
+  "name": "TypesExample",
+  "constructor": {
+    "inputs": [],
+    "outputs": []
+  },
+  "endpoints": [
+    {
+      "name": "doSomething",
+      "onlyOwner": true,
+      "mutability": "mutable",
+      "inputs": [
+        {
+          "name": "s",
+          "type": "MyAbiStruct"
+        }
+      ],
+      "outputs": [
+        {
+          "type": "MyAbiEnum"
+        }
+      ]
+    }
+  ],
+  "events": [],
+  "kdaAttributes": [],
+  "types": {
+    "My
+
+AbiStruct": {
+      "type": "struct",
+      "docs": ["ABI example of a struct."],
+      "fields": [
+        {
+          "docs": ["Fields can also have docs."],
+          "name": "field1",
+          "type": "BigUint"
+        },
+        {
+          "name": "field2",
+          "type": "List<Option<u32>>"
+        },
+        {
+          "name": "field3",
+          "type": "tuple<bool, i32>"
+        }
+      ]
+    },
+    "MyAbiEnum": {
+      "type": "enum",
+      "docs": ["ABI example of an enum."],
+      "variants": [
+        {
+          "name": "Nothing",
+          "discriminant": 0
+        },
+        {
+          "name": "Something",
+          "discriminant": 1,
+          "fields": [
+            {
+              "name": "0",
+              "type": "i32"
+            }
+          ]
+        },
+        {
+          "name": "SomethingMore",
+          "discriminant": 2,
+          "fields": [
+            {
+              "name": "0",
+              "type": "u8"
+            },
+            {
+              "name": "1",
+              "type": "MyAbiStruct"
+            }
+          ]
+        }
+      ]
+    }
+  }
+}
+```
+
+### Custom Types: Struct
+
+[ABI structures](/developers/data/custom-types#custom-structures) are defined with:
+
+- A **name**.
+- Optional **docs**.
+- A list of **fields**, each with:
+  - A **name**.
+  - Optional **docs**.
+  - The **type** of the field, which can be any type, including simple types, composite types, other custom types, or even the type itself.
+
+In the example above, a structure called `MyAbiStruct` is declared with three fields: `field1`, `field2`, and `field3`.
+
+### Custom Types: Enum
+
+Similarly, [enums](/developers/data/custom-types#custom-enums) are defined with:
+
+- A **name**.
+- Optional **docs**.
+- A list of **variants**, each with:
+  - A **name**.
+  - Optional **docs**.
+  - The **discriminant**, which is the index of the variant (starting from 0) and is always serialized as the first byte.
+  - Optional **data fields** associated with the enum. Variants can have single unnamed fields (labeled as "0"), tuple variants, or struct-like variants with named fields.
+
+You can read more about Rust enums [here](https://doc.rust-lang.org/book/ch06-01-defining-an-enum.html).
+
+---
+
+## KDA Attribute ABI
+
+### Overview
+
+Starting with framework version `0.44`, developers can use the `#[kda_attribute("name", Type)]` trait annotation to explicitly specify KDA attribute types in the ABI file.
+
+The `name` field is an arbitrary identifier chosen by the developer to represent the token. Token identifiers are not hardcoded in contracts, but using the ticker (if known) as the name can be practical.
+
+The `type` field represents the name of the type as it appears in regular smart contract code.
+
+|                                                                                                                                                                                                                         |
+| ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 🚨 **The `#[kda_attribute]` annotation should only be used at the trait level in conjunction with `#[klever_sc::contract]` or `#[klever_sc::module]` annotations. Placing it anywhere else will not work as intended.** |
+
+The exported data will be included in two places:
+
+1. In the contract ABI, under a special `"kda_attributes"` section.
+2. In a separate KDA ABI file (e.g., `name.kda-abi.json`) for each declared KDA attribute.
+
+More examples are provided below.
+
+### Details
+
+A new field called `kdaAttributes` has been added to the ABI file, where developers can find the structs (with names and types) exported using the `#[kda_attribute]` trait annotation. Additionally, each `#[kda_attribute]` will create a new JSON file with the developer-specified name (followed by `.kda-abi`) containing information about the exported attributes' types.
+
+The `name` or ticker is used as a marker for a specific KDA and is used to define its attribute types. Defining KDA attribute types in advance can lead to more precise and improved results when fetching data from other services.
+
+### Example Using Basic Types
+
+Let's consider a simple contract, `SomeContract`, and use the `#[kda_attribute("name", Type)]` annotation to define KDA attributes.
+
+```rust title=lib.rs
+#![no_std]
+
+klever_sc::imports!();
+klever_sc::derive_imports!();
+
+#[klever_sc::contract]
+#[kda_attribute("testBasic", BigUint)]
+pub trait SomeContract {
+    #[init]
+    fn init(&self) {}
+}
+```
+
+By adding `#[kda_attribute("testBasic", BigUint)]` at the trait level along with `#[klever_sc::contract]`, a new structure named `testBasic` with a field of type `BigUint` will be exported. This structure represents a KDA attribute with the ticker `testBasic` and attributes fields of type `BigUint`.
+
+Running `sc-meta all abi` (or `sc-meta all build` to build the contract) generates updated folder structure with the new attribute files:
+
+```
+some_contract
+├── output
+│   ├── some_contract.abi.json
+│   ├── some_contract.imports.json
+|   ├── some_contract.kleversc.json
+|   ├── some_contract.wasm
+│   ├── testBasic.kda-abi.json
+```
+
+The `some_contract.abi.json` file now includes a `kdaAttributes` section containing the attribute defined using the annotation:
+
+```json
+{
+  "kdaAttributes": [
+    {
+      "ticker": "testBasic",
+      "type": "BigUint"
+    }
+  ]
+}
+```
+
+Additionally, a separate JSON file, `testBasic.kda-abi.json`, provides detailed information about the attribute type:
+
+```json title=testBasic.kda-abi.json
+{
+  "kdaAttribute": {
+    "ticker": "testBasic",
+    "type": "BigUint"
+  }
+}
+```
+
+### Utilizing Complex Types
+
+Now, let's explore the effects of employing more advanced data types in our code instead of basic ones. We'll introduce a `Vec`, an `Enum (MyAbiEnum)`, an `Option`, and a `ManagedVec<u64>` to our KDA (Klever Data Attributes) attributes.
+
+```rust title=lib.rs
+#![no_std]
+
+klever_sc::imports!();
+klever_sc::derive_imports!();
+
+#[klever_sc::contract]
+#[kda_attribute("testBasic", BigUint)]
+#[kda_attribute("testEnum", MyAbiEnum<Self::Api>)]
+#[kda_attribute("testOption", Option<TokenIdentifier>)]
+#[kda_attribute("testVec", ManagedVec<u64>)]
+pub trait SomeContract {
+    #[init]
+    fn init(&self) {}
+}
+```
+
+If we execute `sc-meta all abi` (or `sc-meta all build` if we also want to build the contract), the new attributes will be included in our **some_contract.abi.json** file, and separate JSON files will be generated for each attribute. Consequently, the `kdaAttributes` section in our ABI file should resemble the following:
+
+```json title=some_contract.abi.json
+{
+  "kdaAttributes": [
+    {
+      "ticker": "testBasic",
+      "type": "BigUint"
+    },
+    {
+      "ticker": "testEnum",
+      "type": "MyAbiEnum"
+    },
+    {
+      "ticker": "testOption",
+      "type": "Option<TokenIdentifier>"
+    },
+    {
+      "ticker": "testVec",
+      "type": "List<u64>"
+    }
+  ]
+}
+```
+
+Now, inspecting the contract's folder structure, we should observe an updated arrangement with newly generated files within the `output` directory:
+
+```
+some_contract
+├── output
+│   ├── some_contract.abi.json
+│   ├── some_contract.imports.json
+|   ├── some_contract.kleversc.json
+|   ├── some_contract.wasm
+│   ├── testBasic.kda-abi.json
+│   ├── testEnum.kda-abi.json
+│   ├── testOption.kda-abi.json
+│   ├── testVec.kda-abi.json
+```
+
+Each of these files contains a struct with its name and a description of the type field, such as:
+
+```json title=testOption.kda-abi.json
+{
+  "kdaAttribute": {
+    "ticker": "testOption",
+    "type": "Option<TokenIdentifier>"
+  }
+}
+```
+
+Let's also introduce a custom `struct` into the equation. For this example, we will use `MyAbiStruct` declared above.
+
+Here's the updated code for **lib.rs:**
+
+```rust title=lib.rs
+#![no_std]
+
+klever_sc::imports!();
+klever_sc::derive_imports!();
+
+#[klever_sc::contract]
+#[kda_attribute("testBasic", BigUint)]
+#[kda_attribute("testEnum", MyAbiEnum<Self::Api>)]
+#[kda_attribute("testOption", Option<TokenIdentifier>)]
+#[kda_attribute("testVec", ManagedVec<u64>)]
+#[kda_attribute("testStruct", MyAbiStruct<Self::Api>)]
+pub trait SomeContract {
+    #[init]
+    fn init(&self) {}
+}
+```
+
+Similarly, when we use `sc-meta all abi`, a new file named `testStruct.kda-abi.json` appears in our folder structure:
+
+```
+some_contract
+├── output
+│   ├── some_contract.abi.json
+│   ├── some_contract.imports.json
+|   ├── some_contract.kleversc.json
+|   ├── some_contract.wasm
+│   ├── testBasic.kda-abi.json
+│   ├── testEnum.kda-abi.json
+│   ├── testOption.kda-abi.json
+│   ├── testStruct.kda-abi.json
+│   ├── testVec.kda-abi.json
+```
+
+As a final verification, let's examine the changes in the main ABI file, `some_contract.abi.json`, after incorporating multiple new attributes:
+
+```json title=some_contract.abi.json
+{
+  "kdaAttributes": [
+    {
+      "ticker": "testBasic",
+      "type": "BigUint"
+    },
+    {
+      "ticker": "testEnum",
+      "type": "MyAbiEnum"
+    },
+    {
+      "ticker": "testOption",
+      "type": "Option<TokenIdentifier>"
+    },
+    {
+      "ticker": "testVec",
+      "type": "List<u64>"
+    },
+    {
+      "ticker": "testStruct",
+      "type": "MyAbiStruct"
+    }
+  ]
+}
+```
+
+For additional examples involving various data types, refer to the `abi-tester` repository [here](https://github.com/klever-io/klever-vm-sdk-rs/tree/master/contracts/feature-tests/abi-tester).

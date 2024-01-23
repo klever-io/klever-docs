@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 
 import { Button } from '@/components/Button'
-import { navigation } from '@/components/Navigation'
+import { findActivePageRecursive, navigation } from '@/components/Navigation'
 
 function PageLink({
   label,
@@ -40,8 +40,17 @@ function PageLink({
 function PageNavigation() {
   let pathname = usePathname()
   let allPages = navigation.flatMap((group) => group.links)
-  let currentPageIndex = allPages.findIndex((page) => page.href === pathname)
+  let currentPageIndex = allPages.findIndex((link) => {
+    if (link.href === pathname) return true
 
+    if (link.children) {
+      return findActivePageRecursive({
+        parentRef: link.href,
+        pathname,
+        children: link.children,
+      })
+    }
+  })
   if (currentPageIndex === -1) {
     return null
   }

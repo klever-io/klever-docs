@@ -1,0 +1,62 @@
+# Modularization in Smart Contract Development
+
+## Overview
+
+Smart contract modules play a crucial role in structuring contracts into more manageable segments. Their reusability and ability to minimize code repetition make them valuable in contract development.
+
+## Module Creation
+
+You can define modules either within the same crate as the primary contract or in a distinct standalone crate. The latter approach is beneficial for modules intended for use in various contracts.
+
+A module is essentially a trait annotated with the `#[klever_sc::module]` macro, allowing standard smart contract functionalities such as endpoints, events, and storage mappers.
+
+Consider the example of a storage module:
+
+```rust
+#[klever_sc::module]
+pub trait StorageModule {
+    #[view(getQuorum)]
+    #[storage_mapper("firstStorage")]
+    fn first_storage(&self) -> SingleValueMapper<usize>;
+
+    #[view]
+    #[storage_mapper("secondStorage")]
+    fn second_storage(&self) -> SingleValueMapper<u64>;
+}
+```
+
+In your core file, typically `lib.rs`, you should declare the module. For instance, if the storage module's file is `storage.rs`, it's declared as follows:
+
+```rust
+pub mod storage;
+```
+
+## Integrating a Module
+
+Modules can be included in other modules and contracts alike:
+
+```rust
+pub trait SetupModule:
+    crate::storage::StorageModule
+    + crate::util::UtilModule {
+
+}
+```
+
+```rust
+#[klever_sc::contract]
+pub trait MainContract:
+    setup::SetupModule
+    + storage::StorageModule
+    + util::UtilModule {
+
+}
+```
+
+It's important to note that the main contract must implement all the modules used by any sub-modules. In the given example, the `MainContract` must implement `UtilModule` to use `SetupModule`, even if it doesn't directly use `UtilModule`.
+
+## Wrapping Up
+
+Our modular system is designed to streamline the process of writing maintainable and reusable smart contract code.
+
+For more examples and modules, visit: [Klever VM SDK RS Modules](https://github.com/klever-io/klever-vm-sdk-rs/tree/master/contracts/modules).

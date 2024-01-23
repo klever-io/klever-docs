@@ -11,13 +11,21 @@ import { useIsInsideMobileNavigation } from '@/components/MobileNavigation'
 import { useSectionStore } from '@/components/SectionProvider'
 import { Tag } from '@/components/Tag'
 import { remToPx } from '@/lib/remToPx'
+import { TreeNavigationItem } from './TreeNavigationItem'
 
-interface NavGroup {
+export interface NavGroup {
   title: string
   links: Array<{
     title: string
     href: string
+    children?: Array<TreeNavGroup>
   }>
+}
+
+export interface TreeNavGroup {
+  title: string
+  href: string
+  children?: Array<TreeNavGroup>
 }
 
 function useInitialValue<T>(value: T, condition = true) {
@@ -44,18 +52,20 @@ function TopLevelNavItem({
   )
 }
 
-function NavLink({
+export function NavLink({
   href,
   children,
   tag,
   active = false,
   isAnchorLink = false,
+  childPx = '',
 }: {
   href: string
   children: React.ReactNode
   tag?: string
   active?: boolean
   isAnchorLink?: boolean
+  childPx?: string
 }) {
   return (
     <Link
@@ -63,9 +73,11 @@ function NavLink({
       aria-current={active ? 'page' : undefined}
       className={clsx(
         'flex justify-between gap-2 py-1 pr-3 text-sm transition',
-        isAnchorLink ? 'pl-7' : 'pl-4',
+        isAnchorLink ? 'pl-7' : childPx !== '' ? 'pl-' + childPx : 'pl-4',
         active
-          ? 'text-zinc-900 dark:text-white'
+          ? childPx !== ''
+            ? 'rounded-md bg-slate-400/[.06] text-fuchsia-400 dark:bg-slate-400/[.03]'
+            : 'text-zinc-900 dark:text-white'
           : 'text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white',
       )}
     >
@@ -105,9 +117,25 @@ function VisibleSectionHighlight({
   let height = isPresent
     ? Math.max(1, visibleSections.length) * itemHeight
     : itemHeight
+
+  let isFromChildren = false
   let top =
-    group.links.findIndex((link) => link.href === pathname) * itemHeight +
+    group.links.findIndex((link) => {
+      if (link.href === pathname) return true
+
+      if (link.children) {
+        isFromChildren = true
+        return findActivePageRecursive({
+          parentRef: link.href,
+          pathname,
+          children: link.children,
+        })
+      }
+    }) *
+      itemHeight +
     firstVisibleSectionIndex * itemHeight
+
+  let final = isFromChildren ? remToPx(2) : height
 
   return (
     <motion.div
@@ -116,9 +144,40 @@ function VisibleSectionHighlight({
       animate={{ opacity: 1, transition: { delay: 0.2 } }}
       exit={{ opacity: 0 }}
       className="absolute inset-x-0 top-0 bg-zinc-800/2.5 will-change-transform dark:bg-white/2.5"
-      style={{ borderRadius: 8, height, top }}
+      style={{ borderRadius: 8, height: final, top }}
     />
   )
+}
+
+export function findActivePageRecursive({
+  pathname,
+  parentRef,
+  children,
+}: {
+  parentRef: string
+  pathname: string
+  children: Array<TreeNavGroup>
+}): boolean {
+  if (!children) return false
+
+  let isValid =
+    children.findIndex((child) => {
+      if (
+        parentRef + child.href === pathname ||
+        pathname.includes(parentRef + child.href)
+      )
+        return true
+
+      if (child.children) {
+        return findActivePageRecursive({
+          parentRef: parentRef + child.href,
+          pathname,
+          children: child.children,
+        })
+      }
+    }) !== -1
+
+  return isValid
 }
 
 function ActivePageMarker({
@@ -130,7 +189,17 @@ function ActivePageMarker({
 }) {
   let itemHeight = remToPx(2)
   let offset = remToPx(0.25)
-  let activePageIndex = group.links.findIndex((link) => link.href === pathname)
+  let activePageIndex = group.links.findIndex((link) => {
+    if (link.href === pathname) return true
+
+    if (link.children) {
+      return findActivePageRecursive({
+        parentRef: link.href,
+        pathname,
+        children: link.children,
+      })
+    }
+  })
   let top = offset + activePageIndex * itemHeight
 
   return (
@@ -162,7 +231,17 @@ function NavigationGroup({
   )
 
   let isActiveGroup =
-    group.links.findIndex((link) => link.href === pathname) !== -1
+    group.links.findIndex((link) => {
+      if (link.href === pathname) return true
+
+      if (link.children) {
+        return findActivePageRecursive({
+          parentRef: link.href,
+          pathname,
+          children: link.children,
+        })
+      }
+    }) !== -1
 
   return (
     <li className={clsx('relative mt-6', className)}>
@@ -188,41 +267,51 @@ function NavigationGroup({
           )}
         </AnimatePresence>
         <ul role="list" className="border-l border-transparent">
-          {group.links.map((link) => (
-            <motion.li key={link.href} layout="position" className="relative">
-              <NavLink href={link.href} active={link.href === pathname}>
-                {link.title}
-              </NavLink>
-              <AnimatePresence mode="popLayout" initial={false}>
-                {link.href === pathname && sections.length > 0 && (
-                  <motion.ul
-                    role="list"
-                    initial={{ opacity: 0 }}
-                    animate={{
-                      opacity: 1,
-                      transition: { delay: 0.1 },
-                    }}
-                    exit={{
-                      opacity: 0,
-                      transition: { duration: 0.15 },
-                    }}
-                  >
-                    {sections.map((section) => (
-                      <li key={section.id}>
-                        <NavLink
-                          href={`${link.href}#${section.id}`}
-                          tag={section.tag}
-                          isAnchorLink
-                        >
-                          {section.title}
-                        </NavLink>
-                      </li>
-                    ))}
-                  </motion.ul>
-                )}
-              </AnimatePresence>
-            </motion.li>
-          ))}
+          {group.links.map((link) =>
+            link.children && link.children.length > 0 ? (
+              <TreeNavigationItem
+                key={link.href}
+                href={link.href}
+                childrens={link.children}
+                title={link.title}
+                pathname={pathname}
+              />
+            ) : (
+              <motion.li key={link.href} layout="position" className="relative">
+                <NavLink href={link.href} active={link.href === pathname}>
+                  {link.title}
+                </NavLink>
+                <AnimatePresence mode="popLayout" initial={false}>
+                  {link.href === pathname && sections.length > 0 && (
+                    <motion.ul
+                      role="list"
+                      initial={{ opacity: 0 }}
+                      animate={{
+                        opacity: 1,
+                        transition: { delay: 0.1 },
+                      }}
+                      exit={{
+                        opacity: 0,
+                        transition: { duration: 0.15 },
+                      }}
+                    >
+                      {sections.map((section) => (
+                        <li key={section.id}>
+                          <NavLink
+                            href={`${link.href}#${section.id}`}
+                            tag={section.tag}
+                            isAnchorLink
+                          >
+                            {section.title}
+                          </NavLink>
+                        </li>
+                      ))}
+                    </motion.ul>
+                  )}
+                </AnimatePresence>
+              </motion.li>
+            ),
+          )}
         </ul>
       </div>
     </li>
@@ -231,16 +320,12 @@ function NavigationGroup({
 
 export const navigation: Array<NavGroup> = [
   {
-    title: "Klever Documentation",
-    links:[
-      {title: 'Introduction', href: '/'},
-    ]
+    title: 'Klever Documentation',
+    links: [{ title: 'Introduction', href: '/' }],
   },
   {
     title: 'Klever Wallet',
-    links: [
-      { title: 'Quickstart', href: '/quickstart' },
-    ],
+    links: [{ title: 'Quickstart', href: '/quickstart' }],
   },
   {
     title: 'Klever Blockchain',
@@ -254,6 +339,92 @@ export const navigation: Array<NavGroup> = [
         href: '/getting-started-with-klever-blockchain',
       },
       { title: 'API & SDK', href: '/api-and-sdk' },
+      { title: 'The Klever VM', href: '/klever-vm' },
+      {
+        title: 'Smart Contracts',
+        href: '/smart-contracts',
+        children: [
+          {
+            title: 'Reference',
+            href: '/reference',
+            children: [
+              { title: 'Anotations', href: '/annotations' },
+              { title: 'Modules', href: '/modules' },
+              { title: 'Payments', href: '/payments' },
+              { title: 'Calls', href: '/calls' },
+              { title: 'Upgrading', href: '/upgrading' },
+              { title: 'API Functions', href: '/api-functions' },
+              { title: 'Storage Mappers', href: '/storage-mappers' },
+              {
+                title: 'Rust Testing Framework',
+                href: '/rust-testing-framework',
+              },
+              {
+                title: 'Testing Framework Functions Reference',
+                href: '/testing-framework-functions',
+              },
+              { title: 'Debugging', href: '/debugging' },
+              { title: 'Random Numbers', href: '/random-numbers' },
+            ],
+          },
+          {
+            title: 'Data',
+            href: '/data',
+            children: [
+              { title: 'Simple Values', href: '/simple-values' },
+              { title: 'Composite Values', href: '/composite-values' },
+              { title: 'Custom Types', href: '/custom-types' },
+              { title: 'Defaults', href: '/defaults' },
+              { title: 'Multi-Values', href: '/multi-values' },
+              { title: 'Code Metadata', href: '/code-metadata' },
+              { title: 'ABI', href: '/ABI' },
+            ],
+          },
+          {
+            title: 'Best Practices',
+            href: '/best-practices',
+            children: [
+              { title: 'Basics', href: '/basics' },
+              { title: 'BigUint Operations', href: '/biguint-operations' },
+              { title: 'Dynamic Allocation', href: '/dynamic-allocation' },
+            ],
+          },
+          {
+            title: 'Config & Tooling',
+            href: '/config-and-tooling',
+            children: [
+              { title: 'Build Reference', href: '/build-reference' },
+              { title: 'Configuration', href: '/configuration' },
+              { title: 'CLI', href: '/CLI' },
+              { title: 'Memory Allocation', href: '/memory-allocation' },
+            ],
+          },
+          {
+            title: 'Testing',
+            href: '/testing',
+            children: [
+              {
+                title: 'Testing In Go',
+                href: '/testing-in-go',
+              },
+              {
+                title: 'Scenarios',
+                href: '/scenarios',
+                children: [
+                  { title: 'JSON Structure', href: '/JSON-structure' },
+                  { title: 'Simple Values', href: '/simple-values' },
+                  { title: 'Complex Values', href: '/complex-values' },
+                  { title: 'Runnning Scenarios', href: '/running-scenarios' },
+                  {
+                    title: 'Generating Scenarios',
+                    href: '/generating-scenarios',
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      },
       { title: 'Become a validator', href: '/become-a-validator' },
       { title: 'Staking', href: '/staking' },
       { title: 'Delegation', href: '/delegation' },
@@ -268,7 +439,6 @@ export const navigation: Array<NavGroup> = [
     ],
   },
 
-
   {
     title: 'Klever SDK',
     links: [
@@ -276,7 +446,7 @@ export const navigation: Array<NavGroup> = [
         title: 'Introduction to KleverChain SDK',
         href: '/introduction-to-kleverchain-sdk',
       },
-      {title: 'KleverChain SDKs', href: '/sdks'},
+      { title: 'KleverChain SDKs', href: '/sdks' },
       {
         title: 'Node.js',
         href: '/node.js',
@@ -286,7 +456,7 @@ export const navigation: Array<NavGroup> = [
       { title: 'Available Transactions', href: '/available-transactions' },
       { title: 'Contract Details', href: '/contract-details' },
 
-      //Relevant Info     
+      //Relevant Info
       { title: 'Precision', href: '/precision' },
       { title: 'KAPPS Flowcharts', href: '/kapps-flowcharts' },
       { title: 'Types', href: '/types' },

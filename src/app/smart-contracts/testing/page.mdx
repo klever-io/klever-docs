@@ -1,0 +1,85 @@
+# Smart Contracts Testing
+
+What does it mean to test a smart contract?
+
+Smart contracts are essentially little programs that run on the blockchain. Therefore, the first step in testing them is to find a suitable environment for execution.
+
+## Types of Tests
+
+The simplest approach is to test smart contracts directly on a blockchain. While it's generally not recommended to test on the mainnet, we have the public devnet and testnet designed specifically for this purpose. Additionally, you can set up and run a blockchain on your local machine, ensuring there's no interference with others.
+
+However, testing on a live blockchain can be cumbersome, making it more suitable for assessing a final product. For the early stages of development, we need a testing solution that is:
+
+- Fast
+- Local
+- Automatable (essential for continuous integration)
+- Debuggable
+
+This is where integration tests come into play. Conveniently, the Klever framework offers a sandboxed environment that mimics a real blockchain for running and debugging smart contracts.
+
+There are two main types of integration tests:
+
+- Black-box tests: These tests simulate contract execution similar to a real blockchain but do not provide access to private contract functions.
+- White-box tests: In white-box tests, you have access to the inner workings of the contract for more in-depth testing.
+
+Both black-box and white-box tests serve different purposes, and we'll explore them further.
+
+Additionally, there is a third type of test: unit tests. These are often underrated but highly valuable for testing small functions or components within a smart contract. Unit tests are quick to write and run and should be a part of a healthy project's testing strategy.
+
+In summary, the ways to test a smart contract include:
+
+- Testing on a live blockchain
+- Integration tests:
+  - Black-box tests
+  - White-box tests
+- Unit tests
+
+## Choosing a Testing Language
+
+Since smart contracts are written in Rust, it's most convenient to use Rust for writing tests. The Rust framework currently supports all the testing types mentioned above.
+
+However, let's briefly explore all the testing options available in Klever:
+
+- Testing on a blockchain:
+  - Rust interactor framework
+  - Any other SDK capable of interacting with Klever blockchains
+  - Launching transactions directly from the wallet
+- Integration tests:
+  - Black-box tests:
+    - Rust
+    - JSON using [JSON scenarios](/developers/testing/scenario/structure-json)
+    - Go (by building around the Go VM tool)
+  - White-box tests:
+    - Rust only (due to the need for direct access to contract code)
+- Unit tests:
+  - Rust only (due to the need for direct access to contract code)
+
+## Testing Backends
+
+Every smart contract requires an execution environment. Testing a smart contract also involves setting up this environment. Fortunately, these environments are modeled after the same blockchain, resulting in similar behavior. This allows for the same tests to potentially run on any compatible infrastructure.
+
+![](/sc-images/testing-mermaid.png)
+
+Here are the available testing backends:
+
+- A blockchain:
+  - Serves as the backend for blockchain interactions
+  - Currently the only place to test cross-shard transactions and contract calls
+- The Go VM:
+  - This is the official VM and the sole VM implementation on a public Klever blockchain
+  - It is currently the most comprehensive implementation and considered the correct one if there are any discrepancies in VM execution
+  - The only VM that can currently model gas
+- The Rust VM:
+  - An alternative VM implementation specifically designed for testing and debugging contracts
+  - It can run contract code directly, eliminating the need to compile contracts to WebAssembly
+  - Supports step-by-step debugging for all types of tests
+  - Can provide code coverage information
+- The K Framework VM specification:
+  - Currently in development, with only test prototypes available
+  - A formal specification of WebAssembly and the Klever VM
+  - An executable specification that can serve as a backend for tests
+  - Supports symbolic execution
+
+White-box and unit tests are limited to the Rust VM backend, while black-box tests are compatible with all backends.
+
+Interactors and black-box tests share similarities, and the goal is to create a common test API that works with all backends, including the actual blockchain. We are making progress toward this goal.
