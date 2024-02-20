@@ -16,15 +16,14 @@ async function main() {
 
   circulars.sort((a, b) => b.length - a.length)
 
-  console.log(prettyCircular(circulars)) // pretty-print to console
-
-  console.log(
-    `Circulars are sorted by length. Longest circular dependency spans ${
-      circulars[0]?.length ?? 'X'
-    } modules`,
-  )
-
   if (circulars.length > 0) {
+    console.log(prettyCircular(circulars)) // pretty-print to console
+
+    console.log(
+      `Circulars are sorted by length. Longest circular dependency spans ${
+        circulars[0]?.length ?? 'X'
+      } modules`,
+    )
     process.exit(1)
   }
 }

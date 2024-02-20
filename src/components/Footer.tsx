@@ -4,7 +4,8 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 
 import { Button } from '@/components/Button'
-import { findActivePageRecursive, navigation } from '@/components/Navigation'
+import { findActivePageRecursive } from '@/components/Navigation'
+import { navigation } from '@/consts/navigation'
 
 function PageLink({
   label,

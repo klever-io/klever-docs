@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "pnpm build:circular && next build",
     "start": "next start",
     "lint": "next lint",
     "build:circular": "tsx ./src/scripts/detect-circular-dependency.ts"
