@@ -6,9 +6,11 @@ import { forwardRef } from 'react'
 import { Logo } from '@/components/Logo'
 import {
   MobileNavigation,
-  useIsInsideMobileNavigation,
   useMobileNavigationStore,
 } from '@/components/MobileNavigation'
+
+import { useIsInsideMobileNavigation } from './MobileNavigationContext'
+
 import { MobileSearch, Search } from '@/components/Search'
 import { ThemeToggle } from '@/components/ThemeToggle'
 

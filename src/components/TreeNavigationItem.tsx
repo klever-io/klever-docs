@@ -1,5 +1,7 @@
-import { NavGroup, TreeNavGroup, NavLink } from './Navigation'
+import { TreeNavGroup } from '@/types/NavGroup'
+
 import { AnimatePresence, motion, useIsPresent } from 'framer-motion'
+import { NavLink } from './NavLink'
 
 interface TreeNavigationItemProps {
   pathname: string
