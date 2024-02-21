@@ -1,0 +1,442 @@
+## Introduction
+
+Function calls are common in programming, but when it comes to smart contracts, there are additional complexities such as token transfers, gas specification, and different call types. A versatile system is required to handle these various needs efficiently.
+
+This system presented below is applicable both on- and off-chain, serving as a general Rust framework for composing and sending calls in any context.
+
+|                                                                                                                                                                                                                                                                                                                       |
+| --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| ℹ️ While basic API methods can be used to perform calls by serializing arguments and specifying endpoints as strings, this approach lacks compiler verification, limits call configuration, and often leads to code duplication. Therefore, it's recommended to use contract call syntax for formatting transactions. |
+
+---
+
+## Contract calls: base
+
+Smart contract calls on the blockchain lack arity and data type awareness. In other words, the blockchain itself does not validate the number or types of arguments or results; they exist solely as raw binary data fields.
+
+Responsibility for managing argument count and deserialization lies with the contract. If a transaction contains an incorrect number of arguments, only the contract can raise an objection. Similarly, if types are mismatched, the contract discovers this during deserialization.
+
+The descriptor for a smart contract's inputs is termed the [ABI](/developers/data/abi), residing off-chain. Essentially, the ABI comprises endpoint names alongside argument names and type descriptions. Understanding a smart contract's ABI is crucial for effective invocation.
+
+In the Rust ecosystem, the equivalent of ABI is a helper trait known as a **proxy**. Its sole purpose is to furnish a typed interface for any smart contract, accepting typed arguments and serializing them as per the [Klever serialization format](/developers/data/serialization-overview).
+
+Simple example:
+
+```rust
+adder_proxy.add(3u32)
+```
+
+Here, we're utilizing a proxy for the adder contract. The `add` method doesn't directly invoke the smart contract. Instead, it generates a contract call object with the data field `add@03`, a format interpretable by the blockchain. We'll delve into how this contract call can eventually be executed later. For now, let's explore how to obtain one of these proxies.
+
+This guide furnishes examples on calling a contract from another contract. Additional examples are available in [the contract composability feature tests](https://github.com/klever-io/klever-vm-sdk-rs/tree/master/contracts/feature-tests/composability).
+
+There are three methods for making these calls:
+
+- Importing the callee contract's source code and utilizing the auto-generated proxy (recommended).
+- Manually writing the proxy.
+- Manually serializing the function name and arguments (not recommended).
+
+### Proxies from contracts
+
+Whenever a smart contract is compiled, a proxy is generated alongside it. This proxy, although invisible, is produced by the procedural macros of the framework, notably `#[klever_sc::contract]` and `#[klever_sc::module]`.
+
+This implies that if you have access to the crate of the target contract, you can import it directly and automatically gain access to the generated proxy.
+
+```toml
+[dependencies.contract-crate-name]
+path = "relative-path-to-contract-crate"
+```
+
+### Note
+
+Contract and module crates can be imported like any other Rust crates, using:
+
+- Relative paths
+- Crate version if released
+- Git branch, tag, or commit
+
+Relative paths are common for contracts in the same workspace.
+
+If the contract includes modules with functionalities you may need to call, you'll need to import those as well.
+
+If the modules reside in different crates than the target contract (and aren't re-exported by the target contract), you'll also need to add the module to dependencies, similar to how you added the target contract.
+
+These proxies are traits, just like the contracts themselves. While the implementation is automatic, to call them, the proxy trait must be in scope. Hence, you'll often see imports like this where these proxies are used:
+
+```rust
+use module_namespace::ProxyTrait as _;
+```
+
+If you're using the [rust-analyzer VSCode extension](https://marketplace.visualstudio.com/items?itemName=rust-lang.rust-analyzer), it might complain about not finding this, but the compiler can find it without issues when you build the contract.
+
+Once you've imported the contract and any external modules it utilizes, you need to declare a proxy creator function in the contract:
+
+```rust
+#[proxy]
+fn callee_contract_proxy(&self, callee_sc_address: ManagedAddress) -> contract_namespace::Proxy<Self::Api>;
+```
+
+This function doesn't perform much; it just handles proxy trait imports and initializes the proxy neatly for you.
+
+This function creates an object containing all the endpoints of the callee contract and handles serialization automatically.
+
+Suppose you have the following endpoint in the contract you wish to call:
+
+```rust
+#[endpoint(caleeEndpoint)]
+fn callee_endpoint(&self, arg: BigUint) -> BigUint {
+	// implementation
+}
+```
+
+|                                                                                                                                                                                 |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 🚨 Importing a smart contract crate only works if both contracts use the exact same framework version. Otherwise, the compiler rightfully complains about interface mismatches. |
+| If the target contract isn't under our control, it's often wiser to manually compose the necessary proxy.                                                                       |
+
+### Manually specified proxies
+
+If there's a need to avoid a dependency on the target contract crate, or if there's no access to it at all, it's always an option to manually create such a proxy. This approach might be preferable if the framework versions of the two contracts differ or are not under our control.
+
+Below is an example of such a manually created proxy:
+
+```rust
+mod callee_proxy {
+    klever_sc::imports!();
+
+    #[klever_sc::proxy]
+    pub trait CalleeContract {
+        #[payable("*")]
+		#[endpoint(myPayableEndpoint)]
+		fn my_payable_endpoint(&self, arg: BigUint) -> BigUint;
+    }
+}
+```
+
+The syntax mirrors that of contracts, except the endpoints lack implementation.
+
+|                                                                                                                                                                                                    |
+| -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 🚨 Similar to smart contracts and modules, proxy declarations must reside in their own module. This can be either a separate file or an explicit declaration, such as `mod callee_proxy {}` above. |
+| This separation is necessary because a considerable amount of code is generated in the background, which could lead to interference otherwise.                                                     |
+
+Manually declared proxies are indistinguishable from auto-generated ones, so calling them follows the same pattern:
+
+```rust
+#[proxy]
+fn callee_contract_proxy(&self, sc_address: ManagedAddress) -> callee_proxy::Proxy<Self::Api>;
+```
+
+### No proxy
+
+The purpose of proxies is to aid in constructing contract calls in a type-safe manner. However, it's not mandatory to use them. There are instances where we specifically intend to construct contract calls manually and serialize the arguments ourselves.
+
+We aim to create a `ContractCallNoPayment` object. Payment considerations will be addressed later.
+
+The `ContractCallNoPayment` takes two type arguments: the API and the expected return type. When inside a contract, the API remains consistent across the entire contract. To avoid explicit specification, we can utilize the following syntax:
+
+```rust
+let mut contract_call = self.send()
+	.contract_call::<ResultType>(to, endpoint_name);
+contract_call.push_raw_argument(arg1_encoded);
+contract_call.push_raw_argument(arg2_encoded);
+```
+
+If attempting to create the same object outside of a smart contract, we lack the `self.send()` API. Nonetheless, the equivalent syntax is always available:
+
+```rust
+let mut contract_call = ContractCallNoPayment::<StaticApi, ResultType>::new(to, endpoint_name);
+contract_call.push_raw_argument(arg1_encoded);
+contract_call.push_raw_argument(arg2_encoded);
+```
+
+### Diagram
+
+Thus far, we've created a contract call without payment, represented by an object of type `ContractCallNoPayment`, in the following ways:
+
+![](/sc-images/calls-mermaid-1.png)
+
+---
+
+## Contract calls: payments
+
+Now that we've specified the recipient address, the function, and the arguments, it's time to incorporate additional configurations: token transfers and gas considerations.
+
+Let's consider calling a `#[payable]` endpoint with the following definition:
+
+```rust
+#[payable("*")]
+#[endpoint(myPayableEndpoint)]
+fn my_payable_endpoint(&self, arg: BigUint) -> BigUint {
+	let payment = self.call_value().any_payment();
+	// ...
+}
+```
+
+For more information on payable endpoints and simple transfers, refer to the documentation [here](/developers/developer-reference/sc-payments). This section pertains specifically to transfers during contract calls.
+
+### KLV transfer
+
+To include a KLV transfer in a contract call, simply append `.with_klv_transfer` to the builder pattern:
+
+```rust
+self.callee_contract_proxy(callee_sc_address)
+	.my_payable_endpoint(my_biguint_arg)
+	.with_klv_transfer(klv_amount)
+```
+
+Note that this method returns a new type of object, `ContractCallWithKlv`, instead of `ContractCallNoPayment`. Having multiple types of contract calls offers several advantages:
+
+- Compile-time restrictions on available methods in the builder can be enforced. For example, it's possible to add KDA transfers to `ContractCallNoPayment` but not to `ContractCallWithKlv`. This eliminates the need to enforce the runtime restriction that KLV and KDA transfers cannot coexist, making it more apparent to developers.
+- Contracts become smaller because the compiler knows which types of transfers occur within the contract and which do not. For example, if a contract only ever transfers KLV, there's no need for the code that prepares KDA transfers within the contract. This optimization would not have been possible if the check had been done only at runtime.
+
+### KDA transfers
+
+On the Klever blockchain, you can transfer multiple KDA tokens at once. A single type, `ContractCallWithMultiKda`, works for both single and multi-transfers. We can obtain such an object by starting with a `ContractCallNoPayment` and calling `with_kda_transfer` once or several times. The first call yields `ContractCallWithMultiKda`, while subsequent calls add more KDA transfers.
+
+### Note
+
+There's more than one way to provide arguments to `with_kda_transfer`:
+
+- as a tuple `(token_identifier, nonce, amount)`;
+- as a `KdaTokenPayment` object.
+
+They contain the same data, but sometimes one is more convenient to use than the other.
+
+Example:
+
+```rust
+let kda_token_payment = self.call_value().single_kda();
+
+self.callee_contract_proxy(callee_sc_address)
+	.my_payable_endpoint(my_biguint_arg)
+	.with_kda_transfer((token_identifier_1, 0, 100_000u32.into()))
+	.with_kda_transfer((token_identifier_2, 1, 1u32.into()))
+	.with_kda_transfer(kda_token_payment)
+```
+
+In this example, arguments were passed both as a tuple and as a `KdaTokenPayment` object. When already having a `KdaTokenPayment` variable, it's easier to pass it directly.
+
+It's also possible to pass multiple KDA transfers at once:
+
+```rust
+self.callee_contract_proxy(callee_sc_address)
+	.my_payable_endpoint(my_biguint_arg)
+	.with_multi_token_transfer(payments)
+```
+
+where `payments` is a `ManagedVec` of `KdaTokenPayment`.
+
+### Mixed transfers
+
+In scenarios where we're uncertain about the types of transfers at compile time, we offer contract call types that support both KLV and KDA tokens.
+
+First, we have the single transfer type `ContractCallWithKlvOrSingleKda`, designed to handle either a single KDA transfer or KLV. While it used to be more prevalent before the introduction of wrapped KLV, nowadays, for most DeFi applications, it's more convenient to work solely with WKLV and disallow KLV transfers.
+
+```rust
+let payment = self.call_value().klv_or_single_kda();
+self.callee_contract_proxy(callee_sc_address)
+	.my_payable_endpoint(my_biguint_arg)
+    .with_klv_or_single_kda_transfer(payment)
+```
+
+The most general object of this kind is `ContractCallWithAnyPayment`, capable of accepting any payment possible on the blockchain: either KLV or one or more KDAs.
+
+```rust
+let payments = self.call_value().any_payment();
+self.callee_contract_proxy(callee_sc_address)
+	.my_payable_endpoint(my_biguint_arg)
+    .with_any_payment(payments)
+```
+
+### Diagram
+
+To summarize, these are the various methods available to specify value transfers for a contract call:
+
+![](/sc-images/calls-mermaid-2.png)
+
+---
+
+## Contract calls: gas
+
+Specifying gas is straightforward. All contract call objects possess a `with_gas_limit` method, allowing gas specification at any point.
+
+Not all contract calls necessitate explicit gas limit specification; omitting it is acceptable in certain scenarios:
+
+- Synchronous calls, by default, utilize all available gas as the upper limit, as unspent gas is returned to the caller anyway.
+
+Conversely, promises and transfer-execute calls do require explicit gas specification.
+
+```rust
+self.callee_contract_proxy(callee_sc_address)
+	.callee_endpoint(my_biguint_arg)
+	.with_gas_limit(gas_limit)
+```
+
+---
+
+## Contract calls: execution
+
+Contract calls from another contract can be launched in several ways:
+
+- Synchronous calls:
+  - Executed on destination context.
+  - Executed on destination context, readonly.
+  - Executed on the same context.
+
+### Transfer-execute
+
+Multiple transfer-execute calls can be launched from a transaction, and unlike promises, they are already available on the mainnet.
+
+Transfer-execute calls do not require further configuration, aside from an explicit gas limit. Therefore, no specific object type is associated with them, and they can be launched immediately:
+
+```rust
+self.callee_contract_proxy(callee_sc_address)
+	.callee_endpoint(my_biguint_arg)
+	.with_gas_limit(gas_limit)
+	.transfer_execute();
+```
+
+### Synchronous calls
+
+Synchronous calls are executed inline, interrupting execution while they're executed and resuming afterwards. The result of the execution is immediately available and can be used in the transaction.
+
+No further configuration is needed for synchronous calls; the call is straightforward:
+
+```rust
+let result: BigUint = self.callee_contract_proxy(callee_sc_address)
+	.callee_endpoint(my_biguint_arg)
+	.with_gas_limit(gas_limit)
+	.execute_on_dest_context();
+```
+
+or
+
+```rust
+let result = self.callee_contract_proxy(callee_sc_address)
+	.callee_endpoint(my_biguint_arg)
+	.with_gas_limit(gas_limit)
+	.execute_on_dest_context::<BigUint>();
+```
+
+The type of the result must always be specified. The framework will check that the requested result is compatible with the original one, but won't impose it upon us. For example, an endpoint might return a `u32` result, but we might choose to deserialize it as `u64` or `BigUint`, which is acceptable since these types have similar semantics and representations. However, casting it to a `ManagedBuffer` won't be allowed.
+
+The `execute_on_dest_context` method is most commonly used for synchronous calls. Other alternatives include:
+
+- `execute_on_dest_context_readonly`: Ensures the target contract doesn't change state at the blockchain level.
+- `execute_on_same_context`: Useful for library-like contracts, where all changes are saved in the caller instead of the called contract.
+
+### Diagram
+
+In summary, when we have a contract call object in a smart contract, these are the actions we can perform on it:
+
+![](/sc-images/calls-mermaid-3.png)
+
+---
+
+## CContract calls: complete diagram
+
+To recap, setting up a contract call from a contract involves the following steps:
+
+1. Obtain a proxy.
+2. Invoke it to acquire a basic contract call object.
+3. Optionally, include KLV or KDA token transfers.
+4. Optionally, specify a gas limit for the call.
+
+Combining all these elements into a comprehensive diagram, we have the following:
+
+![](/sc-images/calls-mermaid-4.png)
+
+---
+
+## Contract deploy: base
+
+A close relative of the contract call is the contract deploy call, which models the deployment or upgrade of a smart contract.
+
+It shares many similarities with contract calls, with some notable differences:
+
+- The endpoint name is always `init`.
+- No KDA transfers are allowed in `init`.
+- They are executed slightly differently.
+
+![](/sc-images/calls-mermaid-5.png)
+
+The object encoding these deployment calls is named `ContractDeploy`. Unlike contract calls, there is only one such object.
+
+Creating this object is similar to contract calls: either through proxies or manually. Constructors in proxies naturally yield `ContractDeploy` objects.
+
+```rust
+mod callee_proxy {
+    klever_sc::imports!();
+
+    #[klever_sc::proxy]
+    pub trait CalleeContract {
+		#[init]
+		fn init(&self, arg: BigUint) -> BigUint;
+    }
+}
+```
+
+```rust
+self.callee_contract_proxy()
+	.init(my_biguint_arg)
+```
+
+---
+
+## Contract deploy: configuration
+
+Just like with regular contract calls, we can specify the gas limit and perform KLV transfers as part of the deployment process, as follows:
+
+```rust
+self.callee_contract_proxy(callee_sc_address)
+	.init(my_biguint_arg)
+
+```
+
+```rust
+self.callee_contract_proxy()
+	.init(my_biguint_arg)
+	.with_klv_transfer(klv_amount)
+    .with_gas_limit(gas_limit)
+```
+
+---
+
+## Contract deploy: execution
+
+### Deploy
+
+Launching a contract deploy differs from a regular contract call and offers several methods.
+
+The simplest deploy operation is achieved by calling `deploy_contract`:
+
+```rust
+let (new_address, result) = self.callee_contract_proxy()
+	.init(my_biguint_arg)
+	.deploy_contract::<ResultType>(code, code_metadata);
+```
+
+The methods for executing contract deploys are as follows:
+
+- `.deploy_contract(code, code_metadata)`: Deploys a new contract with the code provided.
+- `.deploy_from_source(source_address, code_metadata)`: Deploys a new contract with the same code as the contract at `source_address`. The advantage here is that the contract doesn't need to handle the new contract code, potentially saving gas. However, it requires the code to already be deployed elsewhere.
+
+### Upgrade
+
+To upgrade a contract, we also need to specify the recipient address when setting up the `ContractDeploy` object, as follows:
+
+```rust
+self.callee_contract_proxy()
+	.contract(calee_contract_address)
+	.init(123, 456)
+	.with_klv_transfer(payment)
+	.upgrade_contract(code, code_metadata);
+```
+
+Note the use of the `.contract(...)` method call.
+
+Like deploying, upgrading also offers two variants:
+
+- `.upgrade_contract(code, code_metadata)`: Upgrades the target contract to the new code and sets the new code metadata.
+- `.upgrade_from_source(source_address, code_metadata)`: Updates the target contract with the same code as the contract at `source_address`.

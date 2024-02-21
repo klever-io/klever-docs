@@ -1,0 +1,61 @@
+# Code Metadata
+
+## Introduction
+
+Code metadata consists of flags representing the allowed actions of a smart contract after deployment. These flags include:
+
+- `upgradeable` - indicating whether the contract can be upgraded in the future.
+- `readable` - determining if the contract's storage can be read by other contracts.
+- `payable` - specifying if the contract can receive funds without any endpoint being called, similar to user accounts. Note: A contract does NOT have to be payable to receive funds in payable endpoints.
+- `payable by smart contracts` - similar to the `payable` flag but exclusively designed to receive funds from other smart contracts. User transfers will be rejected.
+
+|                                                                                                                                                       |
+| ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 🚨 Code metadata **must be specified** at deploy-time, and if the contract is marked as _upgradeable_, it **must also be specified** at upgrade-time. |
+
+|                                                                                                                                                                                                                         |
+| ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 🚨 **The `#[kda_attribute]` annotation should only be used at the trait level in conjunction with `#[klever_sc::contract]` or `#[klever_sc::module]` annotations. Placing it anywhere else will not work as intended.** |
+
+## Usage
+
+When deploying or upgrading a smart contract using **koperator**, the default _code metadata flags_ are only `upgradeable`. These default values can be overwritten by using the following options with the `koperator sc create` or `koperator sc upgrade` commands:
+
+- `--upgradeable` - marks the contract as **non-** `upgradeable`.
+- `--readable` - marks the contract as **non-** `readable`.
+- `--payable` - marks the contract as `payable`.
+- `--payableBySc` - marks the contract as `payable by smart contracts`.
+
+## Bit-flag Layout
+
+Internally, the metadata is stored as a 2-byte wide bit-flag. For clarity, let's define the flags in binary and hex representation:
+
+```rust
+bitflags! {
+    struct CodeMetadata: u16 {
+		const UPGRADEABLE = 0b0000_0001_0000_0000; // LSB of the first byte
+		const READABLE = 0b0000_0100_0000_0000; // 3rd LSB of the first byte
+		const PAYABLE = 0b0000_0000_0000_0010; // 2nd LSB of the second byte
+		const PAYABLE_BY_SC = 0b0000_0000_0000_0100; // 3rd LSB of the second byte
+    }
+}
+```
+
+Alternatively, in hex representation:
+
+```rust
+const UPGRADEABLE: u16 = 0x01_00;
+const READABLE: u16 = 0x04_00;
+const PAYABLE: u16 = 0x00_02;
+const PAYABLE_BY_SC = 0x00_04;
+```
+
+For example, if you wish to deploy a contract that is payable and upgradeable, the metadata would be `0x0102`.
+
+## Conclusion
+
+We believe that these flags will significantly simplify the process of creating and upgrading smart contracts.
+
+For more examples of how Code Metadata is used, you can explore the [Klever Go SDK Rust repository](https://github.com/klever-io/klever-go-sdk-rs/tree/master/contracts/examples).
+
+---
