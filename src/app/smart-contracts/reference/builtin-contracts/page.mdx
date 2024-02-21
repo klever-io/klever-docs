@@ -79,12 +79,12 @@ Claims either staking rewards, delegation rewards, or expired marketplace orders
 
 Updates the properties or trigger functionalities of a fungible token, NFT collection, or a single NFT. See all types [here](/contracts).
 
-- **Mint:** Directly mints assets in the target account.
+- **Mint:** Directly mints assets in the target account. If the asset is a NFT, the minted nonces will be returned.
 
 ```rust
-    self.send.kda_mint(token, nonce, amount)
+    self.send.kda_mint(token, nonce, amount) -> ManagedVec<u64>;
     //or
-    self.send.kda_mint_with_address(token, nonce, amount, address);
+    self.send.kda_mint_with_address(token, nonce, amount, address) -> ManagedVec<u64>;
 ```
 
 - **Burn:** Directly burns owned assets.
