@@ -1,6 +1,6 @@
 # Complex Values
 
-In the previous section, we discussed representations of simple types [here](/developers/scenario-reference/values-simple). These representations are suitable for arguments of types like `usize`, `BigUint`, or `&[u8]`. However, there is a need to specify complex types such as custom structs or lists of items.
+In the previous section, we discussed representations of simple types [here](/smart-contracts/testing/scenarios/simple-values). These representations are suitable for arguments of types like `usize`, `BigUint`, or `&[u8]`. However, there is a need to specify complex types such as custom structs or lists of items.
 
 ## **Concatenation**
 
@@ -14,7 +14,7 @@ This is ideal for short lists or small structs.
 - A `(BigUint, BigUint)` tuple can be expressed as `"biguint:1|biguint:2"`.
 - A `SimpleStruct { a: u8, b: BoxedBytes }` can be expressed as `"u8:4|nested:str:value-b"`.
 
-Please note that the pipe operator only takes care of the concatenation itself. You are responsible for ensuring that [nested encoding](/developers/data/serialization-overview/#the-concept-of-top-level-vs-nested-objects) is used where appropriate.
+Please note that the pipe operator only takes care of the concatenation itself. You are responsible for ensuring that [nested encoding](/smart-contracts/data/serialization-overview/#the-concept-of-top-level-vs-nested-objects) is used where appropriate.
 
 ## **Using JSON lists as values**
 
@@ -122,7 +122,7 @@ pub struct LotteryInfo<M: ManagedTypeApi> {
 
 ### Tip
 
-Once again, note that all contained values are in [nested encoding format](/developers/data/serialization-overview/#the-concept-of-top-level-vs-nested-objects):
+Once again, note that all contained values are in [nested encoding format](/smart-contracts/data/serialization-overview/#the-concept-of-top-level-vs-nested-objects):
 
 - The token identifier has its length automatically prepended by the `nested:` prefix.
 - Big integers are given with the `biguint:` syntax, which prepends their byte length.

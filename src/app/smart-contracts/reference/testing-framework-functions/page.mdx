@@ -236,7 +236,7 @@ These functions facilitate interactions with smart contracts. While they can be 
 execute_tx(&mut self, caller: &Address, sc_wrapper: &ContractObjWrapper<...>, klv_payment: &num_bigint::BigUint, tx_fn: TxFn) -> TxResult
 ```
 
-Executes a transaction towards the specified smart contract, optionally including a KLV payment (use 0 for no payment). `tx_fn` is a lambda function that accepts a contract object as an argument. For more details on how to write such a lambda, refer to the [Crowdfunding test examples](/developers/developer-reference/rust-testing-framework).
+Executes a transaction towards the specified smart contract, optionally including a KLV payment (use 0 for no payment). `tx_fn` is a lambda function that accepts a contract object as an argument. For more details on how to write such a lambda, refer to the [Crowdfunding test examples](/smart-contracts/reference/rust-testing-framework).
 
 ### `execute_kda_transfer`
 
@@ -272,4 +272,4 @@ Executes an arbitrary function and returns its result, which can be of any type.
 
 ## Undocumented Functions
 
-Several scenario generation functions have not been included in this documentation. We advise against using scenario generation, as it is time-consuming, and the results are often unreadable scenario files. If scenarios are necessary, we recommend writing them manually. If you still wish to explore scenario generation, you can find examples in the [Crowdfunding test examples](/developers/developer-reference/rust-testing-framework).
+Several scenario generation functions have not been included in this documentation. We advise against using scenario generation, as it is time-consuming, and the results are often unreadable scenario files. If scenarios are necessary, we recommend writing them manually. If you still wish to explore scenario generation, you can find examples in the [Crowdfunding test examples](/smart-contracts/reference/rust-testing-framework).

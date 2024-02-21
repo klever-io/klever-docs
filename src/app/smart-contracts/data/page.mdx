@@ -4,6 +4,8 @@ Klever employs a specific serialization format for all data interactions with a 
 
 In Rust, the **klever-sc-codec** crate ([crate](https://crates.io/crates/klever-sc-codec), [docs](https://docs.rs/klever-sc-codec/latest/klever_sc_codec/)) exclusively manages this format. Both Go and Rust implementations of scenarios have a component dedicated to serializing to this format. DApp developers must be mindful of this format when interacting with the smart contract on the backend.
 
+> The klever-sc-codec and docs will be available on the TestNet phase 02
+
 ## Rationale
 
 Our objective is to make the format somewhat readable and facilitate seamless interaction with the broader blockchain ecosystem. That's why we've opted for **big endian representation for all numeric types.**

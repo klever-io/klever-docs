@@ -94,7 +94,7 @@ At its most basic, an ABI contains:
 
 ## Data Types
 
-Smart contract inputs and outputs almost universally use the [standard Klever serialization format](/developers/data/serialization-overview).
+Smart contract inputs and outputs almost universally use the [standard Klever serialization format](/smart-contracts/data).
 
 The ABI is designed to provide enough information so that developers, familiar with this standard, can write encoders or decoders for smart contract data in any programming language.
 
@@ -105,7 +105,7 @@ The ABI is designed to provide enough information so that developers, familiar w
 
 ### Basic Types
 
-Firstly, there are several [basic types](/developers/data/simple-values) with universal representations:
+Firstly, there are several [basic types](/smart-contracts/data/simple-values) with universal representations:
 
 - Numerical types: `BigUint`, `BigInt`, `u64`, `i32`, etc.
 - Booleans: `bool`.
@@ -116,7 +116,7 @@ Firstly, there are several [basic types](/developers/data/simple-values) with un
 
 ### Composite Types
 
-Secondly, there are various standard [composite types](/developers/data/composite-values) with type arguments specifying their content:
+Secondly, there are various standard [composite types](/smart-contracts/data/composite-values) with type arguments specifying their content:
 
 - Variable-length lists: `List<T>`, where `T` can be any type (e.g., `List<u32>`).
 - Fixed-length arrays: `arrayN<T>`, where `N` is a number, and `T` can be any type (e.g., `array5<u8>` represents 5 bytes).
@@ -243,7 +243,7 @@ AbiStruct": {
 
 ### Custom Types: Struct
 
-[ABI structures](/developers/data/custom-types#custom-structures) are defined with:
+[ABI structures](/smart-contracts/data/custom-types#custom-structures) are defined with:
 
 - A **name**.
 - Optional **docs**.
@@ -256,7 +256,7 @@ In the example above, a structure called `MyAbiStruct` is declared with three fi
 
 ### Custom Types: Enum
 
-Similarly, [enums](/developers/data/custom-types#custom-enums) are defined with:
+Similarly, [enums](/smart-contracts/data/custom-types#custom-enums) are defined with:
 
 - A **name**.
 - Optional **docs**.

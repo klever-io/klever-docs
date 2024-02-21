@@ -4,7 +4,11 @@
 
 We've developed a versatile smart contract management tool known as `klever-sc-meta`, often abbreviated as `sc-meta`. This tool adds a layer of meta-programming to conventional smart contract development. It can read and interact with code written by developers.
 
-You can find it on [crates.io](https://crates.io/crates/klever-sc-meta) [![crates.io](https://img.shields.io/crates/v/klever-sc-meta.svg?style=flat)](https://crates.io/crates/klever-sc-meta).
+You can find it on [crates.io](https://crates.io/crates/klever-sc-meta)
+
+{/* [![crates.io](https://img.shields.io/crates/v/klever-sc-meta.svg?style=flat)](https://crates.io/crates/klever-sc-meta). */}
+
+> The crates.io will be available on the TestNet phase 02
 
 To install it, simply execute the following command:
 
@@ -32,7 +36,7 @@ fn main() {
 }
 ```
 
-These lines are crucial as they establish a connection between the contract tool and the contract code via the [ABI](/developers/data/abi).
+These lines are crucial as they establish a connection between the contract tool and the contract code via the [ABI](/smart-contracts/data/ABI).
 
 The contract tool is essential for building contracts because it is the only tool that utilizes the ABI generator, manages the wasm crate, multi-contract configuration, and possesses the knowledge required to build the contract.
 
@@ -52,7 +56,7 @@ The current contract functionality includes:
 - `update`: Updates the Cargo.lock files in all wasm crates.
 - `snippets`: Generates a snippets project based on the contract ABI.
 
-For a more detailed explanation of the smart contract ABI and individual contract tools based on ABI, please refer to [the CLI reference](/developers/meta/sc-meta-cli).
+For a more detailed explanation of the smart contract ABI and individual contract tools based on ABI, please refer to [the CLI reference](/smart-contracts/config-and-tooling/CLI).
 
 ## Standalone Functionality
 

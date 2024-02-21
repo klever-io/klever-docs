@@ -146,10 +146,10 @@ We want to call these endpoints with arguments: `TOKEN-123456` (`0x544f4b454e2d3
 - Endpoint 1: `myOptArgEndpoint1@544f4b454e2d313233343536@010000000000000005`
 - Endpoint 2: `myOptArgEndpoint2@544f4b454e2d313233343536@05`
 
-|                                                                                                                                                                                                                                                                    |
-| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| ℹ️ In the first case, we are dealing with an [Option](/developers/data/composite-values#options), where the first encoded byte must be `0x01` to indicate `Some`. In the second case, no `Option` is needed; the presence of the argument itself indicates `Some`. |
-| Additionally, note that the nonce itself is nested-encoded in the first case (nested within an `Option`). In the second case, it can be top-encoded directly.                                                                                                      |
+|                                                                                                                                                                                                                                                                         |
+| ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| ℹ️ In the first case, we are dealing with an [Option](/smart-contracts/data/composite-values#options), where the first encoded byte must be `0x01` to indicate `Some`. In the second case, no `Option` is needed; the presence of the argument itself indicates `Some`. |
+| Additionally, note that the nonce itself is nested-encoded in the first case (nested within an `Option`). In the second case, it can be top-encoded directly.                                                                                                           |
 
 Now, let's consider omitting the nonce entirely:
 
