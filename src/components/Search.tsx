@@ -21,7 +21,7 @@ import {
 } from 'react'
 import Highlighter from 'react-highlight-words'
 
-import { navigation } from '@/components/Navigation'
+import { navigation } from '@/consts/navigation'
 import { type Result } from '@/mdx/search.mjs'
 
 type EmptyObject = Record<string, never>

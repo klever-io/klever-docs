@@ -1,0 +1,233 @@
+# Multi Values
+
+## Single Values vs. Multi-Values
+
+Previously, we discussed how data can be represented either as:
+
+- Nested encoding, as part of the byte representation of a larger object.
+- Top encoding, the full byte representation of an object.
+
+However, even the top encoding refers to a _single_ object, represented as a _single_ array of bytes. This encoding, regardless of its simplicity or complexity, represents a _single_ argument, result, log topic, log event, NFT attribute, and so on.
+
+Occasionally, we need to work with _multiple_ variadic arguments or an arbitrary number of results. An elegant solution is to model them as special collections of top-encodable objects, with each object representing an individual item. For instance, we might have a list of separate arguments of arbitrary length.
+
+Multi-values work similarly to varargs in other languages, like C, where you can define a function as `void f(int arg, ...) { ... }`. In the smart contract framework, we use the type system to define their behavior.
+
+|                                                                                                                                                        |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| ℹ️ In the framework, single values are treated as a special case of multi-values, one that consumes exactly one argument or returns exactly one value. |
+| In essence, all serializable types implement the multi-value traits.                                                                                   |
+
+## Parsing and Limitations
+
+It's crucial to understand that arguments are read one by one from left to right, imposing some limitations on how varargs can be positioned. Argument types also dictate how the arguments are consumed. For example, if a type specifies that all remaining arguments will be consumed, it doesn't make sense to have any other argument after that.
+
+Consider the behavior of `MultiValueEncoded`, which consumes all subsequent arguments. Therefore, it's advisable to place it as the last argument in a function, like this:
+
+```rust
+#[endpoint(myEndpoint)]
+fn my_endpoint(&self, first_arg: ManagedBuffer, second_arg: TokenIdentifier, last_arg: MultiValueEncoded<u64>)
+```
+
+Placing any argument after `MultiValueEncoded` will not initialize that argument because `MultiValueEncoded` will consume all arguments following it. An important rule to remember is that an endpoint can have only one `MultiValueEncoded` argument, and it should always occupy the last position to achieve the desired outcome.
+
+Another scenario to consider involves the use of multiple `Option` arguments. For instance:
+
+```rust
+#[endpoint(myOptionalEndpoint)]
+fn my_optional_endpoint(&self, first_arg: OptionalValue<TokenIdentifier>, second_arg: OptionalValue<ManagedBuffer>)
+```
+
+In this context, both arguments (or none) should be provided simultaneously to get the desired effect. Since arguments are processed sequentially from left to right, supplying a single value will automatically assign it to the first argument, making it impossible to determine which argument should receive that value.
+
+The same rule applies when any regular argument is placed after a vararg. Hence, a strong restriction regarding arguments order has been enforced. Regular arguments `must not` be placed after varargs.
+
+To enhance clarity and minimize potential errors related to varargs, starting from framework version `v0.44.0`, it is no longer allowed by default to have multiple varargs. This restriction can be lifted by using the #[allow_multiple_var_args] annotation.
+
+### Note
+
+`#[allow_multiple_var_args]` is required when using more than one vararg in an endpoint, and it is placed at the endpoint level, alongside the `#[endpoint]` annotation. Utilizing `#[allow_multiple_var_args]` in any other manner will not work.
+
+Given this, our optional endpoint from the previous example becomes:
+
+```rust
+#[allow_multiple_var_args]
+#[endpoint(myOptionalEndpoint)]
+fn my_optional_endpoint(&self, first_arg: OptionalValue<TokenIdentifier>, second_arg: OptionalValue<ManagedBuffer>)
+```
+
+---
+
+The absence of #[allow_multiple_var_args] as an endpoint attribute, along with the use of multiple varargs and/or the placement of regular arguments after varargs, leads to a build failure because parsing validations now consider the count and positions of varargs.
+
+However, when `#[allow_multiple_var_args]` is used, no other parsing validation (except the ones mentioned above) enforces the vararg rules. In simpler terms, using the annotation implies that the developer assumes responsibility for handling multiple varargs and anticipating the outcomes, effectively placing trust in their ability to manage the situation.
+
+## Standard Multi-Values
+
+The framework provides common multi-value types:
+
+- Straightforward varargs, allowing an arbitrary number of arguments of the same type.
+  - Can be defined as:
+    - `MultiValueVec<T>` - the unmanaged version, for use outside of contracts.
+    - `MultiValueManagedVec<T>` - the equivalent managed version. The only limitation is that `T` must implement `ManagedVecItem`, as it works with an underlying `ManagedVec`. Values are deserialized eagerly, so the endpoint receives them already prepared.
+    - `MultiValueEncoded<T>` - the lazy version of the above. Arguments are only deserialized when iterating over this structure, eliminating the need for `T` to implement `ManagedVecItem` since it is never stored in a `ManagedVec`.
+    - In all three cases, `T` can be any serializable type, either single or multi-value.
+  - Such a vararg always consumes all the remaining arguments, so it doesn't make sense to place any other arguments after it, whether they are single or multi-values. While the framework doesn't forbid it, single values will crash at runtime since they always require a value, and multi-values will always be empty.
+- Multi-value tuples.
+  - Defined as `MultiValueN<T1, T2, ..., TN`, where N is a number between 2 and 16, and `T1`, `T2`, ..., `TN` can be any serializable types, whether single or multi-values. For example, `MultiValue3<BigUint, ManagedBuffer, u32>`.
+  - It doesn't make much sense to use them as standalone arguments (it's easier and equivalent to have separate named arguments), but they have the following uses:
+    - They can be embedded in a regular vararg to obtain groups of arguments. For example, `MultiValueVec<MultiValue3<BigUint, BigUint>>` defines pairs of numbers. There is no need to manually check in code that an even number of arguments was passed; the deserializer handles this automatically.
+    - Rust doesn't allow returning more than one result, but by returning a multi-value tuple, an endpoint can effectively return several values of different types.
+- Optional arguments.
+  - Defined as `OptionalValue<T>`, where `T` can be any serializable type, whether single or multi-value.
+  - At most one argument will be consumed. Therefore, it sometimes makes sense to have multiple optional arguments one after the other, or optional arguments followed by varargs.
+  - Note that an optional argument cannot be missing if there is anything else coming after it. For example, if an endpoint has arguments `a: OptionalValue<u32>, b: OptionalValue<u32>`, `b` can be missing, or both can be missing, but there is no way to have `a` missing and `b` present, because passing any argument will automatically assign it to `a`.
+- Counted varargs.
+
+  - Suppose we actually want two sets of varargs in an endpoint. One solution is to explicitly state how many arguments each of them contains (or at least the first one). Counted varargs simplify this.
+  - Defined as `MultiValueManagedVecCounted<T>`, where `T` can be any serializable type, whether single or multi-value.
+  - Always takes a number argument first, which represents how many arguments follow. Then it consumes exactly that many arguments.
+  - Can be followed by other arguments, whether single or multi-values.
+
+- Ignored arguments.
+  - Sometimes, for backward compatibility or other reasons, it's possible to have optional arguments that are never used and are not of interest. To avoid any unnecessary deserialization, it's possible to define an argument of type `IgnoreValue` at the end.
+  - By doing so, any number of arguments are allowed at the end, all of which will be completely ignored.
+
+To recap:
+
+| Managed Version                  | Unmanaged Version  | Represents                      | Equivalent Single Value   |
+| -------------------------------- | ------------------ | ------------------------------- | ------------------------- |
+| `MultiValueN<T1, T2, ..., TN>`   |                    | A fixed number of arguments     | Tuple `(T1, T2, ..., TN)` |
+| `OptionalValue<T>`               |                    | An optional argument            | `Option<T>`               |
+| `MultiValueEncoded<T>`           | `MultiValueVec<T>` | A variable number of arguments  | `Vec<T>`                  |
+| `MultiValueManagedVec<T>`        | `MultiValueVec<T>` | A variable number of arguments  | `Vec<T>`                  |
+| `MultiValueManagedVecCounted<T>` |                    | A counted number of arguments   | `(usize, Vec<T>)`         |
+| `IgnoreValue`                    |                    | Any number of ignored arguments | Unit `()`                 |
+
+## Storage Mapper Contents as Multi-Values
+
+The storage mapper declaration is a method that can typically also be made into a public view endpoint. When calling them, the entire contents of the mapper will be read from storage and serialized as multi-values. This is recommended when there is little data or in testing scenarios.
+
+The storage mappers that support this feature include, but are not limited to:
+
+- BiDiMapper
+- LinkedListMapper
+- MapMapper
+- QueueMapper
+- SetMapper
+- SingleValueMapper
+- UniqueIdMapper
+- UnorderedSetMapper
+- UserMapper
+- VecMapper
+- FungibleTokenMapper
+- NonFungibleTokenMapper
+
+## Multi-Values in Action
+
+To illustrate how multi-values work in practice, let's provide some examples of how one would call an endpoint with variadic arguments.
+
+### Option vs. OptionalValue
+
+Suppose we want to create an endpoint that takes a token identifier and, optionally, a token nonce. There are two ways to achieve this:
+
+```rust
+#[endpoint(myOptArgEndpoint1)]
+fn my_opt_arg_endpoint_1(&self, token_id: TokenIdentifier, opt_nonce: Option<u64>) {}
+```
+
+```rust
+#[endpoint(myOptArgEndpoint2)]
+fn my_opt_arg_endpoint_2(&self, token_id: TokenIdentifier, opt_nonce: OptionalValue<u64>) {}
+```
+
+We want to call these endpoints with arguments: `TOKEN-123456` (`0x544f4b454e2d313233343536`) and `5`. Here's how we contrast them:
+
+- Endpoint 1: `myOptArgEndpoint1@544f4b454e2d313233343536@010000000000000005`
+- Endpoint 2: `myOptArgEndpoint2@544f4b454e2d313233343536@05`
+
+|                                                                                                                                                                                                                                                                    |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| ℹ️ In the first case, we are dealing with an [Option](/developers/data/composite-values#options), where the first encoded byte must be `0x01` to indicate `Some`. In the second case, no `Option` is needed; the presence of the argument itself indicates `Some`. |
+| Additionally, note that the nonce itself is nested-encoded in the first case (nested within an `Option`). In the second case, it can be top-encoded directly.                                                                                                      |
+
+Now, let's consider omitting the nonce entirely:
+
+- Endpoint 1:
+  - `myOptArgEndpoint1@544f4b454e2d313233343536@`, or
+  - `myOptArgEndpoint1@544f4b454e2d313233343536@00` (also accepted)
+- Endpoint 2:
+  - `myOptArgEndpoint2@544f4b454e2d313233343536`
+
+|                                                                                                                                                                |
+| -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| ℹ️ The difference is less noticeable in this case.                                                                                                             |
+| In the first case, we encoded `None` as an empty byte array (encoding it as `0x00` is also accepted). In any case, we need to pass it as an explicit argument. |
+| In the second case, the last argument is omitted altogether.                                                                                                   |
+
+The multi-value implementation is more efficient in terms of gas. It's simpler for the smart contract to count the number of arguments and top-decode them than to parse a composite type like `Option`.
+
+## ManagedVec vs. MultiValueEncoded
+
+In this example, let's assume we want to receive any number of triples of the form (token ID, nonce, amount). This can be implemented in two ways:
+
+```rust
+#[endpoint(myVarArgsEndpoint1)]
+fn my_var_args_endpoint_1(&self, args: ManagedVec<(TokenIdentifier, u64, BigUint)>) {}
+```
+
+```rust
+#[endpoint(myVarArgsEndpoint2)]
+fn my_var_args_endpoint_2(&self, args: MultiValueManagedVec<TokenIdentifier, u64, BigUint>) {}
+```
+
+The first approach may seem simpler from the perspective of the smart contract implementation, as it uses a `ManagedVec` of tuples. However, when encoding this argument to call the endpoint, we encounter a format that is quite inefficient, both in terms of performance and usability.
+
+Let's call these endpoints with triples: `(TOKEN-123456, 5, 100)` and `(TOKEN-123456, 10, 500)`. The call data for the first approach would look like this:
+`myVarArgsEndpoint1@0000000c_544f4b454e2d313233343536_0000000000000005_00000001_64_0000000c_544f4b454e2d313233343536_000000000000000a_00000002_01f4`.
+
+|                                                                                                                                                                                                                                 |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| ℹ️ Above, we've separated the parts with underscores for readability purposes only. On the real blockchain, there would be no underscores; everything would be concatenated.                                                    |
+| In this encoding, every single value requires nested encoding. We need to specify the length for each token identifier, nonces are spelled out in full 8 bytes, and we also need to include the length of each `BigUint` value. |
+
+As you can see, this endpoint is challenging to work with. All arguments are concatenated into one large chunk, and each value needs to be nested-encoded. This is why we include the length for each `TokenIdentifier` (e.g., the `0000000c` in front, indicating a length of 12) and for each `BigUint` (e.g., the `00000001` before `64`). The nonces are spelled out in their full 8 bytes.
+
+The second endpoint is much easier to use. For the same arguments, the call data looks like this:
+`myVarArgsEndpoint2@544f4b454e2d313233343536@05@64@544f4b454e2d313233343536@0a@01f4`.
+
+It is more readable for several reasons:
+
+- We have six arguments instead of one;
+- The argument separator makes it easier for both us and the smart contract to distinguish where each value ends and the next one begins;
+- All values are top-encoded, eliminating the need for lengths. The nonces can be expressed in a more compact form.
+
+Once again, the multi-value implementation is more efficient in terms of gas. The contract only needs to ensure that the number of arguments is a multiple of 3 and then top-decode each value. In contrast, the first example involves moving around a lot more memory when splitting the large argument into pieces.
+
+## Implementation Details
+
+All serializable types will implement the traits `TopEncodeMulti` and `TopDecodeMulti`.
+
+The components responsible for argument parsing, returning results, or handling event logs all work with these two traits.
+
+For all serializable types (those implementing `TopEncode`), it's explicitly declared that they also function as multi-value types in this declaration:
+
+```rust
+/// All single top encode types also work as multi-value encode types.
+impl<T> TopEncodeMulti for T
+where
+    T: TopEncode,
+{
+    fn multi_encode_or_handle_err<O, H>(&self, output: &mut O, h: H) -> Result<(), H::HandledErr>
+    where
+        O: TopEncodeMultiOutput,
+        H: EncodeErrorHandler,
+    {
+        output.push_single_value(self, h)
+    }
+}
+```
+
+To create a custom multi-value type, you need to manually implement these two traits for the type. Unlike single values, there is no equivalent derive syntax for multi-values.
+
+---

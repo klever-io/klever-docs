@@ -318,8 +318,7 @@ export function CodeGroup({
   let tabGroupProps = useTabGroupProps(languages)
   let hasTabs = Children.count(children) > 1
 
-  let containerClassName =
-    `not-prose my-6 overflow-hidden rounded-2xl bg-zinc-900 shadow-md dark:ring-1 dark:ring-white/10 max-w-3xl`
+  let containerClassName = `not-prose my-6 overflow-hidden rounded-2xl bg-zinc-900 shadow-md dark:ring-1 dark:ring-white/10 max-w-3xl`
   let header = (
     <CodeGroupHeader title={title} selectedIndex={tabGroupProps.selectedIndex}>
       {children}
@@ -330,12 +329,18 @@ export function CodeGroup({
   return (
     <CodeGroupContext.Provider value={true}>
       {hasTabs ? (
-        <Tab.Group {...tabGroupProps} className={`${containerClassName}`} >
+        <Tab.Group {...tabGroupProps} className={`${containerClassName}`}>
           {header}
           {panels}
         </Tab.Group>
       ) : (
-        <div className={containerClassName} style={{marginLeft: "calc(50% - min(50%, 33rem))", marginRight: "calc(50% - min(50%, 33rem))"}}>
+        <div
+          className={containerClassName}
+          style={{
+            marginLeft: 'calc(50% - min(50%, 33rem))',
+            marginRight: 'calc(50% - min(50%, 33rem))',
+          }}
+        >
           {header}
           {panels}
         </div>
