@@ -34,6 +34,7 @@ export const navigation: Array<NavGroup> = [
               { title: 'Modules', href: '/modules' },
               { title: 'Payments', href: '/payments' },
               { title: 'Calls', href: '/calls' },
+              { title: 'BuiltIn Contracts', href: '/builtin-contracts' },
               { title: 'Upgrading', href: '/upgrading' },
               { title: 'API Functions', href: '/api-functions' },
               { title: 'Storage Mappers', href: '/storage-mappers' },

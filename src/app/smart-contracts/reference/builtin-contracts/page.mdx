@@ -1,0 +1,335 @@
+# Builtin Contracts
+
+The Kleverchain BuiltIn Contracts are a set of contracts that are supported in the Kleverchain network. They are used to manage the network's assets, such as KDA, KFI, and other fungible and non-fungible tokens.
+
+# Methods
+
+## Transfer
+
+```rust
+    self.send().direct_kda(&to, &token, nonce, &amount);
+```
+
+Transfers assets to another address.
+
+## Create Asset
+
+```rust
+    self.send().kda_create(asset_type, name, ticker,
+        precision, owner, logo, initial_supply, max_supply, properties, royalties)
+```
+
+Creates a new fungible token or a NFT collection. The returned value is the
+
+## Freeze
+
+```rust
+    self.send().freeze(token, amount) -> ManagedBuffer
+```
+
+Freezes a certain amount of a token for staking. This frozen amount will be referred to as a "bucket". Returning the Bucket ID.
+
+## Unfreeze
+
+```rust
+    self.send().unfreeze(token, bucket_id);
+```
+
+Unfreezes a bucket.
+
+## Delegate
+
+```rust
+    self.send().delegate(address, bucket_id);
+```
+
+Delegates a bucket to a validator.
+
+## Undelegate
+
+```rust
+    self.send().undelegate(bucket_id);
+```
+
+Removes the delegation of a bucket.
+
+## Withdraw
+
+```rust
+   self.send().withdraw(withdraw_type, token, amount, currency);
+```
+
+Retrieves the assets from an unfrozen bucket or assets from KDAPool.
+
+## Claim
+
+```rust
+    self.send().kda_claim(claim_type, id);
+```
+
+Claims either staking rewards, delegation rewards, or expired marketplace orders.
+
+## Create Marketplace Order
+
+```rust
+    self.send().kda_create_marketplace_order(order_type, token, amount, price, expiration);
+```
+
+## Asset Trigger
+
+Updates the properties or trigger functionalities of a fungible token, NFT collection, or a single NFT. See all types [here](/contracts).
+
+- **Mint:** Directly mints assets in the target account.
+
+```rust
+    self.send.kda_mint(token, nonce, amount)
+    //or
+    self.send.kda_mint_with_address(token, nonce, amount, address);
+```
+
+- **Burn:** Directly burns owned assets.
+
+```rust
+    self.send.kda_burn(token, nonce, supply);
+```
+
+- **Wipe:** Directly burns assets of the target account (asset owner only). Useful mostly for stablecoins.
+
+```rust
+    self.send.kda_wipe(token, nonce, amount, address);
+```
+
+- **Pause:** Pauses all transactions of the target asset.
+
+```rust
+    self.send.kda_pause(token);
+```
+
+- **Resume:** Resumes all transactions of the target asset.
+
+```rust
+    self.send.kda_resume(token);
+```
+
+- **AddRole:** Adds a permission role to the asset.
+
+```rust
+    self.send.kda_add_role(token, address, has_role_mint,
+        has_role_set_ito_prices, has_role_deposit);
+```
+
+- **RemoveRole:** Removes a permission role of the asset.
+
+```rust
+    self.send.kda_remove_role(token, address);
+```
+
+- **UpdateMetadata:** Updates the metadata of a given NFT.
+
+```rust
+    self.sendkda_update_metadata(token, nonce, address, mime, metadata);
+```
+
+- **StopNFTMint:** Stops all NFT mints for that asset (forever).
+
+```rust
+    self.send().kda_stop_nft_mint(token);
+```
+
+- **UpdateLogo:** Updates the asset's logo URI.
+
+```rust
+    self.send().kda_update_logo(token, logo);
+```
+
+- **UpdateURIs:** Updates the stored relevant URIs.
+
+```rust
+    self.send().kda_update_uris(token, uris);
+```
+
+- **ChangeRoyaltiesReceiver:** Changes the address that receives royalties.
+
+```rust
+    self.send().kda_change_royalties_receiver(token, address);
+```
+
+- **ChangeOwner:** Changes the owner of the asset.
+
+```rust
+    self.send().kda_change_owner(token, address);
+```
+
+- **UpdateStaking:** Updates staking parameters.
+
+```rust
+    self.send()kda_update_staking( token, staking_type, apr,
+        min_epochs_to_claim, min_epochs_to_unstake, min_epochs_to_withdraw);
+```
+
+- **UpdateRoyalties:** Updates royalties parameters.
+
+```rust
+    self.send().kda_update_royalties(token, royalties);
+```
+
+- **UpdateKDAFeePool:** Updates the KDA Fee Pool parameters. KDA Fee Pool is the system to pay fees with KDA other tha KLV.
+
+```rust
+    self.send().kda_update_fee_pool(token, is_active, admin_address, f_ratio_kda, f_ratio_klv);
+```
+
+- **StopRoyaltiesChange:** Stops the royalties changes, giving the co-owners more safety about the token's royalties.
+
+```rust
+    self.send().kda_stop_royalties_change(token);
+```
+
+- **StopNFTMetadataChange:** Stops NFT Metadata changes for a given collection.
+
+```rust
+    self.send().kda_stop_metadata_change(token);
+```
+
+## Set Account Name
+
+```rust
+    self.send().set_account_name(name);
+```
+
+Defines a name for the account.
+
+## Vote
+
+```rust
+    self.send()vote(proposal_id, vote_type, amount);
+```
+
+Votes on an active proposal. The weight of the vote depends on the staked KFI of the sender address (The KFI is not consumed).
+
+## Buy
+
+```rust
+    self.send().buy(buy_type, id, currency, amount);
+```
+
+Creates a buy (or bid) order for a given market sell order.
+
+## Sell
+
+```rust
+    self.send().sell(sell_type, marketplace_id, nft_id, nft_nonce,
+        currency, price, reserve_price, end_time) -> ManagedBuffer;
+```
+
+Creates a sell order of a NFT in a marketplace. Returning the Order ID.
+
+## Cancel Market Order
+
+```rust
+    self.send().cancel_market_order(order_id);
+```
+
+Cancels a sell order.
+
+## Create Marketplace
+
+```rust
+    self.send().create_marketplace(name, referral_address,
+        referral_percentage) -> ManagedBuffer;
+```
+
+Creates a marketplace. Returning the Marketplace ID.
+
+## Config Marketplace
+
+```rust
+    self.send()config_marketplace(marketplace_id, name,
+        referral_address, referral_percentage);
+```
+
+Changes the parameters of a marketplace.
+
+## Deposit
+
+```rust
+    self.send()deposit(deposit_type, id, currency, amount);
+```
+
+Deposits an asset into a FPR pool or into an auto-swapping fee system.
+
+## Config ITO
+
+```rust
+    self.send()ito_config(token, receiver, status, max_amount,
+        default_limit_per_address, start_time, end_time, whitelist_status,
+            whitelist_start_time, whitelist_end_time, whitelist_info, packs);
+```
+
+Sets up an Initial Token Offering for either a token or a NFT collection.
+
+## ITOTrigger
+
+Updates the properties of a ITO.
+
+- **SetITOPrices:** Update ITOs packs prices.
+
+```rust
+    self.send().ito_set_prices(token, packs);
+```
+
+- **UpdateStatus:** Update ITO status (Active/Paused).
+
+```rust
+    self.send().ito_update_status(token, status);
+```
+
+- **UpdateReceiverAddress:** Update receiver address of the fees.
+
+```rust
+    self.send().ito_update_receiver_address(token, receiver);
+```
+
+- **UpdateMaxAmount:** Update max amount of minted NFTs.
+
+```rust
+    self.send().ito_update_max_amount(token, max_amount);
+```
+
+- **UpdateDefaultLimitPerAddress:** Update default limit of tokens per address in the whitelist, during the whitelist.
+
+```rust
+    self.send().
+        ito_update_default_limit_per_address(token, default_limit_per_address);
+```
+
+- **UpdateTimes:** Update start and end time of ITO.
+
+```rust
+    self.send().ito_update_times(token, start_time, end_time);
+```
+
+- **UpdateWhitelistStatus:** Update whitelist status (Active/Paused).
+
+```rust
+    self.send().ito_update_whitelist_status(token, whitelist_status);
+```
+
+- **AddToWhitelist:** Adds addresses to the whitelist.
+
+```rust
+    self.send().ito_add_to_whitelist(token, whitelist_info);
+```
+
+- **RemoveFromWhitelist:** Remove addresses from the whitelist.
+
+```rust
+    self.send().ito_remove_from_whitelist(token, whitelist_info);
+```
+
+- **UpdateWhitelistTimes:** Update start and end time of the whitelist.
+
+```rust
+    self.send().
+        ito_update_whitelist_times(token, whitelist_start_time, whitelist_end_time);
+```
