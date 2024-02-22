@@ -12,9 +12,9 @@ sc-meta all build
 
 ## Configuring the Build
 
-The build process is primarily configured using the [build configuration file](/developers/meta/sc-config), currently named `multicontract.toml`, and it is placed in the root of the contract crate.
+The build process is primarily configured using the [build configuration file](/smart-contracts/config-and-tooling/configuration), currently named `multicontract.toml`, and it is placed in the root of the contract crate.
 
-It is also possible to configure the build process to produce [more than one contract per project crate](/developers/meta/sc-config#multi-contract-configuration).
+It is also possible to configure the build process to produce [more than one contract per project crate](/smart-contracts/config-and-tooling/configuration#multi-contract-configuration).
 
 ---
 
@@ -34,7 +34,7 @@ However, not everything can be accomplished here. Notably, macros cannot access 
 
 ABIs consist of metadata about the contract. To build an ABI, we also need data from the modules. The module macros cannot be called from the contract macros (macros are executed at compilation, and we cannot guarantee that modules will need to be recompiled). However, modules can be called. This is why we generate **ABI generator functions** for each module, which can call each other to obtain the complete picture.
 
-Note: The ABI generator is implemented as a trait called [ContractAbiProvider](https://docs.rs/klever-sc/0.39.0/klever_sc/contract_base/trait.ContractAbiProvider.html).
+Note: The ABI generator is implemented as a trait called [ContractAbiProvider](https://docs.rs/klever-sc/0.39.0/klever_sc/contract_base/trait.ContractAbiProvider.html). - Will be available on the TestNet phase 02.
 
 ### c. Meta Crate: Generating the ABI
 

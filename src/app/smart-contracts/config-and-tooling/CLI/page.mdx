@@ -2,7 +2,7 @@
 
 ## Introduction
 
-As previously mentioned in the [overview](/developers/meta/sc-meta#standalone-tool-vs-contract-tool), the meta tool comes in two flavors: one for the individual contract (based on the contract's ABI), and the other as a standalone tool. This section will explore the command-line interface (CLI) for both of these flavors.
+As previously mentioned in the [overview](/smart-contracts/config-and-tooling#standalone-tool-vs-contract-tool), the meta tool comes in two flavors: one for the individual contract (based on the contract's ABI), and the other as a standalone tool. This section will explore the command-line interface (CLI) for both of these flavors.
 
 ## Standalone Tool CLI
 
@@ -39,7 +39,7 @@ Parameters for `sc-meta all`:
 
 The `info` command provides an overview of the contracts and libraries residing under a folder, along with their framework versions. Here's an example output:
 
-![sc-meta info screenshot](/developers/sc-meta/sc-meta-info.png 'Result of calling sc-meta info in the example contract folder in the framework')
+![sc-meta info screenshot](/sc-images/sc-meta-info.png 'Result of calling sc-meta info in the example contract folder in the framework')
 
 Parameters for `info`:
 
@@ -135,9 +135,9 @@ Parameters for `templates`:
 
 ### Calling `test-gen`
 
-The `test-gen` tool is used to [generate boilerplate](/developers/testing/scenario/running-scenarios#auto-generating-the-boilerplate
+The `test-gen` tool is used to [generate boilerplate](/smart-contracts/testing/scenarios/running-scenarios)
 
-) code when [integrating JSON scenario files into a contract's Rust test suite](/developers/testing/scenario/running-scenarios#integration-in-rust).
+) code when [integrating JSON scenario files into a contract's Rust test suite](/smart-contracts/testing/scenarios/running-scenarios).
 
 In brief, JSON scenario tests are often associated with contracts and reside in the `scenarios` folder under the contract crate root. To execute these tests as part of the CI process, it's useful to generate a Rust test for each scenario. The `test-gen` tool automates this task.
 
@@ -146,7 +146,7 @@ These integration tests come in two flavors:
 - Rust tests, exclusively using the Rust debugger infrastructure.
 - VM tests that use the Go infrastructure.
 
-For more information about JSON scenarios in smart contract projects, refer to the [documentation](/developers/testing/scenario/running-scenarios).
+For more information about JSON scenarios in smart contract projects, refer to the [documentation](/smart-contracts/testing/scenarios/running-scenarios).
 
 Parameters for `test-gen`:
 
@@ -158,7 +158,7 @@ Individual Contract CLI
 
 ### Calling `abi`
 
-To generate the ABI for a contract, you can use the `abi` command by running `sc-meta all abi` or `cargo run abi` in the contract's root folder. This command generates the primary ABI file for the contract (`<contract>.abi.json`) along with any other JSON files created if `#[kda_attribute("name", type)]` was used (`<name>.Kda-abi.json`). You can read more about Kda Attribute ABI [here](/developers/data/abi#Kda-attribute-abi).
+To generate the ABI for a contract, you can use the `abi` command by running `sc-meta all abi` or `cargo run abi` in the contract's root folder. This command generates the primary ABI file for the contract (`<contract>.abi.json`) along with any other JSON files created if `#[kda_attribute("name", type)]` was used (`<name>.Kda-abi.json`). You can read more about Kda Attribute ABI [here](/smart-contracts/data/ABI#kda-attribute-abi).
 
 ABI generation also occurs when running other contract commands, such as `build`, `build-dbg`, `update`, and so on. The `abi` command is specifically for generating the ABI without performing any other actions.
 

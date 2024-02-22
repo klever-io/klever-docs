@@ -29,7 +29,7 @@ Regarding error messages: when a test fails, the test runner attempts to transfo
 
 The value interpreter is not overly complex and relies on simple prefixes for most functions. Examples of these prefixes include `"str:"` and `"u32:"`.
 
-The `|` (pipe) operator, used for concatenation, has the highest priority. More information about it can be found [here](/developers/scenario-reference/values-complex#concatenation).
+The `|` (pipe) operator, used for concatenation, has the highest priority. More information about it can be found [here](/smart-contracts/testing/scenarios/complex-values#concatenation).
 
 Function arguments begin after the prefix (without whitespace) and extend either until the first pipe (`|`) or the end of the string.
 
@@ -86,7 +86,7 @@ In some cases, positive numbers may unintentionally start with a "1" bit and be 
 - `"+1"` is still represented as `"0x01"`, where the leading 0 is not necessary. Nevertheless, it's good practice to add the `+` if the argument is expected to be signed.
 - `"-1"` is represented as `"0xff"`. Negative numbers are also represented using the minimum number of bytes.
 
-For more information about signed number encoding, refer to [the big number serialization format](/developers/data/serialization-overview/#arbitrary-width-big-numbers).
+For more information about signed number encoding, refer to [the big number serialization format](/smart-contracts/data/serialization-overview/#arbitrary-width-big-numbers).
 
 ## **Nested numbers**
 

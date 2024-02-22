@@ -13,21 +13,23 @@ Before proceeding with this tutorial, make sure you have the following:
 
 If you want to follow along, you can clone the [klever-sdk-rs](https://github.com/klever-io/klever-vm-sdk-rs) repository and use the [crowdfunding-kda](https://github.com/klever-io/klever-vm-sdk-rs/tree/master/contracts/examples/crowdfunding-kda) example.
 
+> The KleverChain VM SDK will be available on the TestNet phase 02
+
 ## Step-by-Step Debugging
 
 In VSCode, you can set breakpoints anywhere in your code by clicking to the left of the line number. A red dot will appear to mark the breakpoint as registered by the environment:
 
-![Breakpoint Setup](/developers/sc-debugging/breakpoint_setup.png)
+![Breakpoint Setup](/sc-images/breakpoints.png)
 
 Once you've set a breakpoint, you can debug your test function by clicking the `Debug` button above the test function name:
 
-![Start Test](/developers/sc-debugging/start_test.png)
+![Start Test](/sc-images/debug.png)
 
 If it doesn't appear, you might need to wait for rust-analyser to load or ensure you've added the `#[test]` annotation.
 
 Once you've started the test, it should stop at the breakpoint and highlight the current line:
 
-![First Step Debugging](/developers/sc-debugging/first_step_debugging.png)
+![First Step Debugging](/sc-images/first-step.png)
 
 You can then use VSCode's step-by-step debugging (usually F10 to step over, F11 to step into, or Shift + F11 to step out).
 

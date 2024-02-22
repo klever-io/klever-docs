@@ -16,9 +16,9 @@ Smart contract calls on the blockchain lack arity and data type awareness. In ot
 
 Responsibility for managing argument count and deserialization lies with the contract. If a transaction contains an incorrect number of arguments, only the contract can raise an objection. Similarly, if types are mismatched, the contract discovers this during deserialization.
 
-The descriptor for a smart contract's inputs is termed the [ABI](/developers/data/abi), residing off-chain. Essentially, the ABI comprises endpoint names alongside argument names and type descriptions. Understanding a smart contract's ABI is crucial for effective invocation.
+The descriptor for a smart contract's inputs is termed the [ABI](/smart-contracts/data/ABI), residing off-chain. Essentially, the ABI comprises endpoint names alongside argument names and type descriptions. Understanding a smart contract's ABI is crucial for effective invocation.
 
-In the Rust ecosystem, the equivalent of ABI is a helper trait known as a **proxy**. Its sole purpose is to furnish a typed interface for any smart contract, accepting typed arguments and serializing them as per the [Klever serialization format](/developers/data/serialization-overview).
+In the Rust ecosystem, the equivalent of ABI is a helper trait known as a **proxy**. Its sole purpose is to furnish a typed interface for any smart contract, accepting typed arguments and serializing them as per the [Klever serialization format](/smart-contracts/data).
 
 Simple example:
 
@@ -173,7 +173,7 @@ fn my_payable_endpoint(&self, arg: BigUint) -> BigUint {
 }
 ```
 
-For more information on payable endpoints and simple transfers, refer to the documentation [here](/developers/developer-reference/sc-payments). This section pertains specifically to transfers during contract calls.
+For more information on payable endpoints and simple transfers, refer to the documentation [here](/smart-contracts/reference/payments/sc-payments). This section pertains specifically to transfers during contract calls.
 
 ### KLV transfer
 
