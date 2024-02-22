@@ -1,13 +1,12 @@
 {
-  "name": "klever-docs",
+  "name": "tailwindui-protocol",
   "version": "0.1.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "npm run build:circular && next build",
+    "build": "next build",
     "start": "next start",
-    "lint": "next lint",
-    "build:circular": "tsx ./src/scripts/detect-circular-dependency.ts"
+    "lint": "next lint"
   },
   "browserslist": "defaults, not ie <= 11",
   "dependencies": {
@@ -26,7 +25,6 @@
     "acorn": "^8.8.1",
     "autoprefixer": "^10.4.7",
     "clsx": "^1.2.0",
-    "dpdm": "^3.14.0",
     "fast-glob": "^3.3.0",
     "flexsearch": "^0.7.31",
     "framer-motion": "7.8.1",
@@ -43,7 +41,6 @@
     "shiki": "^0.11.1",
     "simple-functional-loader": "^1.2.1",
     "tailwindcss": "^3.3.3",
-    "tsx": "^4.7.1",
     "typescript": "5.1.6",
     "unist-util-filter": "^4.0.1",
     "unist-util-visit": "^4.1.1",
