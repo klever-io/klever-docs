@@ -1,0 +1,56 @@
+### Efficient Memory Utilization
+
+|                                                                                                                                                                           |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 🚨 If you need to transition existing code to leverage managed types, it's crucial to understand the necessary changes. This update is essential and cannot be automated. |
+
+|                                                                                                                                                                                                                 |
+| --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 🚨**Smart contracts must avoid dynamic allocation**. Dynamic allocation incurs a performance penalty, and the Klever Virtual Machine imposes hard limits, stopping contracts that attempt excessive allocation. |
+
+To ensure the efficiency of your contract, consider these guidelines. By adhering to them, you can significantly reduce gas consumption when your contract is called. Additionally, the resulting WASM binary from compilation may become smaller, resulting in faster and cheaper overall execution.
+
+### The Importance of Types
+
+Numerous basic Rust types, such as `String` and `Vec<T>`, involve dynamic heap allocation. In simpler terms, the program, in this case, the smart contract, continually requests more memory from the runtime environment (the VM). While this may not be an issue for small collections, it can become a performance bottleneck for larger ones. In extreme cases, the VM may halt the contract and mark the execution as a failure.
+
+The primary challenge lies in the eagerness of basic Rust types to perform dynamic memory allocation; they request more memory than necessary. This eagerness is beneficial for ordinary programs but can be detrimental for smart contracts, where every instruction consumes gas, potentially resulting in increased costs and runtime failures.
+
+An alternative approach is to employ **managed types** instead of conventional Rust types. Managed types, such as `BigUint` and `ManagedBuffer`, store their contents within the VM's memory, rather than the contract's memory. Consequently, they offer significant performance advantages. The inner workings of managed types involve storing only a `handle` in the contract memory, which is essentially a `u32` index. The actual data resides in reserved VM memory. When you perform operations like addition with `BigUint`, the `+` operator in your code merely passes three handles: one for the result, one for the first operand, and one for the second operand. This minimizes data transfer, resulting in cost-efficient operations. Furthermore, since managed types store only a handle, their memory allocation remains fixed in size and can be allocated on the stack, eliminating the need for heap allocation.
+
+|                                                                                                                                                                           |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 🚨 If you need to transition existing code to leverage managed types, it's crucial to understand the necessary changes. This update is essential and cannot be automated. |
+
+### Basic Rust Types vs. Managed Types
+
+Below is a comparison table of unmanaged types (basic Rust types) and their managed counterparts, as provided by the Klever framework:
+
+| Unmanaged (safe to use) | Unmanaged (allocates on the heap) |                   Managed                    |
+| :---------------------: | :-------------------------------: | :------------------------------------------: |
+|            -            |                 -                 |                  `BigUint`                   |
+|         `&[u8]`         |                 -                 |               `&ManagedBuffer`               |
+|            -            |           `BoxedBytes`            |               `ManagedBuffer`                |
+| `ArrayVec<u8, CAP>`[^1] |             `Vec<u8>`             |               `ManagedBuffer`                |
+|            -            |             `String`              |               `ManagedBuffer`                |
+|            -            |                 -                 |              `TokenIdentifier`               |
+|            -            |          `MultiValueVec`          | `MultiValueEncoded` / `MultiValueManagedVec` |
+| `ArrayVec<T, CAP>`[^1]  |             `Vec<T>`              |               `ManagedVec<T>`                |
+|      `[T; N]`[^2]       |           `Box<[T; N]>`           |            `ManagedByteArray<N>`             |
+|            -            |             `Address`             |               `ManagedAddress`               |
+|            -            |              `H256`               |            `ManagedByteArray<32>`            |
+|            -            |                 -                 |                `KdaTokenData`                |
+|            -            |                 -                 |              `KdaTokenPayment`               |
+
+[^1]: `ArrayVec` allocates on the stack, so it has a fixed capacity and cannot grow indefinitely. Be cautious when setting its size to avoid panics; use `try_push` for error handling.
+[^2]: Be mindful when passing arrays, as they are copied when returned from functions, potentially leading to expensive memory copies in your contract.
+
+In most cases, managed types can replace their unmanaged counterparts seamlessly. Refer to the [BigUint Operations](#biguint-operations) example for a simple illustration.
+
+Additionally, consider **allocating Rust arrays directly on the stack** as local variables whenever a contiguous memory block is needed. Avoid creating mutable global buffers for this purpose, as they require `unsafe` code for manipulation.
+
+Furthermore, contemplate using `ArrayVec`, which provides `Vec`-like functionality without heap allocation. Instead, it allocates memory blocks directly on the stack, akin to local Rust arrays, while preserving the flexibility of `Vec`.
+
+|                                                                                                                             |
+| --------------------------------------------------------------------------------------------------------------------------- |
+| 🚨 Migrate to managed types **incrementally** and thoroughly test your code before contemplating deployment on the mainnet. |

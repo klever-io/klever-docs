@@ -6,19 +6,15 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useRef } from 'react'
 
-import { Button } from '@/components/Button'
-import { useIsInsideMobileNavigation } from '@/components/MobileNavigation'
-import { useSectionStore } from '@/components/SectionProvider'
-import { Tag } from '@/components/Tag'
-import { remToPx } from '@/lib/remToPx'
+import { NavGroup, TreeNavGroup } from '@/types/NavGroup'
 
-interface NavGroup {
-  title: string
-  links: Array<{
-    title: string
-    href: string
-  }>
-}
+import { Button } from '@/components/Button'
+import { useSectionStore } from '@/components/SectionProvider'
+import { navigation } from '@/consts/navigation'
+import { remToPx } from '@/lib/remToPx'
+import { TreeNavigationItem } from './TreeNavigationItem'
+import { NavLink } from './NavLink'
+import { useIsInsideMobileNavigation } from './MobileNavigationContext'
 
 function useInitialValue<T>(value: T, condition = true) {
   let initialValue = useRef(value).current
@@ -41,41 +37,6 @@ function TopLevelNavItem({
         {children}
       </Link>
     </li>
-  )
-}
-
-function NavLink({
-  href,
-  children,
-  tag,
-  active = false,
-  isAnchorLink = false,
-}: {
-  href: string
-  children: React.ReactNode
-  tag?: string
-  active?: boolean
-  isAnchorLink?: boolean
-}) {
-  return (
-    <Link
-      href={href}
-      aria-current={active ? 'page' : undefined}
-      className={clsx(
-        'flex justify-between gap-2 py-1 pr-3 text-sm transition',
-        isAnchorLink ? 'pl-7' : 'pl-4',
-        active
-          ? 'text-zinc-900 dark:text-white'
-          : 'text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white',
-      )}
-    >
-      <span className="truncate">{children}</span>
-      {tag && (
-        <Tag variant="small" color="zinc">
-          {tag}
-        </Tag>
-      )}
-    </Link>
   )
 }
 
@@ -105,9 +66,25 @@ function VisibleSectionHighlight({
   let height = isPresent
     ? Math.max(1, visibleSections.length) * itemHeight
     : itemHeight
+
+  let isFromChildren = false
   let top =
-    group.links.findIndex((link) => link.href === pathname) * itemHeight +
+    group.links.findIndex((link) => {
+      if (link.href === pathname) return true
+
+      if (link.children) {
+        isFromChildren = true
+        return findActivePageRecursive({
+          parentRef: link.href,
+          pathname,
+          children: link.children,
+        })
+      }
+    }) *
+      itemHeight +
     firstVisibleSectionIndex * itemHeight
+
+  let final = isFromChildren ? remToPx(2) : height
 
   return (
     <motion.div
@@ -116,9 +93,40 @@ function VisibleSectionHighlight({
       animate={{ opacity: 1, transition: { delay: 0.2 } }}
       exit={{ opacity: 0 }}
       className="absolute inset-x-0 top-0 bg-zinc-800/2.5 will-change-transform dark:bg-white/2.5"
-      style={{ borderRadius: 8, height, top }}
+      style={{ borderRadius: 8, height: final, top }}
     />
   )
+}
+
+export function findActivePageRecursive({
+  pathname,
+  parentRef,
+  children,
+}: {
+  parentRef: string
+  pathname: string
+  children: Array<TreeNavGroup>
+}): boolean {
+  if (!children) return false
+
+  let isValid =
+    children.findIndex((child) => {
+      if (
+        parentRef + child.href === pathname ||
+        pathname.includes(parentRef + child.href)
+      )
+        return true
+
+      if (child.children) {
+        return findActivePageRecursive({
+          parentRef: parentRef + child.href,
+          pathname,
+          children: child.children,
+        })
+      }
+    }) !== -1
+
+  return isValid
 }
 
 function ActivePageMarker({
@@ -130,7 +138,17 @@ function ActivePageMarker({
 }) {
   let itemHeight = remToPx(2)
   let offset = remToPx(0.25)
-  let activePageIndex = group.links.findIndex((link) => link.href === pathname)
+  let activePageIndex = group.links.findIndex((link) => {
+    if (link.href === pathname) return true
+
+    if (link.children) {
+      return findActivePageRecursive({
+        parentRef: link.href,
+        pathname,
+        children: link.children,
+      })
+    }
+  })
   let top = offset + activePageIndex * itemHeight
 
   return (
@@ -162,7 +180,17 @@ function NavigationGroup({
   )
 
   let isActiveGroup =
-    group.links.findIndex((link) => link.href === pathname) !== -1
+    group.links.findIndex((link) => {
+      if (link.href === pathname) return true
+
+      if (link.children) {
+        return findActivePageRecursive({
+          parentRef: link.href,
+          pathname,
+          children: link.children,
+        })
+      }
+    }) !== -1
 
   return (
     <li className={clsx('relative mt-6', className)}>
@@ -188,114 +216,56 @@ function NavigationGroup({
           )}
         </AnimatePresence>
         <ul role="list" className="border-l border-transparent">
-          {group.links.map((link) => (
-            <motion.li key={link.href} layout="position" className="relative">
-              <NavLink href={link.href} active={link.href === pathname}>
-                {link.title}
-              </NavLink>
-              <AnimatePresence mode="popLayout" initial={false}>
-                {link.href === pathname && sections.length > 0 && (
-                  <motion.ul
-                    role="list"
-                    initial={{ opacity: 0 }}
-                    animate={{
-                      opacity: 1,
-                      transition: { delay: 0.1 },
-                    }}
-                    exit={{
-                      opacity: 0,
-                      transition: { duration: 0.15 },
-                    }}
-                  >
-                    {sections.map((section) => (
-                      <li key={section.id}>
-                        <NavLink
-                          href={`${link.href}#${section.id}`}
-                          tag={section.tag}
-                          isAnchorLink
-                        >
-                          {section.title}
-                        </NavLink>
-                      </li>
-                    ))}
-                  </motion.ul>
-                )}
-              </AnimatePresence>
-            </motion.li>
-          ))}
+          {group.links.map((link) =>
+            link.children && link.children.length > 0 ? (
+              <TreeNavigationItem
+                key={link.href}
+                href={link.href}
+                childrens={link.children}
+                title={link.title}
+                pathname={pathname}
+              />
+            ) : (
+              <motion.li key={link.href} layout="position" className="relative">
+                <NavLink href={link.href} active={link.href === pathname}>
+                  {link.title}
+                </NavLink>
+                <AnimatePresence mode="popLayout" initial={false}>
+                  {link.href === pathname && sections.length > 0 && (
+                    <motion.ul
+                      role="list"
+                      initial={{ opacity: 0 }}
+                      animate={{
+                        opacity: 1,
+                        transition: { delay: 0.1 },
+                      }}
+                      exit={{
+                        opacity: 0,
+                        transition: { duration: 0.15 },
+                      }}
+                    >
+                      {sections.map((section) => (
+                        <li key={section.id}>
+                          <NavLink
+                            href={`${link.href}#${section.id}`}
+                            tag={section.tag}
+                            isAnchorLink
+                          >
+                            {section.title}
+                          </NavLink>
+                        </li>
+                      ))}
+                    </motion.ul>
+                  )}
+                </AnimatePresence>
+              </motion.li>
+            ),
+          )}
         </ul>
       </div>
     </li>
   )
 }
-
-export const navigation: Array<NavGroup> = [
-  {
-    title: "Klever Documentation",
-    links:[
-      {title: 'Introduction', href: '/'},
-    ]
-  },
-  {
-    title: 'Klever Wallet',
-    links: [
-      { title: 'Quickstart', href: '/quickstart' },
-    ],
-  },
-  {
-    title: 'Klever Blockchain',
-    links: [
-      {
-        title: 'Welcome to the Klever Blockchain documentation website!',
-        href: '/welcome-to-the-Klever-Blockchain-documentation-website',
-      },
-      {
-        title: 'Getting started with Klever Blockchain',
-        href: '/getting-started-with-klever-blockchain',
-      },
-      { title: 'API & SDK', href: '/api-and-sdk' },
-      { title: 'Become a validator', href: '/become-a-validator' },
-      { title: 'Staking', href: '/staking' },
-      { title: 'Delegation', href: '/delegation' },
-      { title: 'Account Permissions', href: '/account-permissions' },
-      { title: 'Multisignature', href: '/multisignature' },
-      { title: 'Royalties', href: '/royalties' },
-      { title: 'Testnet', href: '/testnet' },
-      { title: 'Contracts', href: '/contracts' },
-      { title: 'Exchange Integration', href: '/exchange-integration' },
-      { title: 'Node Operations', href: '/node-operations' },
-      { title: 'About Our Technology', href: '/about-our-technology' },
-    ],
-  },
-
-
-  {
-    title: 'Klever SDK',
-    links: [
-      {
-        title: 'Introduction to KleverChain SDK',
-        href: '/introduction-to-kleverchain-sdk',
-      },
-      {title: 'KleverChain SDKs', href: '/sdks'},
-      {
-        title: 'Node.js',
-        href: '/node.js',
-      },
-      { title: 'Web App', href: '/web-app' },
-      { title: 'Unity', href: '/unity' },
-      { title: 'Available Transactions', href: '/available-transactions' },
-      { title: 'Contract Details', href: '/contract-details' },
-
-      //Relevant Info     
-      { title: 'Precision', href: '/precision' },
-      { title: 'KAPPS Flowcharts', href: '/kapps-flowcharts' },
-      { title: 'Types', href: '/types' },
-
-      //Legacy
-      { title: 'Legacy', href: '/legacy' },
-    ],
-  },
-]
 
 export function Navigation(props: React.ComponentPropsWithoutRef<'nav'>) {
   return (

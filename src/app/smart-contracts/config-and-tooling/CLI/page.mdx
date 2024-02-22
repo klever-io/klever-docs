@@ -1,0 +1,254 @@
+# CLI
+
+## Introduction
+
+As previously mentioned in the [overview](/smart-contracts/config-and-tooling#standalone-tool-vs-contract-tool), the meta tool comes in two flavors: one for the individual contract (based on the contract's ABI), and the other as a standalone tool. This section will explore the command-line interface (CLI) for both of these flavors.
+
+## Standalone Tool CLI
+
+### The `all` Command
+
+Before diving into the details of the standalone tool's CLI, it's essential to understand the `sc-meta all ...` command. This command serves a special purpose: it allows the standalone tool to control multiple smart contract projects with a single command.
+
+The `all` command finds all contracts in a given folder and calls the contract tool for each of them with the provided arguments. For instance:
+
+- `sc-meta all abi` will generate ABIs for all contracts.
+- `sc-meta all build --locked` will build all contracts, using the crate versions specified in `Cargo.lock`.
+- `sc-meta all clean` will clean all projects, removing build artifacts.
+- And so on.
+
+You can also execute `sc-meta all help` to view CLI documentation, which is almost identical to that of the individual contract tool.
+
+A related command is `info`, which prints a tree view of all the contract and contract libraries in a folder without making any changes to them.
+
+|                                                                                                                                  |
+| -------------------------------------------------------------------------------------------------------------------------------- |
+| ℹ️ Since the CLI of the individual contract tool is available in the standalone tool, the following two commands are equivalent: |
+| `cd my-contract && sc-meta all build`                                                                                            |
+| `cd my-contract/meta && cargo run build`                                                                                         |
+
+Parameters for `sc-meta all`:
+
+- `--path`: Specifies the target directory where the contract meta crates will be called. Default is the current directory.
+- `--ignore`: Specifies directory names to ignore. Default is to ignore the `target` directory.
+- `--no-abi-git-version`: Skips loading the Git version into the ABI.
+- `--target-dir-meta`: Allows specifying the target directory where the Rust compiler will build the intermediary files for the meta crates. Sharing the same target directory can speed up building multiple contract crates at once. Default is to use the workspace or build in `meta/target`.
+- `--target-dir-all`: Overrides both the `--target-dir-meta` and the `--target-dir-wasm` arguments.
+
+### Calling `info`
+
+The `info` command provides an overview of the contracts and libraries residing under a folder, along with their framework versions. Here's an example output:
+
+![sc-meta info screenshot](/sc-images/sc-meta-info.png 'Result of calling sc-meta info in the example contract folder in the framework')
+
+Parameters for `info`:
+
+- `--path`: Specifies the target directory where to call all contract meta crates. Default is the current directory.
+- `--ignore`: Specifies directory names to ignore. Default is to ignore the `target` directory.
+
+### Calling `upgrade`
+
+Running `sc-meta upgrade` will attempt to automatically modify the code of one or more contracts to make them compatible with the latest Rust framework version. The oldest version currently supported is `0.28.0`. Any version older than that will require manual upgrading to at least `0.28.0`.
+
+This automatic upgrading process is particularly crucial when transitioning from `0.38` to `0.39.0`, as many significant changes occurred at that point.
+
+|                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 💡 For projects with multiple contract crates, it is recommended to upgrade all of them simultaneously. The upgrade algorithm progresses step by step, version by version. For some major versions, it also checks that the project compiles before moving on. This allows developers to address issues manually if necessary, preventing them from accumulating. If there are local dependencies between contracts, the upgrader will not be able to perform the check unless all of them are upgraded together. |
+
+|                                                                                                                                                                                                                                                |
+| ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 🚨 It is strongly recommended to maintain code versioning or at least have a backup of the contract code before using `sc-meta upgrade`. This automatic code alteration process significantly increases the importance of this recommendation. |
+
+Parameters for `upgrade`:
+
+- `--path`: Specifies the target directory where to call all contract meta crates. Default is the current directory.
+- `--ignore`: Specifies directory names to ignore. Default is to ignore the `target` directory.
+- `--to`: Overrides the version to upgrade to. Default is the last released version.
+- `--no-check`: By default, `upgrade` compiles the project after each major version upgrade. This allows developers upgrading multiple versions to address upgrade-related issues before they accumulate. This feature can be turned off using the `--no-check` flag. Default is to compile the project.
+
+### Calling `local-deps`
+
+Executing `sc-meta local-deps` will generate a report of local dependencies between contracts and libraries within each contract. This report aids in achieving reproducible builds and may serve other purposes in the future.
+
+Example output (abridged):
+
+```json
+{
+  "root": "/home/user/klever/klever-io/klever-vm-sdk-rsexchange-sc/",
+  "contractPath": "/home/user/klever/klever-io/klever-vm-sdk-rsexchange-sc/dex/pair",
+  "commonDependencyPath": "/home/user/klever/klever-io/klever-vm-sdk-rsexchange-sc",
+  "dependencies": [
+    {
+      "path": "common/common_errors",
+      "depth": 1
+    },
+    {
+      "path": "common/common_structs",
+      "depth": 1
+    },
+    {
+      "path": "common/modules/legacy_token_decode_module",
+      "depth": 3
+    },
+    {
+      "path": "common/modules/locking_module",
+      "depth": 2
+    },
+    {
+      "path": "common/modules/math",
+      "depth": 2
+    }
+  ]
+}
+```
+
+Parameters for `local-deps`:
+
+- `--path`: Specifies the target directory where to call all contract meta crates. Default is the current directory.
+- `--ignore`: Specifies directory names to ignore. Default is to ignore the `target` directory.
+
+### Calling `new`
+
+The `new` command creates a new smart contract project based on a standard template. This tool automatically replaces all the necessary names in the project, including the crate name, contract trait name, and the file name of the main source file.
+
+Parameters for `new`:
+
+- `--template`: The contract template to clone. Available options can be retrieved using the `templates` command. (Required)
+- `--name`: The new name for the contract. If not specified, the template name will be retained by default.
+- `--tag`: The framework version on which the contracts should be created. Default is the latest released version.
+- `--path`: Specifies the target directory where the new contract directory will be created. Default is the current directory.
+
+### Calling `templates`
+
+The `templates` command lists all available contract templates. As of framework version 0.43.2, the available templates are:
+
+```
+crypto-zombies
+empty
+adder
+```
+
+Parameters for `templates`:
+
+- `--tag`: The framework version on which the contracts should be created. Default is the latest released version.
+
+### Calling `test-gen`
+
+The `test-gen` tool is used to [generate boilerplate](/smart-contracts/testing/scenarios/running-scenarios)
+
+) code when [integrating JSON scenario files into a contract's Rust test suite](/smart-contracts/testing/scenarios/running-scenarios).
+
+In brief, JSON scenario tests are often associated with contracts and reside in the `scenarios` folder under the contract crate root. To execute these tests as part of the CI process, it's useful to generate a Rust test for each scenario. The `test-gen` tool automates this task.
+
+These integration tests come in two flavors:
+
+- Rust tests, exclusively using the Rust debugger infrastructure.
+- VM tests that use the Go infrastructure.
+
+For more information about JSON scenarios in smart contract projects, refer to the [documentation](/smart-contracts/testing/scenarios/running-scenarios).
+
+Parameters for `test-gen`:
+
+- `--path`: Specifies the target directory where to call all contract meta crates. Default is the current directory.
+- `--ignore`: Specifies directory names to ignore. Default is to ignore the `target` directory.
+- `--create`: Creates test files if they don't already exist.
+
+Individual Contract CLI
+
+### Calling `abi`
+
+To generate the ABI for a contract, you can use the `abi` command by running `sc-meta all abi` or `cargo run abi` in the contract's root folder. This command generates the primary ABI file for the contract (`<contract>.abi.json`) along with any other JSON files created if `#[kda_attribute("name", type)]` was used (`<name>.Kda-abi.json`). You can read more about Kda Attribute ABI [here](/smart-contracts/data/ABI#kda-attribute-abi).
+
+ABI generation also occurs when running other contract commands, such as `build`, `build-dbg`, `update`, and so on. The `abi` command is specifically for generating the ABI without performing any other actions.
+
+For a simple contract like this:
+
+```rust
+#[klever_sc::contract]
+#[kda_attribute("myTicker", u64)]
+pub trait SomeContract {
+    #[init]
+    fn init(&self) {}
+}
+```
+
+The generated files would be:
+
+```text
+output
+├── myTicker.Kda-abi.json
+└── some_contract.abi.json
+```
+
+Parameters for `abi`:
+
+- `--path`: Specifies the target directory where the contract meta crates will be called. Default is the current directory.
+- `--ignore`: Specifies directory names to ignore. Default is to ignore the `target` directory.
+- `--no-abi-git-version`: Skips loading the Git version into the ABI.
+- `--target-dir-meta`: Allows specifying the target directory where the Rust compiler will build the intermediary files for the meta crates. Default is to use the workspace or build in `meta/target`.
+- `--target-dir-all`: Overrides both the `--target-dir-meta` and the `--target-dir-wasm` arguments.
+
+### Calling `build`
+
+To build a contract, you can use the `build` command by running either `sc-meta all build` or `cargo run build` in the contract's meta crate. The standalone `sc-meta` tool essentially forwards this command to the contract meta crate.
+
+By default, this command produces three files for each output contract: the ABI (`<contract>.abi.json`), the contract (`<contract>.wasm`), and a JSON file containing all the used VM EI imported functions (`<contract>.imports.json`). For example, if you have a multisig contract, the produced files would be:
+
+```text
+output
+├── multisig-full.abi.json
+├── multisig-full.imports.json
+├── multisig-full.wasm
+├── multisig-view.abi.json
+├── multisig-view.imports.json
+├── multisig-view.wasm
+├── multisig.abi.json
+├── multisig.imports.json
+└── multisig.wasm
+```
+
+Parameters for `build`:
+
+- `--locked`: Uses the version from `Cargo.lock` without updating it, ensuring reproducible builds.
+- `--wasm-name` followed by a name: Replaces the main contract's name with the specified one. It has no effect on secondary contracts.
+- `--wasm-suffix` followed by a suffix: Appends a dash and the given suffix to all produced contract files. For example, running `cargo run build --wasm-suffix dbg` on a multisig contract would create contracts named `multisig-dbg.wasm`, `multisig-view-dbg.wasm`, and `multisig-full-dbg.wasm`.
+- `--wasm-symbols`: Retains function names and prevents them from being optimized away at compile time. Useful for investigating the WebAssembly Text (WAT) output.
+- `--no-wasm-opt`: Skips applying `wasm-opt` after the build, preserving function names. Useful for examining the WAT output.
+- `--wat`: Generates a WAT file for each contract output by calling `wasm2wat`.
+- `--mir`: Emits MIR (Mid-level Intermediate Representation) files when building.
+- `--llvm-ir`: Emits LLVM IR (Intermediate Representation) files when building.
+- `--no-abi-git-version`: Skips loading the Git version into the ABI.
+- `--no-imports`: Disables the generation of an EI (External Interface) imports JSON file for each contract, which is the default behavior.
+- `--target-dir-wasm`: Allows specifying the target directory where the Rust compiler will build the intermediary files for the contracts. Sharing the same target directory can speed up building multiple contract crates at once.
+- `--target-dir`: A synonym for `--target-dir-wasm` for backwards compatibility.
+- `--twiggy-top`: Generates a Twiggy top report after building.
+- `--twiggy-paths`: Generates a Twiggy paths report after building.
+- `--twiggy-monos`: Generates a Twiggy monos report after building.
+- `--twiggy-dominators`: Generates a Twiggy dominators report after building.
+
+Additional parameters inherited from `all` when used in the standalone tool:
+
+- `--target-dir-meta`: Allows specifying the target directory where the Rust compiler will build the intermediary files for the meta crates.
+- `--target-dir-all`: Overrides both the `--target-dir-meta` and the `--target-dir-wasm` arguments.
+
+### Calling `build-dbg`
+
+The `build-dbg` command is provided for convenience. Running `cargo run build-dbg` is equivalent to running `cargo run build --wasm-symbols --no-wasm-opt --wasm-suffix "dbg" --wat --no-imports`. It is ideal for developers who want to investigate the WebAssembly output produced by the compiler.
+
+The output for `build-dbg` in the multisig example would be:
+
+```text
+output
+├── multisig.abi.json
+├── multisig-dbg.wasm
+├── multisig-dbg.wat
+├── multisig-full.abi.json
+├── multisig-full-dbg.wasm
+├── multisig-full-dbg.wat
+├── multisig-view.abi.json
+├── multisig-view-dbg.wasm
+└── multisig-view-dbg.wat
+```
+
+This command accepts all the arguments from `build`, so `--target-dir

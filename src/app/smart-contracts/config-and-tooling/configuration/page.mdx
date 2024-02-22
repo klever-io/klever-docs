@@ -1,0 +1,243 @@
+## Configuration
+
+Developers don't write smart contracts directly; instead, they write _specifications_ for smart contracts. An automated process then generates the smart contracts from these specifications. This approach has two practical implications:
+
+1. The smart contract code itself has no direct knowledge of the underlying technology or the blockchain. Therefore, it can be used to build other products like tests, interactors, and services.
+2. The build process is a separate entity that requires configuration.
+
+It's also possible to create different variants of smart contracts from the same code base. These variants can contain only subsets of the endpoints available in the code, or they might have different build settings and underlying APIs. This system is known as "multi-contract," and it will be explained in more detail later.
+
+To avoid overburdening the build CLI, most of the build configuration resides in a configuration file in the contract crate root. Currently, this file must be named `multicontract.toml`. However, there are plans to change this name to something more general, as its contents have recently become more comprehensive.
+
+---
+
+## Single Contract Configuration
+
+### Specification
+
+To illustrate single contract configuration, let's assume we want to build a single contract that encompasses all available functionality. Here are the ways in which we can configure it in the `multicontract.toml` file:
+
+```toml
+[settings]
+main = "main"
+
+[contracts.main]
+name = "my-contract"
+add-unlabelled = true
+panic-message = true
+ei = "1.3"
+allocator = "leaking"
+stack-size = "3 pages"
+features = ["example_feature_1", "example_feature_2"]
+
+[contracts.main.profile]
+codegen-units = 1
+opt-level = "z"
+lto = true
+debug = false
+panic = "abort"
+overflow-checks = false
+```
+
+Here are the settings explained:
+
+- `panic-message`: This feature is useful for debugging, as it displays messages from regular Rust panics in a contract. However, it increases the contract size by approximately 1.5kB and is not recommended for production use. Values: `true` | `false` (default: `false`).
+- `ei`: Configures the post-processor that checks the environment interface (EI) used by the built smart contract. Values: `"1.3"` (default: `"1.2"`).
+- `allocator`: Configures the heap memory allocator used inside the compiled contract. Values: `"fail"`, `"leaking"`, `"static64k"`, `"wee_alloc"` (default: `"fail"`).
+- `stack-size`: Allows adjusting the amount of memory allocated for the stack in a WebAssembly contract. Values: number of bytes, e.g., `655360`, or kilobytes with the suffix `k`, e.g., `"64k"`, `"128k"`, etc., or 64k pages with the suffix `pages`, e.g., `"1 pages"`, `"8 pages"`, etc. (default: `131072` or `"128k"`).
+- `features`: Specifies feature flags for conditional compilation in smart contract crates. It allows differences between variants of the smart contract and usage in tools and off-chain projects. (default: `[]`)
+- `codegen-units`: Controls the number of "code generation units" a crate will be split into. (default: `1`)
+- `opt-level`: Controls the level of optimization applied during compilation. Values: `0`, `1`, `2`, `3`, `s`, `z` (default: `z`).
+- `lto`: Enables link-time optimization for the release profile. Values: `true` | `false` (default: `true`).
+- `debug`: Controls the amount of debug information included in the compiled binary. Values: `true` | `false` (default: `false`).
+- `panic`: Controls how smart contracts handle panics. Values: `"unwind"`, `"abort"` (default: `"abort"`).
+- `overflow_checks`: Controls whether runtime checks for integer overflow are performed. Values: `true` | `false` (default: `false`).
+
+---
+
+### Default Configuration
+
+If there is no configuration file, all defaults will be used. This is equivalent to the minimal file below:
+
+```toml
+[settings]
+main = "main"
+
+[contracts.main]
+name = "my-contract"
+add-unlabelled = true
+```
+
+It is also equivalent to this more verbose version:
+
+```toml
+[settings]
+main = "main"
+
+[contracts.main]
+name = "my-contract"
+add-unlabelled = true
+panic-message = false
+ei = "1.2"
+allocator = "fail"
+stack-size = "2 pages"
+features = []
+```
+
+---
+
+## Multi-Contract Configuration
+
+### Introduction
+
+Starting with version `0.37`, it is possible to configure a "multi-contract build." Multiple contracts can be built from the same source, allowing for external view contracts and reducing the size of the main contract.
+
+An external view contract allows convenient reading from another contract's storage directly. It offloads some of the logic required for view functions from the main contract to a secondary one. This can significantly decrease the main contract's size.
+
+### Specification
+
+The configuration for multi-contract builds in `multicontract.toml`:
+
+```toml
+[settings]
+main = "multisig-main"
+
+[contracts.multisig-main]
+name = "multisig"
+add-unlabelled = true
+
+[contracts.view]
+name = "multisig-view"
+external-view = true
+add-labels = ["multisig-external-view"]
+
+[contracts.full]
+name = "multisig-full"
+add-unlabelled = true
+add-labels = ["multisig-external-view"]
+```
+
+In this configuration:
+
+- `main` specifies the contract id of the main wasm crate.
+- `contracts` is indexed by contract id. Each contract has settings like `name`, `external-view`, `add-unlabelled`, `add-labels`, and `add-endpoints`.
+- `labels-for-contracts` is used for mapping labels to contracts but is not currently used in projects.
+
+---
+
+### The External View Contract Explained
+
+External view contracts are useful for contracts with certain endpoints primarily used for off-chain data retrieval. These endpoints can be moved to an external view contract to reduce the main contract's size. The framework handles storage access rerouting automatically, making it seamless for developers.
+
+An external view contract behaves differently from a regular contract:
+
+1. Storage access is different, as all storage reads are done from the target contract given in the constructor.
+2. An external view contract can write to its own storage, but this might become an error in the future.
+3. The constructor is different and takes the address of the target contract to read from.
+
+---
+
+### Labels for Contracts (Not Recommended)
+
+`labels-for-contracts` can be used to map labels to contracts, but it is not commonly used. It contains a mapping from labels to lists of contract ids, and it can be harder to read than the
+
+contract-to-label map. It is better to stay away from this feature if possible.
+
+---
+
+## More Examples
+
+### Example 1
+
+Starting from framework version 0.43.0, it's possible to have different variants of a contract with different constructors, which can be useful for various purposes:
+
+- Keeping separate versions for upgrades and migrations.
+- Optimizing contract size by initially deploying with just the constructor and then immediately upgrading to a version with all the code but without the constructor.
+
+It's also possible to have different versions of the same endpoint in different contract variants. In the example below, the endpoint `sampleValue` has two different implementations.
+
+Here's a minimal example:
+
+```rust
+#[klever_sc::contract]
+pub trait Example2 {
+    #[init]
+    fn default_init(&self, sample_value: BigUint) {
+        self.sample_value().set(sample_value);
+    }
+
+    #[init]
+    #[label("alt-init")]
+    fn alternative_init(&self) -> &'static str {
+        "alternative init"
+    }
+
+    #[view(sampleValue)]
+    #[storage_mapper("sample-value")]
+    fn sample_value(&self) -> SingleValueMapper<BigUint>;
+
+    #[view(sampleValue)]
+    #[label("alt-impl")]
+    fn alternative_sample_value(&self) -> &'static str {
+        "alternative message instead of sample value"
+    }
+}
+```
+
+Accompanied by the following configuration:
+
+```toml
+[settings]
+main = "example2-main"
+
+[contracts.example2-main]
+add-unlabelled = true
+
+[contracts.example2-alt-impl]
+add-labels = ["alt-impl"]
+```
+
+---
+
+## Testing with Multi-Contracts
+
+It's both possible and recommended to use contracts in scenario tests as they would be used on-chain.
+
+The Go scenario runner will work with the produced contract binaries without any further complications. Attempting to call an endpoint that is not available in a certain output contract will result in a failure, even if that endpoint exists in the original contract code.
+
+To achieve the same effect with the Rust scenario runner, configure it as shown in the following snippet, taken from `multisig_scenario_rs_test.rs`, one of the multisig test files:
+
+```rust
+fn world() -> ScenarioWorld {
+    // Initialize the blockchain mock, just like in a regular test.
+    let mut blockchain = ScenarioWorld::new();
+    blockchain.set_current_dir_from_workspace("contracts/examples/multisig");
+
+    // Contracts that have no multi-contract config are provided the same as before.
+    blockchain.register_contract("file:test-contracts/adder.wasm", adder::ContractBuilder);
+
+    // For multi-contract outputs, you need to provide:
+    // - the ABI via the generated AbiProvider type
+    // - a scenario expression to bind to, same as for simple contracts
+    // - a contract builder, same as for simple contracts
+    // - the contract name as specified in multicontract.toml
+    blockchain.register_partial_contract::<multisig::AbiProvider, _>(
+        "file:output/multisig.wasm",
+        multisig::ContractBuilder,
+        "multisig",
+    );
+
+    // The same goes for the external view contract.
+    // There's no need to specify here that it is an external view;
+    // the framework retrieves all the data from multicontract.toml.
+    blockchain.register_partial_contract::<multisig::AbiProvider, _>(
+        "file:output/multisig-view.wasm",
+        multisig::ContractBuilder,
+        "multisig-view",
+    );
+
+    blockchain
+}
+```
+
+---

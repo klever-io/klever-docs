@@ -1,0 +1,370 @@
+# Rust Storage Mappers
+
+The Rust framework provides various storage mappers to manage data storage in smart contracts. Choosing the right storage mapper for each situation is crucial for optimizing performance. In this guide, we'll describe different storage mappers and provide comparisons to help you make informed decisions.
+
+## General Purpose Mappers
+
+### SingleValueMapper
+
+The `SingleValueMapper` is used to store a single value. Here are some examples:
+
+```rust
+fn single_value(&self) -> SingleValueMapper<Type>;
+fn single_value_with_single_key_arg(&self, key_arg: Type1) -> SingleValueMapper<Type2>;
+fn single_value_with_multi_key_arg(&self, key_arg1: Type1, key_arg2: Type2) -> SingleValueMapper<Type3>;
+```
+
+Keep in mind that there's no way to iterate over all `key_arg`s, so if you need to do so, consider using another mapper.
+
+#### Available methods:
+
+- `get`: Reads the value from storage and deserializes it to the given `Type`.
+- `set`: Sets the stored value to the provided `value` argument.
+- `is_empty`: Returns `true` if the storage entry is empty.
+- `set_if_empty`: Sets the value only if the storage for that value is currently empty.
+- `clear`: Clears the entry.
+- `update`: Takes a closure as an argument, applies that closure to the currently stored value, saves the new value, and returns any value the given closure might return.
+- `raw_byte_length`: Returns the raw byte length of the stored value.
+
+### VecMapper
+
+The `VecMapper` stores elements of the same type, each under their own storage key. It allows access by index for these items. Examples:
+
+```rust
+fn my_vec(&self) -> VecMapper<Type>;
+fn my_vec_with_args(&self, arg: Type1) -> VecMapper<Type2>;
+```
+
+#### Available methods:
+
+- `push`: Stores the element at index `len` and increments `len` afterward.
+- `get`: Gets the element at the specific index.
+- `set`: Sets the element at the given index.
+- `clear_entry`: Clears the entry at the given index.
+- `is_empty`: Returns `true` if the mapper has no elements stored.
+- `len`: Returns the number of items stored in the mapper.
+- `extend_from_slice`: Pushes all elements from the given slice at the end of the mapper.
+- `swap_remove`: Removes the element at `index`, moves the last element to `index` and decreases the `len` by 1.
+- `clear`: Clears all the elements from the mapper.
+- `iter`: Provides an iterator over all the elements.
+
+### SetMapper
+
+The `SetMapper` stores a set of values, with no duplicates allowed. It also provides methods for checking if a value already exists in the set. Values are ordered by their order of insertion.
+
+#### Examples:
+
+```rust
+fn my_set(&self) -> SetMapper<Type>;
+```
+
+#### Available methods:
+
+- `insert`: Inserts the value into the set. Returns `false` if the item was already present.
+- `remove`: Removes the value from the set. Returns `false` if the set did not contain the value.
+- `contains`: Returns `true` if the mapper contains the given value.
+- `is_empty`: Returns `true` if the mapper has no elements stored.
+- `len`: Returns the number of items stored in the mapper.
+- `clear`: Clears all the elements from the mapper.
+- `iter`: Returns an iterator over all the stored elements.
+
+### UnorderedSetMapper
+
+The `UnorderedSetMapper` is similar to `SetMapper`, but it does not guarantee the order of the items. It is more efficient than `SetMapper` and should be used instead unless you need to maintain the order. It uses a `VecMapper` internally to store the elements and provides O(1) `contains`.
+
+#### Examples:
+
+```rust
+fn my_set(&self) -> UnorderedSetMapper<Type>;
+```
+
+#### Available methods:
+
+- `swap_remove`: Uses the internal `VecMapper`'s `swap_remove` method to remove the element. Returns `false` if the element was not present in the set.
+
+### WhitelistMapper
+
+The `WhitelistMapper` stores a whitelist of items and does not provide means of iterating over the elements. If you need to iterate over the elements, use `UnorderedSetMapper` instead. It simply stores a flag in storage for each item if they're whitelisted.
+
+#### Examples:
+
+```rust
+fn my_whitelist(&self) -> WhitelistMapper<Type>
+```
+
+#### Available methods:
+
+- `add`: Adds the value to the whitelist.
+- `remove`: Removes the value from the whitelist.
+- `contains`: Returns `true` if the mapper contains the given value.
+- `require_whitelisted`: Signals an error if the item is not whitelisted.
+
+### LinkedListMapper
+
+The `LinkedListMapper` stores a linked list, allowing fast insertion/removal of elements and the possibility to iterate over the entire list.
+
+#### Examples:
+
+```rust
+fn my_linked_list(&self) -> LinkedListMapper<Type>
+```
+
+#### Available methods:
+
+- `is_empty`: Returns `true` if the mapper has no elements stored.
+- `len`: Returns the number of items stored in the mapper.
+- `clear`: Clears all the elements from the mapper.
+- `iter`: Returns an iterator over all the stored elements.
+- `iter_from_node_id`: Returns an iterator starting from the given `node_id`.
+- `front`/`back`: Returns the first/last element if the list is not empty.
+- `pop_front`/`pop_back`: Removes and returns the first/last element from the list.
+- `push_after`/`push_before`: Inserts the given `element` into the list after/before the given `node`.
+- `push_after_node_id`/`push_before_node_id`: Inserts the given `element` after/before the node with the given `node_id`.
+- `push_front`/`push_back`: Pushes the given `element` at the front/back of the list.
+- `set_node_value`/`set_node_value_by_id`: Sets a node's value.
+- `remove_node`/`remove_node_by_id`: Removes the node from the list.
+
+### MapMapper
+
+The `MapMapper` stores (key, value) pairs and allows iteration over keys. This is the most expensive mapper to use. Keys are ordered by their order of insertion.
+
+#### Examples:
+
+```rust
+fn my_map(&self) -> MapMapper<KeyType, ValueType>
+```
+
+#### Available methods:
+
+- `is_empty`: Returns `true` if the mapper has no elements stored.
+- `len`: Returns the number of items stored in the mapper.
+- `contains_key`: Returns `true` if the mapper contains the given key.
+- `get`: Returns `Some(value)` if the key exists, `None` if the key does not exist.
+- `insert`: Inserts the given key, value pair into the map and returns `Some(old_value)` if the key was already present.
+- `remove`: Removes the key and the corresponding value from the map and returns the value.
+- `keys`/`values`/`iter`: Provides an iterator over all
+
+keys, values, and (key, value) pairs, respectively.
+
+## Specialized Mappers
+
+### UniqueIdMapper
+
+The `UniqueIdMapper` holds values from 1 to N with a special property: if `mapper[i] == i`, then nothing is actually stored. This makes initialization O(1) instead of O(N), making it useful for maintaining a list of available IDs.
+
+#### Examples:
+
+```rust
+fn my_id_mapper(&self) -> UniqueIdMapper<Self::Api>
+```
+
+#### Available methods:
+
+- `set_initial_len`: Sets the initial mapper length.
+- `is_empty`: Returns `true` if the mapper has no elements stored.
+- `len`: Returns the number of items stored in the mapper.
+- `get`: Gets the value for the given index.
+- `set`: Sets the value at the given index.
+- `swap_remove`: Removes the ID at the given `index` and returns it.
+- `iter`: Provides an iterator over all the IDs.
+
+## Comparisons between Different Mappers
+
+### SingleValueMapper vs Old Storage Set/Get Pairs
+
+There is no difference between `SingleValueMapper` and the old-school setters/getters. `SingleValueMapper` is a more compact and efficient option.
+
+### SingleValueMapper vs VecMapper
+
+Use `SingleValueMapper` when you need to read the whole array on every use or the array is expected to be of small length. Use `VecMapper` when you require reading a part of the array or the encoding of `T` is more efficient with `VecMapper`.
+
+### VecMapper vs SetMapper
+
+Use `SetMapper` when you need to store a whitelist of values efficiently, as it provides O(1) value checking. Avoid using `VecMapper` for such cases, as it can be inefficient.
+
+### VecMapper vs LinkedListMapper
+
+`LinkedListMapper` is a specialized version of `VecMapper` that allows fast insertion/removal at both ends and efficient iteration. It is suitable for storing queues or ordered lists.
+
+### SingleValueMapper vs MapMapper
+
+Avoid using `MapMapper` unless you need to iterate over all the entries, as it is the most expensive mapper in terms of gas costs. `SingleValueMapper` is more efficient and suitable for most cases.
+
+Always choose the right mapper for your specific use-case to optimize gas costs and complexity.
+
+## FungibleTokenMapper
+
+Stores a token identifier (like a `SingleValueMapper<TokenIdentifier>`) and provides methods for using this token ID directly with the most common API functions. Note that most method calls will fail if the token was not issued previously.
+
+Examples:
+
+`rust
+fn my_token_id(&self) -> FungibleTokenMapper
+`
+
+Available methods:
+
+### issue
+
+```rust
+fn issue( &mut self, token_display_name: &ManagedBuffer<SA>, token_ticker: &ManagedBuffer<SA>, initial_supply: &BigUint<SA>, max_supply: &BigUint<SA>, num_decimals: u32) -> TokenIdentifier<SA>
+```
+
+Issues a new fungible token. `issue_cost` is 0.05 KLV (5000000000000000) at the time of writing this, but since this changed in the past, we've let it as an argument it case it changes again in the future.
+
+This mapper allows only one issue, so trying to issue multiple types will signal an error.
+
+### mint
+
+`rust
+fn mint(amount: BigUint) -> KdaTokenPayment
+`
+
+Mints `amount` tokens for the stored token ID, using the `KDALocalMint` built-in function. Returns a payment struct, containing the token ID and the given amount.
+
+### mint_and_send
+
+`rust
+fn mint_and_send(to: &ManagedAddress, amount: BigUint) -> KdaTokenPayment<SA>
+`
+
+Same as the method above, but also sends the minted tokens to the given address.
+
+### burn
+
+`rust
+fn burn(amount: &BigUint)
+`
+
+Burns `amount` tokens, using the `KDALocalBurn` built-in function.
+
+### get_balance
+
+`rust
+fn get_balance() -> BigUint
+`
+
+Gets the current balance the SC has for the token.
+
+## NonFungibleTokenMapper
+
+Similar to the `FungibleTokenMapper`, but is used for NFT, SFT and META-Kda tokens.
+
+```rust
+fn nft_create<T: TopEncode>(amount: BigUint, attributes: &T) -> KdaTokenPayment
+
+fn nft_create_named<T: TopEncode>(amount: BigUint, name: &ManagedBuffer, attributes: &T) -> KdaTokenPayment
+```
+
+Creates an NFT (optionally with a display `name`) and returns the token ID, the created token's nonce, and the given amount in a payment struct.
+
+### nft_create_and_send/nft_create_and_send_named
+
+```rust
+fn nft_create_and_send<T: TopEncode>(to: &ManagedAddress, amount: BigUint, attributes: &T,) -> KdaTokenPayment
+
+fn nft_create_and_send_named<T: TopEncode>(to: &ManagedAddress, amount: BigUint, name: &ManagedBuffer, attributes: &T,) -> KdaTokenPayment
+```
+
+Same as the methods above, but also sends the created token to the provided address.
+
+### nft_add_quantity
+
+`rust
+fn nft_add_quantity(token_nonce: u64, amount: BigUint) -> KdaTokenPayment
+`
+
+Adds quantity for the given token nonce. This can only be used if one of the `nft_create` functions was used before AND the SC holds at least 1 token for the given nonce.
+
+### nft_add_quantity_and_send
+
+`rust
+fn nft_add_quantity_and_send(to: &ManagedAddress, token_nonce: u64, amount: BigUint) -> KdaTokenPayment
+`
+
+Same as the method above, but also sends the tokens to the provided address.
+
+### nft_burn
+
+`rust
+fn nft_burn(token_nonce: u64, amount: &BigUint)
+`
+
+Burns `amount` tokens for the given nonce.
+
+### get_all_token_data
+
+`rust
+fn get_all_token_data(token_nonce: u64) -> KdaTokenData<Self::Api>
+`
+
+Gets all the token data for the given nonce. The SC must own the given nonce for this function to work.
+
+`KdaTokenData` contains the following fields:
+
+`rust
+pub struct KdaTokenData<M: ManagedTypeApi> {
+    pub token_type: KdaTokenType,
+    pub amount: BigUint<M>,
+    pub frozen: bool,
+    pub hash: ManagedBuffer<M>,
+    pub name: ManagedBuffer<M>,
+    pub attributes: ManagedBuffer<M>,
+    pub creator: ManagedAddress<M>,
+    pub royalties: BigUint<M>,
+    pub uris: ManagedVec<M, ManagedBuffer<M>>,
+}
+`
+
+### get_balance
+
+`rust
+fn get_balance(token_nonce: u64) -> BigUint
+`
+
+Gets the SC's balance for the given token nonce.
+
+### get_token_attributes
+
+`rust
+fn get_token_attributes<T: TopDecode>(token_nonce: u64) -> T
+`
+
+Gets the attributes for the given token nonce. The SC must own the given nonce for this function to work.
+
+## Common functions for FungibleTokenMapper and NonFungibleTokenMapper
+
+Both mappers work similarly, so some functions have the same implementation for both.
+
+### is_empty
+
+`rust
+fn is_empty() -> bool
+`
+
+Returns `true` if the token ID is not set yet.
+
+### get_token_id
+
+`rust
+fn get_token_id() -> TokenIdentifier<SA>
+`
+
+Gets the stored token ID.
+
+### set_token_id
+
+`rust
+fn set_token_id(token_id: &TokenIdentifier)
+`
+
+Manually sets the token ID for this mapper. This can only be used once, and can not be overwritten afterwards. This will fail if the token was issue previously, as the token ID was automatically set.
+
+### require_same_token/require_all_same_token
+
+`rust
+fn require_same_token(expected_token_id: &TokenIdentifier)
+fn require_all_same_token(payments: &ManagedVec<KdaTokenPayment>)
+`
+
+Will signal an error if the provided token ID argument(s) differs from the stored token. Useful in `#[payable]` methods when you only want to this token as payment.

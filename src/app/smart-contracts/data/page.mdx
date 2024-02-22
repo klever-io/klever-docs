@@ -1,0 +1,41 @@
+## Overview
+
+Klever employs a specific serialization format for all data interactions with a smart contract. This serialization format holds paramount importance in any project since all values entering and exiting a contract are represented as byte arrays. These byte arrays require interpretation based on a consistent specification.
+
+In Rust, the **klever-sc-codec** crate ([crate](https://crates.io/crates/klever-sc-codec), [docs](https://docs.rs/klever-sc-codec/latest/klever_sc_codec/)) exclusively manages this format. Both Go and Rust implementations of scenarios have a component dedicated to serializing to this format. DApp developers must be mindful of this format when interacting with the smart contract on the backend.
+
+> The klever-sc-codec and docs will be available on the TestNet phase 02
+
+## Rationale
+
+Our objective is to make the format somewhat readable and facilitate seamless interaction with the broader blockchain ecosystem. That's why we've opted for **big endian representation for all numeric types.**
+
+More importantly, the format needs to be as compact as possible since each additional byte incurs additional fees.
+
+## Top-level vs. Nested Objects
+
+A key feature of this formatter is that we know the size of the byte arrays entering the contract. All arguments have a predetermined size in bytes, and we typically ascertain the length of storage values before loading the value into the contract. This provides us with immediate additional data that allows for more efficient encoding.
+
+Imagine we have an argument of type int32, and during a smart contract call, we want to transmit the value "5" to it. A standard deserializer might expect us to send the full 4 bytes `0x00000005`. However, there's no need for the leading zeroes in this case. Since it's a single argument with a known size, we can stop without any risk of overreading. Thus, sending `0x05` suffices, saving 3 bytes. In this context, we refer to the integer as being in its **top-level form**—existing on its own and allowing for a more compact representation.
+
+Now, consider an argument that deserializes as a vector of int32. The numbers are serialized consecutively, and variable-length integers are no longer feasible because we won't know the boundaries between numbers. Should we interpret `0x0101` as `[1, 1]` or `[257]`? The solution is to always represent each integer in its full 4-byte form. `[1, 1]` is thus represented as `0x0000000100000001`, and `[257]` as `0x00000101`, eliminating any ambiguity. These integers are referred to as being in their **nested form**. This implies that, as part of a larger structure, their representation length must be evident from the encoding.
+
+But what about the vector itself? Its representation must always be a multiple of 4 bytes in length, enabling us to deduce the length by dividing the number of bytes by 4. If the encoded byte length isn't divisible by 4, it constitutes a deserialization error. Since the vector is top-level, there's no need to encode its length. However, if the vector becomes embedded within a larger structure, encoding the length becomes essential. For instance, if the argument is a vector of vectors of int32, each nested vector also requires its length to be encoded before its data.
+
+## A Note About the Value Zero
+
+Conventionally, we write the number zero as "0" or "0x00." However, we don't actually need 1 byte to represent it; 0 bytes or an "empty byte array" serve just as well to represent the number 0. Similar to `0x0005`, the leading 0 byte is unnecessary, as is the byte `0x00`.
+
+With that said, the format consistently encodes zeroes of any type as empty byte arrays.
+
+## How Each Type Gets Serialized
+
+This guide is divided into several sections:
+
+- [Simple values, such as numbers, strings, etc.](/smart-contracts/data/simple-values)
+- [Lists, tuples, Option](/smart-contracts/data/composite-values)
+- [Custom types defined in the contracts.](/smart-contracts/data/custom-types)
+- [Var-args and other multi-values](/smart-contracts/data/multi-values)
+- [The code metadata flag](/smart-contracts/data/code-metadata)
+
+Additionally, there's a special section on [uninitialized data and its relation to serialization defaults](/smart-contracts/data/defaults).
