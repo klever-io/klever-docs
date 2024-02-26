@@ -10,6 +10,10 @@ export const navigation: Array<NavGroup> = [
     links: [{ title: 'Quickstart', href: '/quickstart' }],
   },
   {
+    title: 'Tutorials',
+    links: [{ title: 'Crowdfunding', href: '/tutorials/crowdfunding' }],
+  },
+  {
     title: 'Klever Blockchain',
     links: [
       {
