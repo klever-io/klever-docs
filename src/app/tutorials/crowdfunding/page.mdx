@@ -1,6 +1,8 @@
-# Crowdfunding tutorials
+# Crowdfunding tutorial
 
-This repository contains tutorials for the [Crowdfunding](https://develop.d1sk4rs9nyv8eu.amplifyapp.com/) Application! Here you will find how to create and deploy your Smart Contract using the Klever IDE.
+This repository contains tutorials for the [Crowdfunding](https://kfund.demo.testnet.kleverscan.org) Application! Here you will find how to create and deploy your Smart Contract using the Klever IDE.
+
+- Checkout the [frontend](https://github.com/klever-io/kc-kapp-crowdfunding) and [contract](https://github.com/klever-io/klever-vm-sdk-rs/tree/master/contracts/examples/crowdfunding-kda) repositories.
 
 ## Pre Requisites
 
@@ -137,7 +139,6 @@ pub trait Storage {
     #[storage_mapper("crowdfundingHoldersValues")]
     fn crowdfundings_holders_values(&self, address: &ManagedAddress) -> VecMapper<ManagedBuffer>;
 
-    #[view(getCrowdfundingHolders)]
     #[storage_mapper("crowdfundingsHolders")]
     fn crowdfundings_holders(&self) -> VecMapper<ManagedAddress>;
 
@@ -145,6 +146,8 @@ pub trait Storage {
     fn crowdfundings(&self) -> VecMapper<ManagedBuffer>;
 }
 ```
+
+> Note: The views of VecMapper will be created in the next steps.
 
 9. Take a look in the macros that we are using in the code above. We are using the `#[storage_mapper]` to store the data in the blockchain. The `#[view]` to create a function that will be exposed in the Node API.
 
@@ -190,6 +193,7 @@ pub trait StorageSetters: storage::Storage {
 
 - The `getLastCrowdfundings` function will return the last Crowdfundings that was created. We only store the ID, so we need to iterate over the IDs and get each Crowdfunding data.
 - The `getCrowdfundingsByHolder` function will return all Crowdfundings by a holder. So we need to get all IDs and then iterate over the IDs and get each Crowdfunding data.
+- The `getCrowdfundingHolders` function will return all Crowdfundings Holders. So we need to iterate over the addresses and return them.
 
 ```rust
 klever_sc::imports!();
@@ -207,6 +211,18 @@ pub trait CrowdfundingViews: storage::Storage {
         for id in &ids {
             let crowdfunding = self.crowdfunding(&id).get();
             vec.push(crowdfunding);
+        }
+
+        vec
+    }
+
+    #[view(getCrowdfundingHolders)]
+    fn get_crowdfunding_holders(&self) -> ManagedVec<ManagedAddress> {
+        let mut vec = ManagedVec::new();
+        let holders = self.crowdfundings_holders();
+
+        for holder in &holders {
+            vec.push(holder.clone());
         }
 
         vec
@@ -395,6 +411,9 @@ pub fn discount_percentage_fee<M: ManagedTypeApi>(amount: &BigUint<M>, percentag
         let mapper = self.crowdfunding(&crowdfunding_id);
         let mut crowdfunding = mapper.get();
 
+        require!(!mapper.is_empty(),"Crowdfunding does not exists!");
+        require!(crowdfunding.owner == self.blockchain().get_caller(), "You are not the owner!");
+
         let timestamp = self.blockchain().get_block_timestamp();
 
         require!(deadline > timestamp, "Deadline already passed!");
@@ -437,8 +456,11 @@ pub fn discount_percentage_fee<M: ManagedTypeApi>(amount: &BigUint<M>, percentag
         let fee = self.service_fee().get();
 
         let claim_value = discount_percentage_fee(&available, fee);
-
         self.send().direct_kda(&crowdfunding.owner, &crowdfunding.token, 0, &claim_value);
+        crowdfunding.claimed += &available;
+
+        let profit = available.clone().sub(&claim_value);
+        self.send().direct_kda(&self.profit_address().get(), &crowdfunding.token, 0, &profit);
 
         crowdfunding.claimed += &available;
 

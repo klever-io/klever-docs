@@ -4,76 +4,71 @@ A brief description of the functionalities of each contract on the chain.
 
 ### Contracts
 
-| Contract          | Description                                                  |
-|-------------------|--------------------------------------------------------------|
-| Transfer          | Transfers assets to another address.                         |
-| Create Asset      | Creates a new fungible token or a NFT collection.            |
-| Create Validator  | Creates a validator for an address, controlled by a BLS key. |
-| Config Validator  | Changes the parameters of a given validator.             |
-| Freeze            | Freezes a certain amount of a token for staking. This frozen amount will be referred to as a "bucket".   |
-| Unfreeze          | Unfreezes a bucket.                                       |
-| Delegate          | Delegates a bucket to a validator.                        |
-| Undelegate        | Removes the delegation of a bucket.                       |
-| Withdraw          | Retrieves the assets from an unfrozen bucket or assets from KDAPool. |
-| Claim             | Claims either staking rewards, delegation rewards, or expired marketplace orders. |
-| Unjail           | Sends an unjail request for the sender validator address. |
-| Asset Trigger    | Updates the properties or trigger functionalities of a fungible token, NFT collection, or a single NFT. See # Asset Triggers. |
-| Set Account Name | Defines a name for the account.                            |
-| Proposal         | Creates a proposal to change the chain [network parameters](https://kleverscan.org/proposals). |
-| Vote             | Votes on an active proposal. The weight of the vote depends on the staked KFI of the sender address (The KFI is not consumed). |
-| Config ITO       | Sets up an Initial Token Offering for either a token or a NFT collection.|
-| Set ITO Prices        | Updates the ITO prices, useful for ITOs that use an oracle-like pricing system. |
-| Buy                   | Creates a buy (or bid) order for a given market sell order. |
-| Sell                  | Creates a sell order of a NFT in a marketplace.         |
-| Cancel Market Order   | Cancels a sell order.                                     |
-| Create Marketplace    | Creates a marketplace.                                    |
-| Config Marketplace    | Changes the parameters of a marketplace.                  |
+| Contract                  | Description                                                                                                                                             |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Transfer                  | Transfers assets to another address.                                                                                                                    |
+| Create Asset              | Creates a new fungible token or a NFT/SFT collection.                                                                                                   |
+| Create Validator          | Creates a validator for an address, controlled by a BLS key.                                                                                            |
+| Config Validator          | Changes the parameters of a given validator.                                                                                                            |
+| Freeze                    | Freezes a certain amount of a token for staking. This frozen amount will be referred to as a "bucket".                                                  |
+| Unfreeze                  | Unfreezes a bucket.                                                                                                                                     |
+| Delegate                  | Delegates a bucket to a validator.                                                                                                                      |
+| Undelegate                | Removes the delegation of a bucket.                                                                                                                     |
+| Withdraw                  | Retrieves the assets from an unfrozen bucket or assets from KDAPool.                                                                                    |
+| Claim                     | Claims either staking rewards, delegation rewards, or expired marketplace orders.                                                                       |
+| Unjail                    | Sends an unjail request for the sender validator address.                                                                                               |
+| Asset Trigger             | Updates the properties or trigger functionalities of a fungible token, NFT/SFT collection, or a single NFT/SFT. See # Asset Triggers.                   |
+| Set Account Name          | Defines a name for the account.                                                                                                                         |
+| Proposal                  | Creates a proposal to change the chain [network parameters](https://kleverscan.org/proposals).                                                          |
+| Vote                      | Votes on an active proposal. The weight of the vote depends on the staked KFI of the sender address (The KFI is not consumed).                          |
+| Config ITO                | Sets up an Initial Token Offering for either a token or a NFT collection.                                                                               |
+| Set ITO Prices            | Updates the ITO prices, useful for ITOs that use an oracle-like pricing system.                                                                         |
+| Buy                       | Creates a buy (or bid) order for a given market sell order.                                                                                             |
+| Sell                      | Creates a sell order of a NFT in a marketplace.                                                                                                         |
+| Cancel Market Order       | Cancels a sell order.                                                                                                                                   |
+| Create Marketplace        | Creates a marketplace.                                                                                                                                  |
+| Config Marketplace        | Changes the parameters of a marketplace.                                                                                                                |
 | Update Account Permission | Updates the permissions of an account, setting multi-signature permissions with a set signature threshold. Useful for creating a safely shared account. |
-| Deposit               | Deposits an asset into a FPR pool or into an auto-swapping fee system. |
-| ITOTrigger            | Updates the properties of a ITO.                                                |
-
-
+| Deposit                   | Deposits an asset into a FPR pool or into an auto-swapping fee system.                                                                                  |
+| ITOTrigger                | Updates the properties of a ITO.                                                                                                                        |
 
 ### Asset Triggers
 
-| Trigger Type            | Description                                                |
-|-------------------------|------------------------------------------------------------|
-| Mint                    | Directly mints assets in the target account.               |
-| Burn                    | Directly burns owned assets.                               |
-| Wipe                    | Directly burns assets of the target account (asset owner only). Useful mostly for stablecoins.          |                           
-| Pause                   | Pauses all transactions of the target asset.               |
-| Resume                  |   Resumes all transactions of the target asset.            |
-| ChangeOwner             | Changes the asset owner.                                   |
-| AddRole                 | Adds a permission role to the asset.                       |
-| RemoveRole              | Removes a permission role of the asset.                    |
-| UpdateMetadata          | Updates the metadata of a given NFT.                       |
-| StopNFTMint             | Stops all NFT mints for that asset (forever).              |
-| UpdateLogo              | Updates the asset's logo URI.                              |
-| UpdateURIs              | Updates the stored relevant URIs.                          |
-| ChangeRoyaltiesReceiver | Changes the address that receives royalties.               |
-| UpdateStaking           | Updates staking parameters.                                |
-| UpdateRoyalties         | Updates royalties parameters.                              |
-| UpdateKDAFeePool        | Updates the KDA Fee Pool parameters. KDA Fee Pool is the system to pay fees with KDA other tha KLV.   |
-| StopRoyaltiesChange     | Stops the royalties changes, giving the co-owners more safety about the token's royalties.
-| StopNFTMetadataChange   | Stops NFT Metadata changes for a given collection.
-
-
+| Trigger Type            | Description                                                                                         |
+| ----------------------- | --------------------------------------------------------------------------------------------------- |
+| Mint                    | Directly mints assets in the target account.                                                        |
+| Burn                    | Directly burns owned assets.                                                                        |
+| Wipe                    | Directly burns assets of the target account (asset owner only). Useful mostly for stablecoins.      |
+| Pause                   | Pauses all transactions of the target asset.                                                        |
+| Resume                  | Resumes all transactions of the target asset.                                                       |
+| ChangeOwner             | Changes the asset owner.                                                                            |
+| AddRole                 | Adds a permission role to the asset.                                                                |
+| RemoveRole              | Removes a permission role of the asset.                                                             |
+| UpdateMetadata          | Updates the metadata of a given NFT.                                                                |
+| StopNFTMint             | Stops all NFT mints for that asset (forever).                                                       |
+| UpdateLogo              | Updates the asset's logo URI.                                                                       |
+| UpdateURIs              | Updates the stored relevant URIs.                                                                   |
+| ChangeRoyaltiesReceiver | Changes the address that receives royalties.                                                        |
+| UpdateStaking           | Updates staking parameters.                                                                         |
+| UpdateRoyalties         | Updates royalties parameters.                                                                       |
+| UpdateKDAFeePool        | Updates the KDA Fee Pool parameters. KDA Fee Pool is the system to pay fees with KDA other tha KLV. |
+| StopRoyaltiesChange     | Stops the royalties changes, giving the co-owners more safety about the token's royalties.          |
+| StopNFTMetadataChange   | Stops NFT Metadata changes for a given collection.                                                  |
 
 ### ITO Triggers
 
-| Type                         | Description                                       |
-|------------------------------|---------------------------------------------------|
-| SetITOPrices                 | Update ITOs packs prices                          |
-| UpdateStatus                 | Update ITO status (Active/Paused)                 |
-| UpdateReceiverAddress        | Update receiver address of the fees               |
-| UpdateMaxAmount              | Update max amount of minted NFTs                  |
+| Type                         | Description                                                                       |
+| ---------------------------- | --------------------------------------------------------------------------------- |
+| SetITOPrices                 | Update ITOs packs prices                                                          |
+| UpdateStatus                 | Update ITO status (Active/Paused)                                                 |
+| UpdateReceiverAddress        | Update receiver address of the fees                                               |
+| UpdateMaxAmount              | Update max amount of minted NFTs                                                  |
 | UpdateDefaultLimitPerAddress | Update default limit of tokens per address in the whitelist, during the whitelist |
-| UpdateTimes                  | Update start and end time of ITO                  |
-| UpdateWhitelistStatus        | Update whitelist status (Active/Paused)           |
-| AddToWhitelist               | Adds addresses to the whitelist                   |
-| RemoveFromWhitelist          | Remove addresses from the whitelist               |
-| UpdateWhitelistTimes         | Update start and end time of the whitelist        |
-
+| UpdateTimes                  | Update start and end time of ITO                                                  |
+| UpdateWhitelistStatus        | Update whitelist status (Active/Paused)                                           |
+| AddToWhitelist               | Adds addresses to the whitelist                                                   |
+| RemoveFromWhitelist          | Remove addresses from the whitelist                                               |
+| UpdateWhitelistTimes         | Update start and end time of the whitelist                                        |
 
 ### Common contract flows
 
@@ -82,7 +77,6 @@ A brief description of the functionalities of each contract on the chain.
 1. Freeze
 2. Delegate
 3. Claim
-
 
 **Create Initial Token Offering**
 
