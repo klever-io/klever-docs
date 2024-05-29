@@ -10,10 +10,9 @@ import Link from 'next/link'
 
 import { GridPattern } from '@/components/GridPattern'
 import { Heading } from '@/components/Heading'
-import { ChatBubbleIcon } from '@/components/icons/ChatBubbleIcon'
-import { EnvelopeIcon } from '@/components/icons/EnvelopeIcon'
-import { UserIcon } from '@/components/icons/UserIcon'
-import { UsersIcon } from '@/components/icons/UsersIcon'
+import { AiOutlineSignature } from 'react-icons/ai'
+import { GrLineChart } from 'react-icons/gr'
+import { PiGraphFill, PiTreeStructureLight } from 'react-icons/pi'
 
 interface Resource {
   href: string
@@ -32,7 +31,7 @@ const resources: Array<Resource> = [
     name: 'Staking',
     description:
       'Learn about the KleverChain staking model and how to freeze, delegate, claim and withdraw your staking rewards.',
-    icon: UserIcon,
+    icon: GrLineChart,
     pattern: {
       y: 16,
       squares: [
@@ -46,7 +45,7 @@ const resources: Array<Resource> = [
     name: 'Validator',
     description:
       'Learn about KleverChain validating process and how to become a validator in your ecosystem.',
-    icon: ChatBubbleIcon,
+    icon: PiGraphFill,
     pattern: {
       y: -6,
       squares: [
@@ -60,7 +59,7 @@ const resources: Array<Resource> = [
     name: 'Account Permission',
     description:
       'Learn about the permissions of an account and how to set up a secure shared account.',
-    icon: EnvelopeIcon,
+    icon: PiTreeStructureLight,
     pattern: {
       y: 32,
       squares: [
@@ -74,7 +73,7 @@ const resources: Array<Resource> = [
     name: 'Multisignature',
     description:
       'Learn about the KleverChain multisignature feature and how to sign transactions on shared accounts.',
-    icon: UsersIcon,
+    icon: AiOutlineSignature,
     pattern: {
       y: 22,
       squares: [[0, 1]],
@@ -85,7 +84,7 @@ const resources: Array<Resource> = [
 function ResourceIcon({ icon: Icon }: { icon: Resource['icon'] }) {
   return (
     <div className="flex h-7 w-7 items-center justify-center rounded-full bg-zinc-900/5 ring-1 ring-zinc-900/25 backdrop-blur-[2px] transition duration-300 group-hover:bg-white/50 group-hover:ring-zinc-900/25 dark:bg-white/7.5 dark:ring-white/15 dark:group-hover:bg-fuchsia-300/10 dark:group-hover:ring-fuchsia-400">
-      <Icon className="h-5 w-5 fill-zinc-700/10 stroke-zinc-700 transition-colors duration-300 group-hover:stroke-zinc-900 dark:fill-white/10 dark:stroke-zinc-400 dark:group-hover:fill-fuchsia-300/10 dark:group-hover:stroke-fuchsia-400" />
+      <Icon className="h-5 w-5 fill-zinc-700 stroke-zinc-700 transition-colors duration-300 group-hover:stroke-zinc-900 dark:fill-zinc-400 dark:stroke-zinc-400 dark:group-hover:fill-fuchsia-400 dark:group-hover:stroke-fuchsia-400" />
     </div>
   )
 }

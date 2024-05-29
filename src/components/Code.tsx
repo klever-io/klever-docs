@@ -109,23 +109,31 @@ function CopyButton({ code }: { code: string }) {
   )
 }
 
-function CodePanelHeader({ tag, label }: { tag?: string; label?: string }) {
+export function CodePanelHeader({
+  tag,
+  label,
+}: {
+  tag?: string
+  label?: string
+}) {
   if (!tag && !label) {
     return null
   }
 
   return (
-    <div className="flex h-9 items-center gap-2 border-y border-b-white/7.5 border-t-transparent bg-white/2.5 bg-zinc-900 px-4 dark:border-b-white/5 dark:bg-white/1">
+    <div className="flex min-h-9 items-center gap-2 border-y border-b-white/7.5 border-t-transparent bg-white/2.5 bg-zinc-900 px-4 dark:border-b-white/5 dark:bg-white/1">
       {tag && (
         <div className="dark flex">
           <Tag variant="small">{tag}</Tag>
         </div>
       )}
       {tag && label && (
-        <span className="h-0.5 w-0.5 rounded-full bg-zinc-500" />
+        <span className="max-h-0.5 min-h-0.5 min-w-0.5 max-w-0.5 rounded-full bg-zinc-500" />
       )}
       {label && (
-        <span className="font-mono text-xs text-zinc-400">{label}</span>
+        <span className="break-all font-mono text-xs text-zinc-400">
+          {label}
+        </span>
       )}
     </div>
   )
@@ -142,7 +150,7 @@ function CodePanel({
   label?: string
   code?: string
 }) {
-  let child = Children.only(children)
+  let child = children && Children.only(children)
 
   if (isValidElement(child)) {
     tag = child.props.tag ?? tag
@@ -150,7 +158,7 @@ function CodePanel({
     code = child.props.code ?? code
   }
 
-  if (!code) {
+  if (children && !code) {
     throw new Error(
       '`CodePanel` requires a `code` prop, or a child with a `code` prop.',
     )
@@ -159,10 +167,14 @@ function CodePanel({
   return (
     <div className="group dark:bg-white/2.5">
       <CodePanelHeader tag={tag} label={label} />
-      <div className="relative">
-        <pre className="overflow-x-auto p-4 text-xs text-white">{children}</pre>
-        <CopyButton code={code} />
-      </div>
+      {children && code && (
+        <div className="relative">
+          <pre className="overflow-x-auto p-4 text-xs text-white">
+            {children}
+          </pre>
+          <CopyButton code={code} />
+        </div>
+      )}
     </div>
   )
 }
