@@ -1,6 +1,50 @@
 export const metadata = {
-  title: 'api-and-sdk', description: 'Content for api-and-sdk'
+  title: 'api-and-sdk',
+  description: 'Content for api-and-sdk',
 }
+
+export const bodyTransaction = `{
+  "hash": "bd51a21cb8c364f5b1cc20e44684fe1163bc0767a7051dcd34095d77d010bf5e",
+  "address": "klv1kvl993g53ktvyg5675etu3c5hzyd7hxu75y8kathev6wazpe2tgqxu7xhv",
+  "signers": [
+    {
+      "address": "klv1kvl993g53ktvyg5675etu3c5hzyd7hxu75y8kathev6wazpe2tgqxu7xhv",
+      "weight": 1,
+      "signed": true
+    },
+    {
+      "address": "klv1nk2v6udpmv6v8hhp9eyp99v68zrgzd95c2u6zt799qm7de4vfnjqnngs8x",
+      "weight": 1,
+      "signed": true
+    }
+  ],
+  "Threshold": 2,
+  "raw": {
+    "RawData": {
+      "Nonce": 4,
+      "Sender": "sz5SxRSNlsIimvUyvkcUuIjfXNz1CHt1d8s07og5UtA=",
+      "Contract": [
+        {
+          "Parameter": {
+            "type_url": "type.googleapis.com/proto.TransferContract",
+            "value": "CiBSrsW33uMB+HZ7BFuEhcvcr79J5B5IhKVPhgmHPaaLQxIDS0xWGICt4gQ="
+          }
+        }
+      ],
+      "KAppFee": 500000,
+      "BandwidthFee": 1000000,
+      "Version": 1,
+      "ChainID": "MTAwNDIw"
+    },
+    "Signature": [
+      "MjztYUmxAYJr6BQRLvlYj5NPkQKhbViXVgqJ31cBnfKV76B69ZZQ61lyMnGGS7Be1UJgm0BvI1wKdSHVT8roDw==",
+      "i9AIua688ler+Cgs8E6uZALZds3Dtp4UZOO0nTxzSQH2XG0z/fXVHO4e+0N4LJyv/1j3utKAetmTekUSVX1/DQ=="
+    ],
+    "hash": "YmQ1MWEyMWNiOGMzNjRmNWIxY2MyMGU0NDY4NGZlMTE2M2JjMDc2N2E3MDUxZGNkMzQwOTVkNzdkMDEwYmY1ZQ=="
+  }
+}`
+
+import { CodeGroup } from '@/components/Code'
 
 # API & SDK
 
@@ -9,8 +53,6 @@ Useful links and info for devs that want to integrate the Kleverchain to their p
 ## Web SDK
 
 If you want to create a web app that communicates with the Kleverchain via the Klever web extension or via the Klever mobile app's built-in browser, you can find more info on our javascript library in this link:
-
-
 
 ## Kleverchain API
 
@@ -52,7 +94,6 @@ Using the explorer or the proxy api, you can check the status code of the transa
 
 If, for some reason, your transaction was broadcast but doesn't appear in the proxy api or in the explorer, you can check its status in the node api. It will help you identify if the node that you used to broadcast the transaction is faulty.
 
-
 ## Sending a transaction to the KleverChain
 
 If you plan on using the raw endpoints, you'll need to do three main steps: building, signing and broadcasting the transaction.
@@ -63,15 +104,14 @@ To build the transaction, if you are creating a web application, you can use the
 
 ```typescript
 const unsignedTransaction = await window.kleverWeb.buildTransaction([
-      {
-        payload,
-        type: TransactionType.Transfer,
-      },
-]);
+  {
+    payload,
+    type: TransactionType.Transfer,
+  },
+])
 ```
 
 Even though you can use the window kleverWeb object directly, we suggest you [use the Kleverchain JS SDK,](/sdks) if you are using javascript.
-
 
 Alternatively you can send the params [through the `send` endpoint](https://node.mainnet.klever.finance/swagger/index.html#/Transaction/post_transaction_send), and will receive an unsigned transaction as response.
 
@@ -80,10 +120,9 @@ Alternatively you can send the params [through the `send` endpoint](https://node
 To sign the transaction, if you are creating a web application, again, you can use the window method injected by the Klever extension (or the Klever 5 mobile browser).
 
 ```typescript
-const signedTransaction = await window.kleverWeb.signTransaction(unsignedTransaction);
+const signedTransaction =
+  await window.kleverWeb.signTransaction(unsignedTransaction)
 ```
-
-
 
 Alternatively, to sign the transaction, you will need to do it using a backend application, so you don't expose your private key. For instance, you can [use the GO SDK](https://github.com/klever-io/klever-go-sdk) or [the Kleverchain JS SDK](/node.js) with NodeJS.
 
@@ -92,11 +131,12 @@ Alternatively, to sign the transaction, you will need to do it using a backend a
 To broadcast the transaction, if you are creating a web application, again, you can use the window method.
 
 ```typescript
-const broadcastResponse = await window.kleverWeb.broadcastTransactions([signedTransaction]);
+const broadcastResponse = await window.kleverWeb.broadcastTransactions([
+  signedTransaction,
+])
 ```
 
 Alternatively you can send a signed transaction [through the `broadcast` endpoint](https://node.mainnet.klever.finance/swagger/index.html#/Transaction/post_transaction_broadcast) to be processed and validated by the blockchain.
-
 
 ## Checking the status of the transaction
 
@@ -133,69 +173,79 @@ If, for some reason, your transaction was broadcast but doesn't appear in the pr
 
 ### API Reference
 
-POST https://multisign.mainnet.klever.finance/transaction
-
-This endpoint will handle the creation of a new transaction and the signatures additions.
-
-Body example:
-
+<CodeGroup
+	title="Create a new transaction or add a signature"
+	tag="POST"
+	label="https://multisign.mainnet.klever.finance/transaction"
+  code={bodyTransaction}
+	>
+  <div>
+  Body example
 ```json
 {
-	"hash": "bd51a21cb8c364f5b1cc20e44684fe1163bc0767a7051dcd34095d77d010bf5e",
-	"address": "klv1kvl993g53ktvyg5675etu3c5hzyd7hxu75y8kathev6wazpe2tgqxu7xhv",
-	"signers": [
-		{
-			"address": "klv1kvl993g53ktvyg5675etu3c5hzyd7hxu75y8kathev6wazpe2tgqxu7xhv",
-			"weight": 1,
-			"signed": true
-		},
-		{
-			"address": "klv1nk2v6udpmv6v8hhp9eyp99v68zrgzd95c2u6zt799qm7de4vfnjqnngs8x",
-			"weight": 1,
-			"signed": true
-		}
-	],
-	"Threshold": 2,
-	"raw": {
-		"RawData": {
-			"Nonce": 4,
-			"Sender": "sz5SxRSNlsIimvUyvkcUuIjfXNz1CHt1d8s07og5UtA=",
-			"Contract": [
-				{
-					"Parameter": {
-						"type_url": "type.googleapis.com/proto.TransferContract",
-						"value": "CiBSrsW33uMB+HZ7BFuEhcvcr79J5B5IhKVPhgmHPaaLQxIDS0xWGICt4gQ="
-					}
-				}
-			],
-			"KAppFee": 500000,
-			"BandwidthFee": 1000000,
-			"Version": 1,
-			"ChainID": "MTAwNDIw"
-		},
-		"Signature": [
-			"MjztYUmxAYJr6BQRLvlYj5NPkQKhbViXVgqJ31cBnfKV76B69ZZQ61lyMnGGS7Be1UJgm0BvI1wKdSHVT8roDw==",
-			"i9AIua688ler+Cgs8E6uZALZds3Dtp4UZOO0nTxzSQH2XG0z/fXVHO4e+0N4LJyv/1j3utKAetmTekUSVX1/DQ=="
-		],
-		"hash": "YmQ1MWEyMWNiOGMzNjRmNWIxY2MyMGU0NDY4NGZlMTE2M2JjMDc2N2E3MDUxZGNkMzQwOTVkNzdkMDEwYmY1ZQ=="
-	}
+  "hash": "bd51a21cb8c364f5b1cc20e44684fe1163bc0767a7051dcd34095d77d010bf5e",
+  "address": "klv1kvl993g53ktvyg5675etu3c5hzyd7hxu75y8kathev6wazpe2tgqxu7xhv",
+  "signers": [
+    {
+      "address": "klv1kvl993g53ktvyg5675etu3c5hzyd7hxu75y8kathev6wazpe2tgqxu7xhv",
+      "weight": 1,
+      "signed": true
+    },
+    {
+      "address": "klv1nk2v6udpmv6v8hhp9eyp99v68zrgzd95c2u6zt799qm7de4vfnjqnngs8x",
+      "weight": 1,
+      "signed": true
+    }
+  ],
+  "Threshold": 2,
+  "raw": {
+    "RawData": {
+      "Nonce": 4,
+      "Sender": "sz5SxRSNlsIimvUyvkcUuIjfXNz1CHt1d8s07og5UtA=",
+      "Contract": [
+        {
+          "Parameter": {
+            "type_url": "type.googleapis.com/proto.TransferContract",
+            "value": "CiBSrsW33uMB+HZ7BFuEhcvcr79J5B5IhKVPhgmHPaaLQxIDS0xWGICt4gQ="
+          }
+        }
+      ],
+      "KAppFee": 500000,
+      "BandwidthFee": 1000000,
+      "Version": 1,
+      "ChainID": "MTAwNDIw"
+    },
+    "Signature": [
+      "MjztYUmxAYJr6BQRLvlYj5NPkQKhbViXVgqJ31cBnfKV76B69ZZQ61lyMnGGS7Be1UJgm0BvI1wKdSHVT8roDw==",
+      "i9AIua688ler+Cgs8E6uZALZds3Dtp4UZOO0nTxzSQH2XG0z/fXVHO4e+0N4LJyv/1j3utKAetmTekUSVX1/DQ=="
+    ],
+    "hash": "YmQ1MWEyMWNiOGMzNjRmNWIxY2MyMGU0NDY4NGZlMTE2M2JjMDc2N2E3MDUxZGNkMzQwOTVkNzdkMDEwYmY1ZQ=="
+  }
 }
-```
-POST https://multisign.mainnet.klever.finance/broadcast/{hash}
+````
+</div>
+</CodeGroup>
 
-This endpoint will broadcast the transaction if the threshold is reached.
+<CodeGroup
+  tag="POST"
+  label="https://multisign.mainnet.klever.finance/broadcast/{hash}"
+  title="Broadcast the transaction if the threshold was reached"
+/>
 
+<CodeGroup
+  tag="GET"
+  label="https://multisign.mainnet.klever.finance/transaction/{hash}"
+  title="List a transaction by hash"
+/>
 
-GET https://multisign.mainnet.klever.finance/transaction/{hash}
-
-List a transaction by hash.
-
-GET https://multisign.mainnet.klever.finance/transaction/by-address/{address}
- 
-List all transactions for and address.
-
+<CodeGroup
+  tag="GET"
+  label="https://multisign.mainnet.klever.finance/transaction/by-address/{address}"
+  title="List all transactions for an address"
+/>
 
 ## Websocket Reference
+
 Here you will find a guide on establishing a connection to the Blockchain WebSocket client. This guide will walk you through the step-by-step process of connecting and receiving messages.
 
 ### How to receive messages:
@@ -307,8 +357,7 @@ const { sendJsonMessage, lastJsonMessage } = useWebSocket(socketUrl, {
 # Topics
 
 | Topic        | Value        |
-|--------------|--------------|
+| ------------ | ------------ |
 | BLOCKS       | blocks       |
 | TRANSACTIONS | transactions |
 | ACCOUNTS     | accounts     |
-
