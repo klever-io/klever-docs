@@ -13,6 +13,7 @@ export const navigation: Array<NavGroup> = [
     title: 'Tutorials',
     links: [
       { title: 'Crowdfunding', href: '/tutorials/crowdfunding' },
+      { title: 'Deposit KDA Pool', href: '/tutorials/kda-pool' },
       { title: 'Kleverchain IDE', href: '/tutorials/kleverchain-ide' },
     ],
   },
