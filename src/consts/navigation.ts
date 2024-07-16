@@ -30,6 +30,7 @@ export const navigation: Array<NavGroup> = [
       },
       { title: 'API & SDK', href: '/api-and-sdk' },
       { title: 'The Klever VM', href: '/klever-vm' },
+      { title:"Local Testnet", href: "/create-local-testnet" },
       {
         title: 'Smart Contracts',
         href: '/smart-contracts',
