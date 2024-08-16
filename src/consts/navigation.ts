@@ -13,6 +13,7 @@ export const navigation: Array<NavGroup> = [
     title: 'Tutorials',
     links: [
       { title: 'Crowdfunding', href: '/tutorials/crowdfunding' },
+      { title: 'Deposit KDA Pool', href: '/tutorials/kda-pool' },
       { title: 'Kleverchain IDE', href: '/tutorials/kleverchain-ide' },
     ],
   },
@@ -29,6 +30,7 @@ export const navigation: Array<NavGroup> = [
       },
       { title: 'API & SDK', href: '/api-and-sdk' },
       { title: 'The Klever VM', href: '/klever-vm' },
+      { title:"Local Testnet", href: "/create-local-testnet" },
       {
         title: 'Smart Contracts',
         href: '/smart-contracts',
@@ -115,7 +117,6 @@ export const navigation: Array<NavGroup> = [
           },
         ],
       },
-      { title: 'Become a validator', href: '/become-a-validator' },
       { title: 'Staking', href: '/staking' },
       { title: 'Delegation', href: '/delegation' },
       { title: 'Account Permissions', href: '/account-permissions' },
@@ -125,6 +126,7 @@ export const navigation: Array<NavGroup> = [
       { title: 'Contracts', href: '/contracts' },
       { title: 'Exchange Integration', href: '/exchange-integration' },
       { title: 'Node Operations', href: '/node-operations' },
+      { title: 'Become a validator', href: '/become-a-validator' },
       { title: 'About Our Technology', href: '/about-our-technology' },
     ],
   },

@@ -1,0 +1,49 @@
+# KDA Pool Deposit Contract Tutorial
+
+*only works in testnet*
+
+This repository contains tutorials for the Deposit KDA Pool Contract! Here you will find how deploy your Smart Contract with your kda pool using Klever IDE.
+
+- Checkout the [contract](https://github.com/klever-io/klever-vm-sdk-rs-internal/tree/43.4/contracts/examples/deposit-kda-pool) repository.
+
+## Pre Requisites
+
+1. Install VSCode and the [Rust Analyzer extension](https://marketplace.visualstudio.com/items?itemName=rust-lang.rust-analyzer).
+2. Install the [Klever IDE Plugin](https://marketplace.visualstudio.com/).
+3. Clone this repository and install the dependencies using cargo.
+
+## Understand the Contract
+
+When you create a kda pool, only the owner, admin, and the addresses with Deposit Permission are allowed to deposit into the kda pool.
+This contract will allow any other address to deposit into your kda pool.
+
+## Deploy the Contract
+
+1. You can click on the Klever IDE Icon and Select the deposit-kda-pool contract, and with the right click, selec the option Build Contract.
+
+   <img src="/tutorials-images/kdapool/build_contract.png" alt="Build contract in Klever IDE" />
+
+2. The output must be this:
+
+   <img src="/tutorials-images/kdapool/build_result.png" alt="Build result" />
+
+3. Now you can click on the Klever IDE Icon and Select the **deposit-kda-pool** again, right click, and select the option **Deploy Contract**.
+
+4. In arguments page you must pass your **Pool ID**. **Pool ID** is your asset id.
+
+   <img src="/tutorials-images/kdapool/arguments.png" alt="Arguments" />
+
+5. Congrats, you have deployed your deposit kda pool contract! Now we need to give the correct permissions to the contract.
+
+
+## Contract Permission
+
+1. You need to get the contract address.
+
+2. We must do a **Asset Trigger Transaction** of type **Add Role (6)** in the asset of your pool.
+
+3. In Kleverscan make sure to pass the contract address in the Address field and mark the Has Role Deposit
+
+   <img src="/tutorials-images/kdapool/role.png" alt="Add Role Transaction" />
+
+4. Now all addresses can deposit in your kda pool!
