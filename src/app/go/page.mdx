@@ -150,6 +150,8 @@ func main() {
 
 ## Breakdown of the start guide
 
+First we instantiates a new provider to interact with the kleverchain with specific network configuration (LocalNet, MainNet, TestNet, DevNet, Custom) and http client:
+
 ```go
 	// Utility to create a network configuration
 	net := network.NewNetworkConfig(network.TestNet)
@@ -162,4 +164,62 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+```
+
+Next we load the user wallet from mnemonic (or through pem file, we'll see how further) and sync the account with the kleverchain:
+
+```go
+	// Loads user wallet from mnemonic
+	w, err := wallet.NewWalletFromMnemonic("my wallet mnemonic separated by spaces")
+	if err != nil {
+		panic(err)
+	}
+
+	// Getting account from wallet
+	acc, err := w.GetAccount()
+	if err != nil {
+		panic(err)
+	}
+
+	// Sync account with the kleverchain
+	err = acc.Sync(kc)
+	if err != nil {
+		panic(err)
+	}
+```
+
+Now we're ready to create transaction, sign and broadcast transactions in kleverchain.
+
+Lets begin with a simple transfer contract. Initially you must create a base transaction usign `NewBaseTX()`, note that is possible to customize some base transaction fields, in the example we change the asset used to pay the fee to "KDA-AB12". Then to create the transfer transaction we need the base transaction, bech32 address of the asset receiver, the amount and the asset ticker, but in that particular case we get the receiver address from loading its wallet from a .pem file with the method `NewWalletFromPEM()`, then sign and finally broadcast it on kleverchain.
+
+```go
+	// Send (transfer) example with fee payment in some KDA instead of KLV
+	// Create a base transaction
+	baseTransfer := acc.NewBaseTX()
+
+	// Set a custom kda to kdaFee field on baseTX
+	baseTransfer.KdaFee = "KDA-AB12"
+
+	// Get the transfer receiver wallet and its account address
+	rw, _ := wallet.NewWalletFromPEM("./path/to/receiver/wallet.pem")
+	rAcc, _ := rw.GetAccount()
+
+	// Create the transaction
+	tx, err := kc.Send(baseTransfer, rAcc.Address().Bech32(), 10, "KLV")
+	if err != nil {
+		panic(err)
+	}
+
+	// Sign the transaction with the sender wallet
+	err = tx.Sign(w)
+	if err != nil {
+		panic(err)
+	}
+
+	transferHash, err := tx.Broadcast(kc)
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Printf("Transfer transaction hash: %s\n", transferHash)
 ```
