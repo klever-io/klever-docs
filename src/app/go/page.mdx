@@ -1,0 +1,165 @@
+# Go
+
+Here are the articles in this section:
+
+## Quick start guide
+
+Common flow example using our Go SDK:
+
+```go
+package main
+
+import (
+	"fmt"
+	"time"
+
+	"github.com/klever-io/klever-go-sdk/core/wallet"
+	"github.com/klever-io/klever-go-sdk/provider"
+	"github.com/klever-io/klever-go-sdk/provider/network"
+	"github.com/klever-io/klever-go-sdk/provider/utils"
+)
+
+func main() {
+	/////////////////////////////////////////////////////////
+	////////// Setup to connect to the kleverchain //////////
+	/////////////////////////////////////////////////////////
+
+	// Utility to create a network configuration
+	net := network.NewNetworkConfig(network.TestNet)
+
+	// Utility to create a http client plug and playh to interact with the kleverchain
+	hc := utils.NewHttpClient(10 * time.Second)
+
+	// Instantiates a new provider to interact with the kleverchain with specific network configuration and http client
+	kc, err := provider.NewKleverChain(net, hc)
+	if err != nil {
+		panic(err)
+	}
+
+	/////////////////////////////////////////////////////////
+	// Preparing user account to interact with Kleverchain //
+	/////////////////////////////////////////////////////////
+
+	// Loads user wallet from mnemonic
+	w, err := wallet.NewWalletFromMnemonic("my wallet mnemonic separated by spaces")
+	if err != nil {
+		panic(err)
+	}
+
+	// Getting account from wallet
+	acc, err := w.GetAccount()
+	if err != nil {
+		panic(err)
+	}
+
+	// Sync account with the kleverchain
+	err = acc.Sync(kc)
+	if err != nil {
+		panic(err)
+	}
+
+	/////////////////////////////////////////////////////////
+	//// Creating, signing and broadcasting transactions ///
+	/////////////////////////////////////////////////////////
+
+	// Send (transfer) example with fee payment in some KDA instead of KLV
+	// Create a base transaction
+	baseTransfer := acc.NewBaseTX()
+
+	// Set a custom kda to kdaFee field on baseTX
+	baseTransfer.KdaFee = "KDA-AB12"
+
+	// Get the transfer receiver wallet and its account address
+	rw, _ := wallet.NewWalletFromPEM("./path/to/receiver/wallet.pem")
+	rAcc, _ := rw.GetAccount()
+
+	// Create the transaction
+	tx, err := kc.Send(baseTransfer, rAcc.Address().Bech32(), 10, "KLV")
+	if err != nil {
+		panic(err)
+	}
+
+	// Sign the transaction with the sender wallet
+	err = tx.Sign(w)
+	if err != nil {
+		panic(err)
+	}
+
+	transferHash, err := tx.Broadcast(kc)
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Printf("Transfer transaction hash: %s\n", transferHash)
+
+	// Deploy smart contract example
+	baseScDeploy := acc.NewBaseTX()
+
+	deployTx, err := kc.DeploySmartContract(
+		baseScDeploy,
+		"./path/to/sc/wasm/file/lottery-kda.wasm",
+		true, true, true, true, "",
+	)
+	if err != nil {
+		panic(err)
+	}
+
+	err = deployTx.Sign(w)
+	if err != nil {
+		panic(err)
+	}
+
+	deployHash, err := deployTx.Broadcast(kc)
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Printf("Smart contract deploy hash: %s\n", deployHash)
+
+	// Invoke smart contract example
+
+	baseScInvoke := acc.NewBaseTX()
+
+	timeStamp := time.Now().Unix()
+	lotteryDuration := int64(120) // 120 seconds -> 2 minutes
+	lotteryDeadline := fmt.Sprintf("optionu64:%d", timeStamp+lotteryDuration)
+	invokeTx, err := kc.InvokeSmartContract(
+		baseScInvoke,
+		"klv1qqqqqqqqqqqqqy0ur5m4rtc0ntr4act4ddres5",
+		"createLotteryPool",
+		map[string]int64{},
+		"string:demo", "string:KLV", "N:10000000", "E:0", lotteryDeadline, "E:0", "E:0", "E:0",
+	)
+	if err != nil {
+		panic(err)
+	}
+
+	err = invokeTx.Sign(w)
+	if err != nil {
+		panic(err)
+	}
+
+	invokeHash, err := invokeTx.Broadcast(kc)
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Printf("Smart contract invoke hash: %s\n", invokeHash)
+}
+```
+
+## Breakdown of the start guide
+
+```go
+	// Utility to create a network configuration
+	net := network.NewNetworkConfig(network.TestNet)
+
+	// Utility to create a http client plug and playh to interact with the kleverchain
+	hc := utils.NewHttpClient(10 * time.Second)
+
+	// Instantiates a new provider to interact with the kleverchain with specific network configuration and http client
+	kc, err := provider.NewKleverChain(net, hc)
+	if err != nil {
+		panic(err)
+	}
+```
