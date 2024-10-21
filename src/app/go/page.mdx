@@ -150,6 +150,8 @@ func main() {
 
 ## Breakdown of the start guide
 
+## Instantiating the SDK provider
+
 First we instantiates a new provider to interact with the kleverchain with specific network configuration (LocalNet, MainNet, TestNet, DevNet, Custom) and http client:
 
 ```go
@@ -165,6 +167,8 @@ First we instantiates a new provider to interact with the kleverchain with speci
 		panic(err)
 	}
 ```
+
+## Handling wallet and account
 
 Next we load the user wallet from mnemonic (or through pem file, we'll see how further) and sync the account with the kleverchain:
 
@@ -188,9 +192,11 @@ Next we load the user wallet from mnemonic (or through pem file, we'll see how f
 	}
 ```
 
-Now we're ready to create transaction, sign and broadcast transactions in kleverchain.
+## Creating, signing and broadcasting transactions
 
-Lets begin with a simple transfer contract. Initially you must create a base transaction usign `NewBaseTX()`, note that is possible to customize some base transaction fields, in the example we change the asset used to pay the fee to "KDA-AB12". Then to create the transfer transaction we need the base transaction, bech32 address of the asset receiver, the amount and the asset ticker, but in that particular case we get the receiver address from loading its wallet from a .pem file with the method `NewWalletFromPEM()`, then sign and finally broadcast it on kleverchain.
+Now we're ready to create, sign and broadcast transactions in kleverchain.
+
+Lets begin with a simple transfer contract. Initially you must create a base transaction usign `NewBaseTX()`, note that is possible to customize some base transaction fields, in the example we change the asset used to pay the fee to "KDA-AB12". Then to create the transfer transaction we call it from klever chain provider, `kc.Send()`, then we need to pass the base transaction, bech32 address of the asset receiver, the amount and the asset ticker, but in that particular case we get the receiver address from loading its wallet from a .pem file with the method `NewWalletFromPEM()`, then sign and finally broadcast it on kleverchain.
 
 ```go
 	// Send (transfer) example with fee payment in some KDA instead of KLV
