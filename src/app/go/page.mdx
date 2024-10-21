@@ -229,3 +229,67 @@ Lets begin with a simple transfer contract. Initially you must create a base tra
 
 	fmt.Printf("Transfer transaction hash: %s\n", transferHash)
 ```
+
+## Deploy and invoke smart contracts
+
+Now lets see how to deploy a [lottery smart contract](https://github.com/klever-io/klever-vm-sdk-rs/tree/master/contracts/examples/lottery-kda) on kleverchain. We create a new base transaction as we did in transfer, then to the `kc.DeploySmartContract()` kleverchain provider method we passe the base tx, the path to the wasm file, contract boolean flags, `vmType` (always empty string), and then variadic arguments with its types (we'll see this later) needeb by `init()` function of your smart contract.
+
+```go
+	// Deploy smart contract example
+	baseScDeploy := acc.NewBaseTX()
+
+	deployTx, err := kc.DeploySmartContract(
+		baseScDeploy,
+		"./path/to/sc/wasm/file/lottery-kda.wasm",
+		true, true, true, true, "",
+	)
+	if err != nil {
+		panic(err)
+	}
+
+	err = deployTx.Sign(w)
+	if err != nil {
+		panic(err)
+	}
+
+	deployHash, err := deployTx.Broadcast(kc)
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Printf("Smart contract deploy hash: %s\n", deployHash)
+```
+
+As our deployed smart contract now invokes one of its functions. A new base transaction, then we format the deadline timestamp and invoke the smart contract with the `kc.InvokeSmartContract()` method passing the base tx, the contract address, the function name, a map of assets and its amounts, in lottery case not needed to send assets, and the variadic arguments with its types needed by the function.
+
+```go
+	// Invoke smart contract example
+
+	baseScInvoke := acc.NewBaseTX()
+
+	timeStamp := time.Now().Unix()
+	lotteryDuration := int64(120) // 120 seconds -> 2 minutes
+	lotteryDeadline := fmt.Sprintf("optionu64:%d", timeStamp+lotteryDuration)
+	invokeTx, err := kc.InvokeSmartContract(
+		baseScInvoke,
+		"klv1qqqqqqqqqqqqqy0ur5m4rtc0ntr4act4ddres5",
+		"createLotteryPool",
+		map[string]int64{},
+		"string:demo", "string:KLV", "N:10000000", "E:0", lotteryDeadline, "E:0", "E:0", "E:0",
+	)
+	if err != nil {
+		panic(err)
+	}
+
+	err = invokeTx.Sign(w)
+	if err != nil {
+		panic(err)
+	}
+
+	invokeHash, err := invokeTx.Broadcast(kc)
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Printf("Smart contract invoke hash: %s\n", invokeHash)
+```
