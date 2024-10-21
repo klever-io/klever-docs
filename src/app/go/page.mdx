@@ -293,3 +293,26 @@ As our deployed smart contract now invokes one of its functions. A new base tran
 
 	fmt.Printf("Smart contract invoke hash: %s\n", invokeHash)
 ```
+
+## Encoding smart contract types
+
+You've noticed the syntas `type:value` in variadic arguments to invoke (also need in deploy in case of `init` receive arguments). this syntax is necessary to sdk encode correctly the values because th klever virtual machine only accepts hexadecimal inputs encoded in a specific way. bellow theres a table relating the values with encoder types.
+
+| Value type                   | Encoder type prefix                                            |
+| ---------------------------- | -------------------------------------------------------------- |
+| int8                         | `i8`, `I8`                                                     |
+| int16                        | `i16`, `I16`                                                   |
+| int32                        | `i32`, `I32`                                                   |
+| int64                        | `i64`, `I64`                                                   |
+| uint8                        | `u8`, `U8`                                                     |
+| uint16                       | `u16`, `U16`                                                   |
+| uint32                       | `u32`, `U32`                                                   |
+| uint64                       | `u64`, `U64`                                                   |
+| \*big.Int, BigUint(rust sdk) | `BigInt`, `bigint`, `BigUint`, `biguint`, `bi`, `n`, `BI`, `N` |
+| ManagedAddress               | `Address`, `address`, `a`, `A`                                 |
+| BigFloat                     | `BigFloat`, `bigfloat`, `bf`, `BF`, `f`, `F`                   |
+| ManagedBuffer                | `ManagedBuffer`, `managedbuffer`                               |
+| TokenIdentifer               | `TokenIdentifer`, `tokenidentifier`                            |
+| String                       | `string`, `String`                                             |
+| Boolean                      | `bool`, `boolean`, `b`, `B`                                    |
+| Empty argument               | `empty`, `0`, `e`, `E`                                         |
