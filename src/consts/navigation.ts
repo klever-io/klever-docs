@@ -144,6 +144,10 @@ export const navigation: Array<NavGroup> = [
         href: "/go",
       },
       {
+        title: "C#",
+        href: "/csharp",
+      },
+      {
         title: 'Node.js',
         href: '/node.js',
       },
