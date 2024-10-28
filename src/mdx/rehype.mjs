@@ -22,8 +22,6 @@ let highlighter
 
 function rehypeShiki() {
   return async (tree) => {
-    //highlighter =
-    //  highlighter ?? (await shiki.getHighlighter({ theme: 'css-variables' }))
     highlighter = highlighter ?? (await shiki.getHighlighter({
       theme: 'css-variables',
       langs: [
