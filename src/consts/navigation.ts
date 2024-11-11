@@ -140,6 +140,14 @@ export const navigation: Array<NavGroup> = [
       },
       { title: 'KleverChain SDKs', href: '/sdks' },
       {
+        title: "Go",
+        href: "/go",
+      },
+      {
+        title: "C#",
+        href: "/csharp",
+      },
+      {
         title: 'Node.js',
         href: '/node.js',
       },

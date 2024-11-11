@@ -1,0 +1,292 @@
+# C#
+
+Here are the articles in this section:
+
+**[Quick start guide](/go#quick-start-guide)**
+
+**[Breakdown of the start guide](/go#breakdown-of-the-start-guide)**
+
+**[Instantiating the SDK provider](/go#instantiating-the-sdk-provider)**
+
+**[Handling wallet and account](/go#handling-wallet-and-account)**
+
+**[Creating, signing and broadcasting transactions](/go#creating-signing-and-broadcasting-transactions)**
+
+**[Deploy and invoke smart contracts](/go#deploy-and-invoke-smart-contracts)**
+
+**[Encoding smart contract types](/go#encoding-smart-contract-types)**
+
+## Quick start guide
+
+Common flow example using our C# SDK:
+
+```csharp
+using System;
+using System.Threading.Tasks;
+using System.Collections.Generic;
+using kleversdk.core;
+using kleversdk.provider;
+
+class Program
+{
+    static async Task Main(string[] args)
+    {
+        /////////////////////////////////////////////////////////
+        ////////// Setup to connect to the kleverchain //////////
+        /////////////////////////////////////////////////////////
+
+        // Create a network configuration for TestNet
+        var provider = new KleverProvider(new NetworkConfig(Network.TestNet));
+
+        /////////////////////////////////////////////////////////
+        // Preparing user account to interact with Kleverchain //
+        /////////////////////////////////////////////////////////
+
+        // Load user wallet from mnemonic
+        var wallet = Wallet.DeriveFromMnemonic("my wallet mnemonic separated by spaces");
+        var account = wallet.GetAccount();
+
+        // Sync account with the kleverchain
+        await account.Sync(provider);
+
+        /////////////////////////////////////////////////////////
+        //// Creating, signing and broadcasting transactions ////
+        /////////////////////////////////////////////////////////
+
+        // Transfer example with KDA fee instead of KLV
+        try
+        {
+            // Create a transfer transaction
+            var tx = await provider.Send(
+                account.Address.Bech32,
+                account.Nonce,
+                "klv1receiving_address",
+                10,
+                "KLV",
+                "KDA-AB12" // KDA fee
+            );
+
+            // Sign and broadcast the transaction
+            var decoded = await provider.Decode(tx);
+            var signature = wallet.SignHex(decoded.Hash);
+            tx.AddSignature(signature);
+
+            var transferHash = await provider.Broadcast(tx);
+            Console.WriteLine($"Transfer transaction hash: {transferHash}");
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine($"Error in transfer: {e.Message}");
+        }
+
+        // Deploy smart contract example
+        try
+        {
+            byte[] contractBytes = File.ReadAllBytes("./path/to/sc/wasm/file/lottery-kda.wasm");
+            var deployParams = new List<string[]>();
+            string parameters = SmartContract.ToEncodeDeploySmartContract(
+                contractBytes,
+                deployParams,
+                true, true, true, true
+            );
+
+            var deployTx = await provider.SmartContract(
+                account.Address.Bech32,
+                account.Nonce,
+                null,
+                1, // Deploy Type
+                "", // Empty address for deployment
+                new Dictionary<string, long>(),
+                parameters
+            );
+
+            var decodedDeploy = await provider.Decode(deployTx);
+            var deploySignature = wallet.SignHex(decodedDeploy.Hash);
+            deployTx.AddSignature(deploySignature);
+
+            var deployHash = await provider.Broadcast(deployTx);
+            Console.WriteLine($"Smart contract deploy hash: {deployHash}");
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine($"Error in deployment: {e.Message}");
+        }
+
+        // Invoke smart contract example
+        try
+        {
+            long timestamp = DateTimeOffset.Now.ToUnixTimeSeconds() + 120; // 2 minutes
+            var scParamsLottery = new List<string[]> {
+                new[] { "string", "demo" },
+                new[] { "tokenidentifier", "KLV" },
+                new[] { "N", "10000000" },
+                new[] { "E", "" },
+                new[] { "optionu64", $"{timestamp}" },
+                new[] { "E", "" },
+                new[] { "E", "" },
+                new[] { "E", "" }
+            };
+
+            string parameters = SmartContract.ToEncodeInvokeSmartContract(
+                "createLotteryPool",
+                scParamsLottery
+            );
+
+            var invokeTx = await provider.SmartContract(
+                account.Address.Bech32,
+                account.Nonce,
+                null,
+                0, // Invoke Type
+                "klv1qqqqqqqqqqqqqy0ur5m4rtc0ntr4act4ddres5",
+                new Dictionary<string, long>(),
+                parameters
+            );
+
+            var decodedInvoke = await provider.Decode(invokeTx);
+            var invokeSignature = wallet.SignHex(decodedInvoke.Hash);
+            invokeTx.AddSignature(invokeSignature);
+
+            var invokeHash = await provider.Broadcast(invokeTx);
+            Console.WriteLine($"Smart contract invoke hash: {invokeHash}");
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine($"Error in invocation: {e.Message}");
+        }
+    }
+}
+```
+
+## Breakdown of the start guide
+
+The following breakdown shows the transactions of transfer, deploy, and invoke of smart contracts. For other transactions available in KleverChain, explore the methods available in the `KleverProvider` class.
+
+## Instantiating the SDK provider
+
+First, we instantiate a new provider to interact with the KleverChain with specific network configuration (LocalNet, MainNet, TestNet, DevNet):
+
+```csharp
+// Create a network configuration for TestNet
+var provider = new KleverProvider(new NetworkConfig(Network.TestNet));
+```
+
+## Handling wallet and account
+
+Next, we load the user wallet from mnemonic and sync the account with the KleverChain:
+
+```csharp
+// Load user wallet from mnemonic
+var wallet = Wallet.DeriveFromMnemonic("my wallet mnemonic separated by spaces");
+var account = wallet.GetAccount();
+
+// Sync account with the kleverchain
+await account.Sync(provider);
+```
+
+## Creating, signing and broadcasting transactions
+
+Now we're ready to create, sign and broadcast transactions in KleverChain.
+For a transfer transaction, we use the Send method from the provider, then sign and broadcast it. Note that we can specify a KDA fee instead of the default KLV fee:
+
+```csharp
+// Create a transfer transaction
+var tx = await provider.Send(
+    account.Address.Bech32,
+    account.Nonce,
+    "klv1receiving_address",
+    10,
+    "KLV",
+    "KDA-AB12" // KDA fee
+);
+
+// Sign and broadcast the transaction
+var decoded = await provider.Decode(tx);
+var signature = wallet.SignHex(decoded.Hash);
+tx.AddSignature(signature);
+
+var transferHash = await provider.Broadcast(tx);
+```
+
+## Deploy and invoke smart contracts
+
+To deploy a [lottery smart contract](https://github.com/klever-io/klever-vm-sdk-rs/tree/master/contracts/examples/lottery-kda), we first read the WASM file and encode the deployment parameters. Then we create, sign, and broadcast the transaction:
+
+```csharp
+byte[] contractBytes = File.ReadAllBytes("./path/to/sc/wasm/file/lottery-kda.wasm");
+var deployParams = new List<string[]>();
+string parameters = SmartContract.ToEncodeDeploySmartContract(
+    contractBytes,
+    deployParams,
+    true, true, true, true
+);
+
+var deployTx = await provider.SmartContract(
+    account.Address.Bech32,
+    account.Nonce,
+    null,
+    1, // Deploy Type
+    "", // Empty address for deployment
+    new Dictionary<string, long>(),
+    parameters
+);
+
+var decodedDeploy = await provider.Decode(deployTx);
+var deploySignature = wallet.SignHex(decodedDeploy.Hash);
+deployTx.AddSignature(deploySignature);
+
+var deployHash = await provider.Broadcast(deployTx);
+```
+
+To invoke a smart contract function, we create and encode the function parameters, then create, sign, and broadcast the transaction:
+
+```csharp
+long timestamp = DateTimeOffset.Now.ToUnixTimeSeconds() + 120; // 2 minutes
+var scParamsLottery = new List<string[]> {
+    new[] { "string", "demo" },
+    new[] { "tokenidentifier", "KLV" },
+    new[] { "N", "10000000" },
+    new[] { "E", "" },
+    new[] { "optionu64", $"{timestamp}" },
+    new[] { "E", "" },
+    new[] { "E", "" },
+    new[] { "E", "" }
+};
+
+string parameters = SmartContract.ToEncodeInvokeSmartContract(
+    "createLotteryPool",
+    scParamsLottery
+);
+
+var invokeTx = await provider.SmartContract(
+    account.Address.Bech32,
+    account.Nonce,
+    null,
+    0, // Invoke Type
+    "klv1qqqqqqqqqqqqqy0ur5m4rtc0ntr4act4ddres5",
+    new Dictionary<string, long>(),
+    parameters
+);
+
+var decodedInvoke = await provider.Decode(invokeTx);
+var invokeSignature = wallet.SignHex(decodedInvoke.Hash);
+invokeTx.AddSignature(invokeSignature);
+
+var invokeHash = await provider.Broadcast(invokeTx);
+```
+
+## Encoding smart contract types
+
+When encoding parameters for smart contract deployment or invocation, use the following type prefixes:
+
+| Value type     | Encoder type prefix                                                 |
+| -------------- | ------------------------------------------------------------------- |
+| BigInteger     | `bi`, `BI`, `n`, `N`, `bigNumber`, `BigNumber`, `BigInt`, `BigUint` |
+| Int64          | `i`, `I`, `i64`, `I64`, `int64`                                     |
+| Uint64         | `u`, `U`, `u64`, `U64`, `uint64`                                    |
+| Int32          | `i32`, `I32`, `int32`, `isize`                                      |
+| Uint32         | `u32`, `U32`, `uint32`, `usize`                                     |
+| String/Buffer  | `s`, `S`, `string`, `ManagedBuffer`, `String`, `bytes`              |
+| TokenIdentifer | `TokenIdentifer`                                                    |
+| Address        | `a`, `A`, `address`, `Address`                                      |
+| Boolean        | `bool`                                                              |
+| Empty argumen  | `0`, `e`, `E`, `empty`                                              |
