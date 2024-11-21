@@ -274,6 +274,39 @@ invokeTx.AddSignature(invokeSignature);
 var invokeHash = await provider.Broadcast(invokeTx);
 ```
 
+Invoke a smart contract with CallValues
+
+```csharp
+    List<string[]> scParamsDice = new List<string[]> {
+        new string[] { "i32", "1" },
+        new string[] { "i32", "32"},
+    };
+
+    string parameters = SmartContract.ToEncodeInvokeSmartContract(
+        "bet",
+        scParamsDice
+    );
+
+    var callValue = new Dictionary<string, long> { };
+    callValue.Add("KLV", 10);
+
+    var invokeTx = await provider.SmartContract(
+    account.Address.Bech32,
+        account.Nonce,
+        null,
+        0, // Invoke Type
+        "klv1qqqqqqqqqqqqqpgq0k4yvl0f8dsxvaaym9gukkc6rh4flgk0annq4w060n",
+        callValue,
+        parameters
+    );
+
+    var decodedInvoke = await provider.Decode(invokeTx);
+    var invokeSignature = wallet.SignHex(decodedInvoke.Hash);
+    invokeTx.AddSignature(invokeSignature);
+
+    var invokeHash = await provider.Broadcast(invokeTx);
+```
+
 ## Encoding smart contract types
 
 When encoding parameters for smart contract deployment or invocation, use the following type prefixes:
