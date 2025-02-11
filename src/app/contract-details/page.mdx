@@ -545,12 +545,13 @@ Creates a buy (or bid) order for a given market sell order.
 
 ### Payload Parameters
 
-| Required | Parameter  | Type   | Description                                                                                       |
-| -------- | ---------- | ------ | ------------------------------------------------------------------------------------------------- |
-| ✅       | buyType    | number | 0: ITOBuy, 1: MarketBuy                                                                           |
-| ✅       | id         | string | ITOBuy: ITO Asset ID, MarketBuy: order ID                                                         |
-| ✅       | currencyId | string | ID of the trade currency                                                                          |
-| ✅       | amount     | number | ITOBuy: Amount to be bought, MarkeyBuy: item price / amount bidden(check [precision](/precision)) |
+| Required | Parameter        | Type   | Description                                                                                       |
+| -------- | ---------------- | ------ | ------------------------------------------------------------------------------------------------- |
+| ✅       | buyType          | number | 0: ITOBuy, 1: MarketBuy                                                                           |
+| ✅       | id               | string | ITOBuy: ITO Asset ID, MarketBuy: order ID                                                         |
+| ✅       | currencyId       | string | ID of the trade currency                                                                          |
+| ✅       | amount           | number | ITOBuy: Amount to be bought, MarkeyBuy: item price / amount bidden(check [precision](/precision)) |
+| ✅       | currencyAmount   | number | ITOBuy: Amount to be spent, MarkeyBuy: Not used                                                   |
 
 **_Send the 'amount' parameter with the correct [precision](/precision) based on the currency asset_**
 

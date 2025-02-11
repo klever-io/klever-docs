@@ -123,7 +123,7 @@ curl -k https://backup.mainnet.klever.finance/config.mainnet.108.tar.gz \
 _For TestNet_
 
 ```bash
-curl -k https://backup.testnet.klever.finance/config.testnet.100420.tar.gz \
+curl -k https://backup.testnet.klever.org/config.testnet.109.tar.gz \
     | tar -xz -C ./node
 ```
 
@@ -1506,11 +1506,12 @@ operator kapps buy [flags]
 ### Options
 
 ```
-      --amount float   set a buy amount
-  -h, --help           help for buy
-      --id string      set a buy ID
-      --kda string     set a KDA ID
-      --type int32     set a buy type
+      --amount float            set a buy amount
+      --currencyAmount float    locks the currency amount to be spent
+  -h, --help                    help for buy
+      --id string               set a buy ID
+      --kda string              set a KDA ID
+      --type int32              set a buy type
 ```
 
 ### Options inherited from parent commands
