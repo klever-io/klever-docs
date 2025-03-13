@@ -155,8 +155,8 @@ Creates a new fungible token or a NFT/SFT collection.
 |              Required              | Parameter          | Type                                    | Description                                                                       |
 | :--------------------------------: | ------------------ | --------------------------------------- | --------------------------------------------------------------------------------- |
 |                 ✅                 | address            | string                                  | Royalty receiver address                                                          |
-| <input type="checkbox"  disabled/> | transferPercentage | RoyaltyInfo object array                | Transfer fee for fungible and semi-fungible tokens ([precision](/precision) 2)                      |
-| <input type="checkbox"  disabled/> | transferFixed      | number                                  | Transfer fee for fungible, semi-fungible and non-fungible tokens                                              |
+| <input type="checkbox"  disabled/> | transferPercentage | RoyaltyInfo object array                | Transfer fee for fungible tokens ([precision](/precision) 2)                      |
+| <input type="checkbox"  disabled/> | transferFixed      | number                                  | Transfer fee for fungible, semi-fungible and non-fungible tokens                  |
 | <input type="checkbox"  disabled/> | marketPercentage   | number                                  | Market percentage fee details for non-fungible tokens ([precision](/precision) 2) |
 | <input type="checkbox"  disabled/> | marketFixed        | number                                  | Market fixed fee for non-fungible tokens                                          |
 | <input type="checkbox"  disabled/> | itoPercentage      | number                                  | ITO percentage fee [precision](/precision) 2                                      |
@@ -266,7 +266,7 @@ required ones will be ignored.
 |  Required  |       Parameter       |           Type           |               Description                |
 |:----------:|-----------------------|-------------------------|------------------------------------------|
 |   ✅  |       address         |         string          | Royalty receiver address                |
-|   <input type="checkbox"  disabled/>  | transferPercentage    | [RoyaltyInfo](#asset-trigger-royaltyinfo-structure) object array | Transfer fee for fungible and semi-fungible tokens ([precision](/precision) 2) |
+|   <input type="checkbox"  disabled/>  | transferPercentage    | [RoyaltyInfo](#asset-trigger-royaltyinfo-structure) object array | Transfer fee for fungible tokens ([precision](/precision) 2) |
 |   <input type="checkbox"  disabled/>  |    transferFixed     |         number          | Transfer fee for fungible, semi-fungible and non-fungible tokens    |
 |   <input type="checkbox"  disabled/>  | marketPercentage      |         number          | Market percentage fee details for non-fungible tokens ([precision](/precision) 2) |
 |   <input type="checkbox"  disabled/>  |    marketFixed       |         number          | Market fixed fee for non-fungible tokens |
