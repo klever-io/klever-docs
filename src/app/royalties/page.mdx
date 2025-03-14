@@ -1,4 +1,7 @@
-export const metadata = {'title': 'Royalties', 'description': 'Content for royalties'}
+export const metadata = {
+  title: 'Royalties',
+  description: 'Content for royalties',
+}
 
 # Royalties
 
@@ -20,22 +23,20 @@ The royalties can even be split between multiple accounts.
 
 Here are all the royalty types in KleverChain:
 
-1. Transfer fixed: Charges a fixed amount of KLV every time someone transfers an NFT from one account to another. This applies only to NFTs.
+1. Transfer fixed: Charges a fixed amount of KLV every time someone transfers an NFT from one account to another. This is applied to all types of assets.
 2. Transfer percentage: Charges a percentage amount of the asset being transferred to another account. This applies only to Fungible assets.
 3. ITO Fixed: Charges a fixed amount of KLV every time someone buys an asset from an ITO.
 4. ITO Percentage: Charges a percentage amount every time someone buys an asset from an ITO.
-5. Market Fixed: Charges a fixed amount of KLV every time a seller puts their NFT up for sale in a marketplace. This applies only to NFTs. The royalties owner only receives the value after the sale is completed.
+5. Market Fixed: Charges a fixed amount of KLV every time a seller puts their NFT up for sale in a marketplace. The royalties owner only receives the value after the sale is completed.
 6. Market Percentage: Charges a percentage fee when someone effectively buys an NFT from a marketplace.
 
-| Type                 | Contract  | Fungibility    | Out/In* | Payer   | Moment                 | Currency                              |
-|----------------------|-----------|----------------|---------|---------|------------------------|---------------------------------------|
-| Transfer Fixed       | Transfer  | NFT            | Out     | Sender  | When transferred       | KLV                                   |
-| Transfer Percentage  | Transfer  | FT             | Out     | Sender  | When transferred       | Currency of the transferred asset     |
-| ITO Fixed            | Buy       | FT and NFT     | Out     | Buyer   | When bought            | KLV                                   |
-| ITO Percentage       | Buy       | FT and NFT     | In      | Seller  | When bought            | Currency of the token price           |
-| Market Fixed         | Sell      | NFT            | Out     | Seller  | When sell order placed | KLV                                   |
-| Market Percentage    | Buy       | NFT            | In      | Buyer   | When bought            | Currency of the NFT price             |
+| Type                | Contract | Fungibility     | Out/In\* | Payer  | Moment                 | Currency                          |
+| ------------------- | -------- | --------------- | -------- | ------ | ---------------------- | --------------------------------- |
+| Transfer Fixed      | Transfer | FT, SFT, NFT | Out      | Sender | When transferred       | KLV                               |
+| Transfer Percentage | Transfer |  FT         | Out      | Sender | When transferred       | Currency of the transferred asset |
+| ITO Fixed           | Buy      | FT, SFT, NFT | Out      | Buyer  | When bought            | KLV                               |
+| ITO Percentage      | Buy      | FT, SFT, NFT | In       | Seller | When bought            | Currency of the token price       |
+| Market Fixed        | Sell     | SFT, NFT             | Out      | Seller | When sell order placed | KLV                               |
+| Market Percentage   | Buy      | SFT, NFT             | In       | Buyer  | When bought            | Currency of the NFT price         |
 
-
-
-*The royalty can be charged as an additional fee on top of the price (the buyer pays 10 KLV for one asset and an additional 2 KLV for royalties), or the royalty can be deducted from the received value in a transfer/buy contract (the buyer pays 10 KLV, but the seller only receives 8 KLV, as the other 2 KLV go to the royalties owner).
+\*The royalty can be charged as an additional fee on top of the price (the buyer pays 10 KLV for one asset and an additional 2 KLV for royalties), or the royalty can be deducted from the received value in a transfer/buy contract (the buyer pays 10 KLV, but the seller only receives 8 KLV, as the other 2 KLV go to the royalties owner).

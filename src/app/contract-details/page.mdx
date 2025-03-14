@@ -156,7 +156,7 @@ Creates a new fungible token or a NFT/SFT collection.
 | :--------------------------------: | ------------------ | --------------------------------------- | --------------------------------------------------------------------------------- |
 |                 ✅                 | address            | string                                  | Royalty receiver address                                                          |
 | <input type="checkbox"  disabled/> | transferPercentage | RoyaltyInfo object array                | Transfer fee for fungible tokens ([precision](/precision) 2)                      |
-| <input type="checkbox"  disabled/> | transferFixed      | number                                  | Transfer fee for non-fungible tokens                                              |
+| <input type="checkbox"  disabled/> | transferFixed      | number                                  | Transfer fee for fungible, semi-fungible and non-fungible tokens                  |
 | <input type="checkbox"  disabled/> | marketPercentage   | number                                  | Market percentage fee details for non-fungible tokens ([precision](/precision) 2) |
 | <input type="checkbox"  disabled/> | marketFixed        | number                                  | Market fixed fee for non-fungible tokens                                          |
 | <input type="checkbox"  disabled/> | itoPercentage      | number                                  | ITO percentage fee [precision](/precision) 2                                      |
@@ -267,7 +267,7 @@ required ones will be ignored.
 |:----------:|-----------------------|-------------------------|------------------------------------------|
 |   ✅  |       address         |         string          | Royalty receiver address                |
 |   <input type="checkbox"  disabled/>  | transferPercentage    | [RoyaltyInfo](#asset-trigger-royaltyinfo-structure) object array | Transfer fee for fungible tokens ([precision](/precision) 2) |
-|   <input type="checkbox"  disabled/>  |    transferFixed     |         number          | Transfer fee for non-fungible tokens    |
+|   <input type="checkbox"  disabled/>  |    transferFixed     |         number          | Transfer fee for fungible, semi-fungible and non-fungible tokens    |
 |   <input type="checkbox"  disabled/>  | marketPercentage      |         number          | Market percentage fee details for non-fungible tokens ([precision](/precision) 2) |
 |   <input type="checkbox"  disabled/>  |    marketFixed       |         number          | Market fixed fee for non-fungible tokens |
 |   <input type="checkbox"  disabled/>  |    itoPercentage     |         number          | ITO percentage fee [precision](/precision) 2        |
@@ -545,15 +545,17 @@ Creates a buy (or bid) order for a given market sell order.
 
 ### Payload Parameters
 
-| Required | Parameter        | Type   | Description                                                                                       |
-| -------- | ---------------- | ------ | ------------------------------------------------------------------------------------------------- |
-| ✅       | buyType          | number | 0: ITOBuy, 1: MarketBuy                                                                           |
-| ✅       | id               | string | ITOBuy: ITO Asset ID, MarketBuy: order ID                                                         |
-| ✅       | currencyId       | string | ID of the trade currency                                                                          |
-| ✅       | amount           | number | ITOBuy: Amount to be bought, MarkeyBuy: item price / amount bidden(check [precision](/precision)) |
-| ✅       | currencyAmount   | number | ITOBuy: Amount to be spent, MarkeyBuy: Not used                                                   |
+| Required | Parameter      | Type   | Description                                                                                       |
+| -------- | -------------- | ------ | ------------------------------------------------------------------------------------------------- |
+| ✅       | buyType        | number | 0: ITOBuy, 1: MarketBuy                                                                           |
+| ✅       | id             | string | ITOBuy: ITO Asset ID, MarketBuy: order ID                                                         |
+| ✅       | currencyId     | string | ID of the trade currency                                                                          |
+| ✅       | amount         | number | ITOBuy: Amount to be bought, MarkeyBuy: item price / amount bidden(check [precision](/precision)) |
+| ✅       | currencyAmount | number | ITOBuy: Amount to be spent, MarkeyBuy: Not used                                                   |
 
-**_Send the 'amount' parameter with the correct [precision](/precision) based on the currency asset_**
+**_For ITOBuy, send the `amount` parameter with the `id` precision and `currencyAmount` with the `currencyId` precision._**
+
+**_For MarketBuy, send the `amount` parameter with the `currencyId` precision only._**
 
 ## Cancel Market Order
 
