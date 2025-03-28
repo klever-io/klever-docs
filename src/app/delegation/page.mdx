@@ -19,7 +19,7 @@ docker run -it --rm --user "$(id -u):$(id -g)" \
     --entrypoint=/usr/local/bin/operator \
     kleverapp/klever-go:latest \
     --key-file=./walletKey.pem \
-    --node=https://node.mainnet.klever.finance \
+    --node=https://node.mainnet.klever.org \
     account delegate \
     klv186vg5k3pqetmfuy04620htcvz3krugu7hqe4ukczdy48r222j78q9y8vm5 \
     --bucketID=db0748c562c413a68b21a75249e1b936339fc03513e0bf076d3850b7a81113d2
@@ -65,7 +65,7 @@ docker run -it --rm --user "$(id -u):$(id -g)" \
     --entrypoint=/usr/local/bin/operator \
     kleverapp/klever-go:latest \
     --key-file=./walletKey.pem \
-    --node=https://node.mainnet.klever.finance \
+    --node=https://node.mainnet.klever.org \
     account undelegate \
     --bucketID=db0748c562c413a68b21a75249e1b936339fc03513e0bf076d3850b7a81113d2
 ```

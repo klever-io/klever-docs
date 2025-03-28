@@ -82,8 +82,8 @@ The default network is the Kleverchain Mainnet, but if you want to use the Kleve
 import { utils, IProvider } from "@klever/sdk-node";
 ...
   const provider: IProvider = {
-    api: "https://api.testnet.klever.finance",
-    node: "https://node.testnet.klever.finance",
+    api: "https://api.testnet.klever.org",
+    node: "https://node.testnet.klever.org",
   };
 
   utils.setProviders(provider);
@@ -190,8 +190,8 @@ Each Update Metadata has a Kapp Fee of 2KLV, and the Bandwidth Fee depends on th
 import { Account, utils, TransactionType } from '@klever/sdk-node'
 
 utils.setProviders({
-  api: 'https://api.devnet.klever.finance',
-  node: 'https://node.devnet.klever.finance',
+  api: 'https://api.devnet.klever.org',
+  node: 'https://node.devnet.klever.org',
 })
 
 const privateKey = 'Your PrivateKey'

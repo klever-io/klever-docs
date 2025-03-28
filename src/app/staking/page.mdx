@@ -42,7 +42,7 @@ docker run -it --rm --user "$(id -u):$(id -g)" \
     --entrypoint=/usr/local/bin/operator \
     kleverapp/klever-go:latest \
     --key-file=./walletKey.pem \
-    --node=https://node.mainnet.klever.finance account freeze 10000000
+    --node=https://node.mainnet.klever.org account freeze 10000000
 ```
 
 After the "freeze" instruction, there is this structure: [AMOUNT].
@@ -66,7 +66,7 @@ docker run -it --rm --user "$(id -u):$(id -g)" \
     --entrypoint=/usr/local/bin/operator \
     kleverapp/klever-go:latest \
     --key-file=./walletKey.pem \
-    --node=https://node.mainnet.klever.finance \
+    --node=https://node.mainnet.klever.org \
     account unfreeze --bucketID=1acd6f3958f24a058e5c185fe1491bb3b42c88f65a085d9b4dbfd5866273481c
 ```
 
@@ -85,7 +85,7 @@ docker run -it --rm --user "$(id -u):$(id -g)" \
     --entrypoint=/usr/local/bin/operator \
     kleverapp/klever-go:latest \
     --key-file=./walletKey.pem \
-    --node=https://node.mainnet.klever.finance \
+    --node=https://node.mainnet.klever.org \
     account withdraw
 ```
 
@@ -101,7 +101,7 @@ docker run -it --rm --user "$(id -u):$(id -g)" \
     --entrypoint=/usr/local/bin/operator \
     kleverapp/klever-go:latest \
     --key-file=./walletKey.pem \
-    --node=https://node.mainnet.klever.finance \
+    --node=https://node.mainnet.klever.org \
     account claim 0 --id=KLV
 ```
 
@@ -133,7 +133,7 @@ docker run -it --rm --user "$(id -u):$(id -g)" \\
     --entrypoint=/usr/local/bin/operator \\
     kleverapp/klever-go:latest \\
     --key-file=./walletKey.pem \\
-    --node=https://node.mainnet.klever.finance \\
+    --node=https://node.mainnet.klever.org \\
     kda create 0 --canBurn=true --canMint=true --canFreeze=true --canPause=true --canWipe=true --logo=LOGO_URL --maxSupply=AMOUNT_MAX --precision=6 --name=KDA_NAME --ticker=KDA_TICKER —-interestType 1
 ```
 
@@ -150,7 +150,7 @@ docker run -it --rm --user "$(id -u):$(id -g)" \\
     --entrypoint=/usr/local/bin/operator \\
     kleverapp/klever-go:latest \\
     --key-file=./walletKey.pem \\
-    --node=https://node.mainnet.klever.finance \\
+    --node=https://node.mainnet.klever.org \\
     kda deposit AMOUNT --depositType=0 --kdaID=YOUR_KDA_ID --currencyID=KDA_YOU_WANT_TO_PAY_REWARDS
 ```
 
@@ -169,7 +169,7 @@ docker run -it --rm --user "$(id -u):$(id -g)" \\
     --entrypoint=/usr/local/bin/operator \\
     kleverapp/klever-go:latest \\
     --key-file=./walletKey.pem \\
-    --node=https://node.mainnet.klever.finance \\
+    --node=https://node.mainnet.klever.org \\
     account freeze AMOUNT --kda=KDA_id_YOU_WANT_TO_FREEZE
 ```
 
@@ -186,7 +186,7 @@ docker run -it --rm --user "$(id -u):$(id -g)" \
     --entrypoint=/usr/local/bin/operator \
     kleverapp/klever-go:latest \
     --key-file=./walletKey.pem \
-    --node=https://node.mainnet.klever.finance \
+    --node=https://node.mainnet.klever.org \
     account claim 0 --id=KDA_ID_YOU_HAVE_FROZEN
 ```
 
