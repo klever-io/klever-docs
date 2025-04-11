@@ -246,7 +246,7 @@ If, for some reason, your transaction was broadcast but doesn't appear in the pr
 
 ## Websocket Reference
 
-Here you will find a guide on establishing a connection to the Blockchain WebSocket client. This guide will walk you through the step-by-step process of connecting and receiving messages.
+Here you will find a guide on establishing a connection to the Blockchain WebSocket client. You must run your node with indexer option to have events subscription. This guide will walk you through the step-by-step process of connecting and receiving messages.
 
 ### How to receive messages:
 
@@ -261,21 +261,35 @@ To connect to the Blockchain WebSocket client, follow these steps.
 package main
 
 import (
-	"github.com/gorilla/websocket"
+	"encoding/json"
 	"log"
 	"net/url"
+
+	"github.com/gorilla/websocket"
 )
 
 type EventType string
 
 const (
-	ACCOUNTS         EventType = "accounts" // receive all accounts changed or created
-	BLOCKS           EventType = "blocks" // receive all blocks
-	TRANSACTION      EventType = "transaction" // receive all transactions
+	ACCOUNTS    EventType = "accounts"    // receive all accounts changed or created
+	BLOCKS      EventType = "blocks"      // receive all blocks
+	TRANSACTION EventType = "transaction" // receive all transactions
 )
 
+type Data struct {
+	Types     []EventType `json:"subcribed_types"`
+	Addresses []string    `json:"addresses"`
+}
+
+type Event struct {
+	Type    EventType `json:"type"`
+	Address string    `json:"address"`
+	Hash    string    `json:"hash"`
+	Data    []byte    `json:"data"`
+}
+
 func main() {
-	u := url.URL{Scheme: "wss", Host: "websocket.mainnet.klever.org", Path: ""}
+	u := url.URL{Scheme: "ws", Host: "127.0.0.1:8080", Path: "/subscribe"}
 	log.Printf("connecting to %s", u.String())
 
 	c, _, err := websocket.DefaultDialer.Dial(u.String(), nil)
@@ -295,29 +309,31 @@ func main() {
 				return
 			}
 
-			log.Println(string(message))
+			// marshal the message to Event struct
+			var event Event
+			if err := json.Unmarshal(message, &event); err != nil {
+				log.Println("unmarshal:", err)
+				return
+			}
+
+			switch event.Type {
+			case BLOCKS:
+				log.Println("Received BLOCKS data:", string(event.Data))
+			case ACCOUNTS:
+				log.Println("Received ACCOUNTS data:", string(event.Data))
+			case TRANSACTION:
+				log.Println("Received TRANSACTION data:", string(event.Data))
+			default:
+				log.Println("Unknown data ", string(message))
+			}
+
 		}
 	}()
 
-	subMessage := struct {
-		Action string `json:"action"`
-		Data   struct {
-		        Address string `json:"address"`
-			Hash string `json:"hash"`
-			Topics []EventType `json:"topics"`
-		} `json:"data"`
-	}{
-		Action: "subscribe",
-		Data: struct {
-			Topics []EventType `json:"topics"`
-			Address string `json:"address"`
-			Hash string `json:"hash"`
-		}{
-			Topics: []EventType{indexer.ACCOUNTS},
-			Address: "klv1....", // OPTIONAL field to listen a specific address
-			Hash: "hash11.." // // OPTIONAL field to listen a specific tx hash
-		},
+	subMessage := Data{
+		Types: []EventType{BLOCKS, TRANSACTION, ACCOUNTS},
 	}
+
 	// send the first message to subscribe
 	if err := c.WriteJSON(subMessage); err != nil {
 		log.Println("err: ", err)
@@ -326,6 +342,7 @@ func main() {
 
 	<-done
 }
+
 ```
 
 ```javascript
@@ -337,17 +354,13 @@ export enum WSTopics {
   transaction = 'transaction', // receive all transactions
 }
 
-const socketUrl = "wss://websocket.mainnet.klever.org"
+const socketUrl = "ws://127.0.0.1:8080" // your indexer node
 
 const { sendJsonMessage, lastJsonMessage } = useWebSocket(socketUrl, {
     onOpen: () => {
       const payload = {
-        action: 'subscribe',
-        data: {
-          address: "klv1....", // OPTIONAL field to listen a specific address
-          topics: [WSTopics.blocks],
-          hash: "hash11.." // // OPTIONAL field to listen a specific tx hash
-        },
+        addresses: ["klv1...."], // OPTIONAL field to listen a specific address
+        subcribed_types: [WSTopics.blocks],
       }
       sendJsonMessage(payload)
     }
