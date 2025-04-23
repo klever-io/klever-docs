@@ -61,22 +61,22 @@ If you need more info on the Kleverchain APIs to interact directly with the bloc
 ### Proxy API endpoints
 
 Proxy API endpoints
-[Swagger UI](https://api.testnet.klever.finance/swagger/index.html)
+[Swagger UI](https://api.testnet.klever.org/swagger/index.html)
 
 ### Node API endpoints
 
 Node API endpoints
-[Swagger UI](https://node.testnet.klever.finance/swagger/index.html)
+[Swagger UI](https://node.testnet.klever.org/swagger/index.html)
 
 ### Multi-Signature API
 
 Create and handle transactions with multiple signatures accounts:
-[MultiSig API Reference](https://docs.klever.finance/api-and-sdk/multisig-api-reference)
+[MultiSig API Reference](https://docs.klever.org/api-and-sdk/multisig-api-reference)
 
 ### WebSocket
 
 Receive blocks, addresses and transactions from our WebSocket:
-[Websocket Reference](https://docs.klever.finance/api-and-sdk/websocket-reference)
+[Websocket Reference](https://docs.klever.org/api-and-sdk/websocket-reference)
 
 ## Checking the status of the transaction
 
@@ -86,9 +86,9 @@ Take the hash `7b066e58b650d4ea6ba61de087350ddf909cfee660cc9537c0167b38df6d4882 
 
 You can either see the transaction details [using the Klever Explorer](https://kleverscan.org/transaction/7b066e58b650d4ea6ba61de087350ddf909cfee660cc9537c0167b38df6d4882) or by calling one of the api endpoint's.
 
-[Using the proxy api call](https://api.mainnet.klever.finance/v1.0/transaction/7b066e58b650d4ea6ba61de087350ddf909cfee660cc9537c0167b38df6d4882), you will receive the parsed transaction as response.
+[Using the proxy api call](https://api.mainnet.klever.org/v1.0/transaction/7b066e58b650d4ea6ba61de087350ddf909cfee660cc9537c0167b38df6d4882), you will receive the parsed transaction as response.
 
-[Using the node api call](https://node.mainnet.klever.finance/transaction/7b066e58b650d4ea6ba61de087350ddf909cfee660cc9537c0167b38df6d4882), you will receive the transaction as it is in the blockchain.
+[Using the node api call](https://node.mainnet.klever.org/transaction/7b066e58b650d4ea6ba61de087350ddf909cfee660cc9537c0167b38df6d4882), you will receive the transaction as it is in the blockchain.
 
 Using the explorer or the proxy api, you can check the status code of the transaction, if it matches the expected format it will be "`success`".
 
@@ -113,7 +113,7 @@ const unsignedTransaction = await window.kleverWeb.buildTransaction([
 
 Even though you can use the window kleverWeb object directly, we suggest you [use the Kleverchain JS SDK,](/sdks) if you are using javascript.
 
-Alternatively you can send the params [through the `send` endpoint](https://node.mainnet.klever.finance/swagger/index.html#/Transaction/post_transaction_send), and will receive an unsigned transaction as response.
+Alternatively you can send the params [through the `send` endpoint](https://node.mainnet.klever.org/swagger/index.html#/Transaction/post_transaction_send), and will receive an unsigned transaction as response.
 
 ### 2. Sign
 
@@ -136,7 +136,7 @@ const broadcastResponse = await window.kleverWeb.broadcastTransactions([
 ])
 ```
 
-Alternatively you can send a signed transaction [through the `broadcast` endpoint](https://node.mainnet.klever.finance/swagger/index.html#/Transaction/post_transaction_broadcast) to be processed and validated by the blockchain.
+Alternatively you can send a signed transaction [through the `broadcast` endpoint](https://node.mainnet.klever.org/swagger/index.html#/Transaction/post_transaction_broadcast) to be processed and validated by the blockchain.
 
 ## Checking the status of the transaction
 
@@ -146,9 +146,9 @@ Take the hash `7b066e58b650d4ea6ba61de087350ddf909cfee660cc9537c0167b38df6d4882 
 
 You can either see the transaction details [using the Klever Explorer](https://kleverscan.org/transaction/7b066e58b650d4ea6ba61de087350ddf909cfee660cc9537c0167b38df6d4882) or by calling one of the api endpoint's.
 
-[Using the proxy api call](https://api.mainnet.klever.finance/v1.0/transaction/7b066e58b650d4ea6ba61de087350ddf909cfee660cc9537c0167b38df6d4882), you will receive the parsed transaction as response.
+[Using the proxy api call](https://api.mainnet.klever.org/v1.0/transaction/7b066e58b650d4ea6ba61de087350ddf909cfee660cc9537c0167b38df6d4882), you will receive the parsed transaction as response.
 
-[Using the node api call](https://node.mainnet.klever.finance/transaction/7b066e58b650d4ea6ba61de087350ddf909cfee660cc9537c0167b38df6d4882), you will receive the transaction as it is in the blockchain.
+[Using the node api call](https://node.mainnet.klever.org/transaction/7b066e58b650d4ea6ba61de087350ddf909cfee660cc9537c0167b38df6d4882), you will receive the transaction as it is in the blockchain.
 
 Using the explorer or the proxy api, you can check the status code of the transaction, if it matches the expected format it will be "`success`".
 
@@ -176,7 +176,7 @@ If, for some reason, your transaction was broadcast but doesn't appear in the pr
 <CodeGroup
 	title="Create a new transaction or add a signature"
 	tag="POST"
-	label="https://multisign.mainnet.klever.finance/transaction"
+	label="https://multisign.mainnet.klever.org/transaction"
   code={bodyTransaction}
 	>
   <div>
@@ -228,25 +228,25 @@ If, for some reason, your transaction was broadcast but doesn't appear in the pr
 
 <CodeGroup
   tag="POST"
-  label="https://multisign.mainnet.klever.finance/broadcast/{hash}"
+  label="https://multisign.mainnet.klever.org/broadcast/{hash}"
   title="Broadcast the transaction if the threshold was reached"
 />
 
 <CodeGroup
   tag="GET"
-  label="https://multisign.mainnet.klever.finance/transaction/{hash}"
+  label="https://multisign.mainnet.klever.org/transaction/{hash}"
   title="List a transaction by hash"
 />
 
 <CodeGroup
   tag="GET"
-  label="https://multisign.mainnet.klever.finance/transaction/by-address/{address}"
+  label="https://multisign.mainnet.klever.org/transaction/by-address/{address}"
   title="List all transactions for an address"
 />
 
 ## Websocket Reference
 
-Here you will find a guide on establishing a connection to the Blockchain WebSocket client. This guide will walk you through the step-by-step process of connecting and receiving messages.
+Here you will find a guide on establishing a connection to the Blockchain WebSocket client. You must run your node with indexer option to have events subscription. This guide will walk you through the step-by-step process of connecting and receiving messages.
 
 ### How to receive messages:
 
@@ -261,21 +261,35 @@ To connect to the Blockchain WebSocket client, follow these steps.
 package main
 
 import (
-	"github.com/gorilla/websocket"
+	"encoding/json"
 	"log"
 	"net/url"
+
+	"github.com/gorilla/websocket"
 )
 
 type EventType string
 
 const (
-	ACCOUNTS         EventType = "accounts" // receive all accounts changed or created
-	BLOCKS           EventType = "blocks" // receive all blocks
-	TRANSACTION      EventType = "transaction" // receive all transactions
+	ACCOUNTS    EventType = "accounts"    // receive all accounts changed or created
+	BLOCKS      EventType = "blocks"      // receive all blocks
+	TRANSACTION EventType = "transaction" // receive all transactions
 )
 
+type Data struct {
+	Types     []EventType `json:"subcribed_types"`
+	Addresses []string    `json:"addresses"`
+}
+
+type Event struct {
+	Type    EventType `json:"type"`
+	Address string    `json:"address"`
+	Hash    string    `json:"hash"`
+	Data    []byte    `json:"data"`
+}
+
 func main() {
-	u := url.URL{Scheme: "wss", Host: "websocket.mainnet.klever.finance", Path: ""}
+	u := url.URL{Scheme: "ws", Host: "127.0.0.1:8080", Path: "/subscribe"}
 	log.Printf("connecting to %s", u.String())
 
 	c, _, err := websocket.DefaultDialer.Dial(u.String(), nil)
@@ -295,29 +309,31 @@ func main() {
 				return
 			}
 
-			log.Println(string(message))
+			// marshal the message to Event struct
+			var event Event
+			if err := json.Unmarshal(message, &event); err != nil {
+				log.Println("unmarshal:", err)
+				return
+			}
+
+			switch event.Type {
+			case BLOCKS:
+				log.Println("Received BLOCKS data:", string(event.Data))
+			case ACCOUNTS:
+				log.Println("Received ACCOUNTS data:", string(event.Data))
+			case TRANSACTION:
+				log.Println("Received TRANSACTION data:", string(event.Data))
+			default:
+				log.Println("Unknown data ", string(message))
+			}
+
 		}
 	}()
 
-	subMessage := struct {
-		Action string `json:"action"`
-		Data   struct {
-		        Address string `json:"address"`
-			Hash string `json:"hash"`
-			Topics []EventType `json:"topics"`
-		} `json:"data"`
-	}{
-		Action: "subscribe",
-		Data: struct {
-			Topics []EventType `json:"topics"`
-			Address string `json:"address"`
-			Hash string `json:"hash"`
-		}{
-			Topics: []EventType{indexer.ACCOUNTS},
-			Address: "klv1....", // OPTIONAL field to listen a specific address
-			Hash: "hash11.." // // OPTIONAL field to listen a specific tx hash
-		},
+	subMessage := Data{
+		Types: []EventType{BLOCKS, TRANSACTION, ACCOUNTS},
 	}
+
 	// send the first message to subscribe
 	if err := c.WriteJSON(subMessage); err != nil {
 		log.Println("err: ", err)
@@ -326,6 +342,7 @@ func main() {
 
 	<-done
 }
+
 ```
 
 ```javascript
@@ -337,17 +354,13 @@ export enum WSTopics {
   transaction = 'transaction', // receive all transactions
 }
 
-const socketUrl = "wss://websocket.mainnet.klever.finance"
+const socketUrl = "ws://127.0.0.1:8080" // your indexer node
 
 const { sendJsonMessage, lastJsonMessage } = useWebSocket(socketUrl, {
     onOpen: () => {
       const payload = {
-        action: 'subscribe',
-        data: {
-          address: "klv1....", // OPTIONAL field to listen a specific address
-          topics: [WSTopics.blocks],
-          hash: "hash11.." // // OPTIONAL field to listen a specific tx hash
-        },
+        addresses: ["klv1...."], // OPTIONAL field to listen a specific address
+        subcribed_types: [WSTopics.blocks],
       }
       sendJsonMessage(payload)
     }

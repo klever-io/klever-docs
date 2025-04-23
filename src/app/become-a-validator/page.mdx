@@ -15,13 +15,13 @@ docker run -it --rm --user "$(id -u):$(id -g)" \
     --entrypoint=/usr/local/bin/operator \
     kleverapp/klever-go:latest \
     --key-file=./walletKey.pem \
-    --node=https://node.mainnet.klever.finance \
+    --node=https://node.mainnet.klever.org \
     validator create \
     klv1h7vx629mwuv4pnecn0k9clxp9rt7rquat3kvydgu8npt20e0ntjq3jhd40 \
     --bls=ce3aa977d1028e2a91730259c4b66cd862b77c63253fa12932012288108a0b7f110da4a2e3e1c15cc94802a79afef418f9a724a1ebe1423c0fa897bae669f1735b082ff3f19b3e00acc76a2bb0f31b1856e3e55952655386fbedad9c55322b81 \
     --rewards=klv1h7vx629mwuv4pnecn0k9clxp9rt7rquat3kvydgu8npt20e0ntjq3jhd40 \
     --name=MyValidatorName \
-    --logo="https://klever.finance/wp-content/uploads/2021/09/logo.svg" \
+    --logo="https://klever.org/wp-content/uploads/2021/09/logo.svg" \
     --commission=5 \
     --maxDelegation=12000000 \
     --uris="github=github.com/klever-io"
@@ -57,7 +57,7 @@ docker run -it --rm --user "$(id -u):$(id -g)" \
     --entrypoint=/usr/local/bin/operator \
     kleverapp/klever-go:latest \
     --key-file=./walletKey.pem \
-    --node=https://node.mainnet.klever.finance account freeze 10000000
+    --node=https://node.mainnet.klever.org account freeze 10000000
 ```
 
 After the "freeze" instruction, there is this structure: [AMOUNT].
@@ -80,7 +80,7 @@ docker run -it --rm --user "$(id -u):$(id -g)" \
     --entrypoint=/usr/local/bin/operator \
     kleverapp/klever-go:latest \
     --key-file=./walletKey.pem \
-    --node=https://node.mainnet.klever.finance \
+    --node=https://node.mainnet.klever.org \
     account delegate \
     klv186vg5k3pqetmfuy04620htcvz3krugu7hqe4ukczdy48r222j78q9y8vm5 \
     --bucketID=db0748c562c413a68b21a75249e1b936339fc03513e0bf076d3850b7a81113d2
@@ -125,13 +125,13 @@ docker run -it --rm --user "$(id -u):$(id -g)" \
     --entrypoint=/usr/local/bin/operator \
     kleverapp/klever-go:latest \
     --key-file=./walletKey.pem \
-    --node=https://node.mainnet.klever.finance \
+    --node=https://node.mainnet.klever.org \
     validator config \
     klv1h7vx629mwuv4pnecn0k9clxp9rt7rquat3kvydgu8npt20e0ntjq3jhd40 \
     --bls=ce3aa977d1028e2a91730259c4b66cd862b77c63253fa12932012288108a0b7f110da4a2e3e1c15cc94802a79afef418f9a724a1ebe1423c0fa897bae669f1735b082ff3f19b3e00acc76a2bb0f31b1856e3e55952655386fbedad9c55322b81 \
     --rewards=klv1h7vx629mwuv4pnecn0k9clxp9rt7rquat3kvydgu8npt20e0ntjq3jhd40 \
     --name=MyValidatorName \
-    --logo="https://klever.finance/wp-content/uploads/2021/09/logo.svg" \
+    --logo="https://klever.org/wp-content/uploads/2021/09/logo.svg" \
     --commission=5 \
     --maxDelegation=12000000 \
     --uris="github=github.com/klever-io"
