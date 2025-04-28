@@ -525,9 +525,9 @@ fn main() {
 
    - Key File: The path to your .pem file that will be used to deploy the contract.
    - Address: The address (refered to .pem) that will be used to deploy the contract.
-   - Node: You can use https://node.testnet.klever.finance (Testnet) or https://node.mainnet.klever.finance (Mainnet).
+   - Node: You can use https://node.testnet.klever.org (Testnet) or https://node.mainnet.klever.org (Mainnet).
 
-3. To create your own .pem file, you can access the [KApps](https://kapps.klever.finance/connect) and click on the "Generate New Account" button.
+3. To create your own .pem file, you can access the [KApps](https://kapps.klever.org/connect) and click on the "Generate New Account" button.
 
    <img src="/tutorials-images/crowdfunding/generate.png" alt="generate" />
 
@@ -540,7 +540,7 @@ fn main() {
 6. If you are using the Tesnet you can ask for some Test KLV. Just run the following command on your terminal **Make sure to replace with your address**:
 
 ```bash
-curl -X POST https://api.testnet.klever.finance/v1.0/transaction/send-user-funds/klv1sr70jktl8rhq37s8htl390qm6mnx4wsdm5e8nykk797d6d3n85vsghyqd4
+curl -X POST https://api.testnet.klever.org/v1.0/transaction/send-user-funds/klv1sr70jktl8rhq37s8htl390qm6mnx4wsdm5e8nykk797d6d3n85vsghyqd4
 ```
 
 7. Now you can click on the Klever IDE Icon and Select the Crowdfunding, and with the rigth click, selec the option Build Contract.
@@ -584,7 +584,7 @@ Here we will show some examples of how to integrate the Crowdfunding contract wi
 
 ```javascript
 // setup constants
-const nodeUrl = 'https://node.testnet.klever.finance'
+const nodeUrl = 'https://node.testnet.klever.org'
 const scAddress = 'klv1qqqqqqqqqqqqqpgqak42rwftgzrd929g27jagf9dmh33a7hu0n0qzdr86f'
 
 // fetch the last crowdfunding view

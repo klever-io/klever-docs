@@ -138,7 +138,7 @@ docker run -it --rm --user "$(id -u):$(id -g)" \
     --entrypoint=/usr/local/bin/operator \
     kleverapp/klever-go:latest \
     --key-file=./walletKey.pem \
-    --node=https://node.mainnet.klever.finance \
+    --node=https://node.mainnet.klever.org \
     account permission --perm='your-permission-here'
 ```
 
@@ -151,7 +151,7 @@ docker run -it --rm --user "$(id -u):$(id -g)" \
     --entrypoint=/usr/local/bin/operator \
     kleverapp/klever-go:latest \
     --key-file=./walletKey.pem \
-    --node=https://node.mainnet.klever.finance \
+    --node=https://node.mainnet.klever.org \
     account permission --perm='{"type":1,"threshold":2,"operations":"01af","permissionName": "Klever Permission!" "signers":[{"address":"Address-A","weight":1},{"address":"Address-B","weight":1},{"address":"Address-C","weight":2}]}'
 ```
 

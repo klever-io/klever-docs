@@ -38,8 +38,8 @@ import {
 } from 'https://sdk.kleverscan.org/kleverchain-sdk-web-esm-1-0-x.js'
 
 const provider = {
-  api: 'https://api.testnet.klever.finance',
-  node: 'https://node.testnet.klever.finance',
+  api: 'https://api.testnet.klever.org',
+  node: 'https://node.testnet.klever.org',
 }
 
 web.setProvider(provider)
@@ -102,8 +102,8 @@ The following scripts are fully functional for a send button component that does
 import React from 'react'
 import { IProvider, web, ITransfer, TransactionType } from '@klever/sdk-web'
 const provider: IProvider = {
-  api: 'https://api.testnet.klever.finance',
-  node: 'https://node.testnet.klever.finance',
+  api: 'https://api.testnet.klever.org',
+  node: 'https://node.testnet.klever.org',
 }
 
 web.setProvider(provider)
@@ -189,8 +189,8 @@ Eg: Set it inside a group of Routes, Context, or in the application entry point.
 import { web, IProvider } from '@klever/sdk-web';
 ...
   const provider:IProvider = {
-      api: 'https://api.testnet.klever.finance',
-      node: 'https://node.testnet.klever.finance'
+      api: 'https://api.testnet.klever.org',
+      node: 'https://node.testnet.klever.org'
   };
 
   web.setProvider(provider);

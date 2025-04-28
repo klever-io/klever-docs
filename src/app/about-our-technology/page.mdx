@@ -164,7 +164,7 @@ docker run -it --rm --user "$(id -u):$(id -g)" \
     --entrypoint=/usr/local/bin/operator \
     kleverapp/klever-go:latest \
     --key-file=./walletKey.pem \
-    --node=https://node.mainnet.klever.finance \
+    --node=https://node.mainnet.klever.org \
     kda trigger 15 --kdaID=YOUR_KDA_ID --updateKdaPool='active=true,adminAddress=yourAddress,fixedRatioKLV=KLVRATIO,fixedRatioKDA=KDARATIO'
 ```
 
@@ -179,7 +179,7 @@ docker run -it --rm --user "$(id -u):$(id -g)" \
     --entrypoint=/usr/local/bin/operator \
     kleverapp/klever-go:latest \
     --key-file=./walletKey.pem \
-    --node=https://node.mainnet.klever.finance \
+    --node=https://node.mainnet.klever.org \
     kda deposit AMOUNT --depositType=1 --kdaID=YOUR_KDA_ID --currencyID=KLV
 ```
 
@@ -288,7 +288,7 @@ docker run -it --rm --user "$(id -u):$(id -g)" \
     --entrypoint=/usr/local/bin/operator \
     kleverapp/klever-go:latest \
     --key-file=./walletKey.pem \
-    --node=https://node.mainnet.klever.finance \
+    --node=https://node.mainnet.klever.org \
     kda create 0 --canBurn=true --canMint=true --canFreeze=true --canPause=true --canWipe=true --logo=LOGO_URL --maxSupply=AMOUNT_MAX --precision=6 --name=KDA_NAME --ticker=KDA_TICKER
 ```
 
