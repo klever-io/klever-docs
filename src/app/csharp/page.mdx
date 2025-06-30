@@ -32,21 +32,21 @@ class Program
     static async Task Main(string[] args)
     {
         /////////////////////////////////////////////////////////
-        ////////// Setup to connect to the kleverchain //////////
+        ////////// Setup to connect to the Klever Blockchain //////////
         /////////////////////////////////////////////////////////
 
         // Create a network configuration for TestNet
         var provider = new KleverProvider(new NetworkConfig(Network.TestNet));
 
         /////////////////////////////////////////////////////////
-        // Preparing user account to interact with Kleverchain //
+        // Preparing user account to interact with Klever Blockchain //
         /////////////////////////////////////////////////////////
 
         // Load user wallet from mnemonic
         var wallet = Wallet.DeriveFromMnemonic("my wallet mnemonic separated by spaces");
         var account = wallet.GetAccount();
 
-        // Sync account with the kleverchain
+        // Sync account with the klever blockchain
         await account.Sync(provider);
 
         /////////////////////////////////////////////////////////
@@ -159,11 +159,11 @@ class Program
 
 ## Breakdown of the start guide
 
-The following breakdown shows the transactions of transfer, deploy, and invoke of smart contracts. For other transactions available in KleverChain, explore the methods available in the `KleverProvider` class.
+The following breakdown shows the transactions of transfer, deploy, and invoke of smart contracts. For other transactions available in Klever Blockchain, explore the methods available in the `KleverProvider` class.
 
 ## Instantiating the SDK provider
 
-First, we instantiate a new provider to interact with the KleverChain with specific network configuration (LocalNet, MainNet, TestNet, DevNet):
+First, we instantiate a new provider to interact with the Klever Blockchain with specific network configuration (LocalNet, MainNet, TestNet, DevNet):
 
 ```csharp
 // Create a network configuration for TestNet
@@ -172,20 +172,20 @@ var provider = new KleverProvider(new NetworkConfig(Network.TestNet));
 
 ## Handling wallet and account
 
-Next, we load the user wallet from mnemonic and sync the account with the KleverChain:
+Next, we load the user wallet from mnemonic and sync the account with the Klever Blockchain:
 
 ```csharp
 // Load user wallet from mnemonic
 var wallet = Wallet.DeriveFromMnemonic("my wallet mnemonic separated by spaces");
 var account = wallet.GetAccount();
 
-// Sync account with the kleverchain
+// Sync account with the klever blockchain
 await account.Sync(provider);
 ```
 
 ## Creating, signing and broadcasting transactions
 
-Now we're ready to create, sign and broadcast transactions in KleverChain.
+Now we're ready to create, sign and broadcast transactions in Klever Blockchain.
 For a transfer transaction, we use the Send method from the provider, then sign and broadcast it. Note that we can specify a KDA fee instead of the default KLV fee:
 
 ```csharp
