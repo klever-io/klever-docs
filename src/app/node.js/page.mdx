@@ -76,7 +76,7 @@ console.log(broadcastRes)
 
 ## Changing Network
 
-The default network is the Kleverchain Mainnet, but if you want to use the Kleverchain Testnet or a local version of the Kleverchain, you can change the provider object by setting it before calling other methods.
+The default network is the Klever Blockchain Mainnet, but if you want to use the Klever Blockchain Testnet or a local version of the Klever Blockchain, you can change the provider object by setting it before calling other methods.
 
 ```ts
 import { utils, IProvider } from "@klever/sdk-node";
@@ -174,11 +174,11 @@ All method packed into the utils object.
 | decodeAddress            | (address: string)                                     | `Promise<Uint8Array>`                               | Decodes an address to a Uint8Array.                                                                           |
 | toHex                    | (data: Uint8Array)                                    | string                                              | Helper method to convert Uint8Array to a hex string.                                                          |
 | fromHex                  | (hex: string)                                         | Uint8Array                                          | Helper method to convert a hex string to a Uint8Array.                                                        |
-| validateAddress          | (address: string)                                     | `Promise<boolean>`                                  | Checks if an address is valid for the KleverChain standard.                                                   |
+| validateAddress          | (address: string)                                     | `Promise<boolean>`                                  | Checks if an address is valid for the Klever Blockchain standard.                                                   |
 
 ## Auxiliary Scripts
 
-In this section, we provide scripts to automate the most commonly executed transaction patterns in KleverChain.
+In this section, we provide scripts to automate the most commonly executed transaction patterns in Klever Blockchain.
 
 ### Mint + UpdateMetadata
 
