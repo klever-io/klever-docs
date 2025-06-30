@@ -35,23 +35,23 @@ import (
 
 func main() {
 	/////////////////////////////////////////////////////////
-	////////// Setup to connect to the kleverchain //////////
+	////////// Setup to connect to the klever Blockchain //////////
 	/////////////////////////////////////////////////////////
 
 	// Utility to create a network configuration
 	net := network.NewNetworkConfig(network.TestNet)
 
-	// Utility to create a http client plug and playh to interact with the kleverchain
+	// Utility to create a http client plug and playh to interact with the klever Blockchain
 	hc := utils.NewHttpClient(10 * time.Second)
 
-	// Instantiates a new provider to interact with the kleverchain with specific network configuration and http client
+	// Instantiates a new provider to interact with the klever Blockchain with specific network configuration and http client
 	kc, err := provider.NewKleverChain(net, hc)
 	if err != nil {
 		panic(err)
 	}
 
 	/////////////////////////////////////////////////////////
-	// Preparing user account to interact with Kleverchain //
+	// Preparing user account to interact with Klever Blockchain //
 	/////////////////////////////////////////////////////////
 
 	// Loads user wallet from mnemonic
@@ -66,7 +66,7 @@ func main() {
 		panic(err)
 	}
 
-	// Sync account with the kleverchain
+	// Sync account with the klever Blockchain
 	err = acc.Sync(kc)
 	if err != nil {
 		panic(err)
@@ -164,20 +164,20 @@ func main() {
 
 ## Breakdown of the start guide
 
-The following breakdown shows the transactios of transfer, deploy, and invoke of smart contracts. For the other transaction available in kleverchain, simply inspect the methods of the sturct returned by `provider.NewKleverChain()`, which we named `kc` in the example, and golang's typing will guide you on the required arguments.
+The following breakdown shows the transactios of transfer, deploy, and invoke of smart contracts. For the other transaction available in klever Blockchain, simply inspect the methods of the sturct returned by `provider.NewKleverChain()`, which we named `kc` in the example, and golang's typing will guide you on the required arguments.
 
 ## Instantiating the SDK provider
 
-First we instantiates a new provider to interact with the kleverchain with specific network configuration (LocalNet, MainNet, TestNet, DevNet, Custom) and http client:
+First we instantiates a new provider to interact with the klever Blockchain with specific network configuration (LocalNet, MainNet, TestNet, DevNet, Custom) and http client:
 
 ```go
 	// Utility to create a network configuration
 	net := network.NewNetworkConfig(network.TestNet)
 
-	// Utility to create a http client plug and playh to interact with the kleverchain
+	// Utility to create a http client plug and playh to interact with the klever Blockchain
 	hc := utils.NewHttpClient(10 * time.Second)
 
-	// Instantiates a new provider to interact with the kleverchain with specific network configuration and http client
+	// Instantiates a new provider to interact with the klever Blockchain with specific network configuration and http client
 	kc, err := provider.NewKleverChain(net, hc)
 	if err != nil {
 		panic(err)
@@ -186,7 +186,7 @@ First we instantiates a new provider to interact with the kleverchain with speci
 
 ## Handling wallet and account
 
-Next we load the user wallet from mnemonic (or through pem file, we'll see how further) and sync the account with the kleverchain:
+Next we load the user wallet from mnemonic (or through pem file, we'll see how further) and sync the account with the klever blockchain:
 
 ```go
 	// Loads user wallet from mnemonic
@@ -201,7 +201,7 @@ Next we load the user wallet from mnemonic (or through pem file, we'll see how f
 		panic(err)
 	}
 
-	// Sync account with the kleverchain
+	// Sync account with the klever blockchain
 	err = acc.Sync(kc)
 	if err != nil {
 		panic(err)
@@ -210,9 +210,9 @@ Next we load the user wallet from mnemonic (or through pem file, we'll see how f
 
 ## Creating, signing and broadcasting transactions
 
-Now we're ready to create, sign and broadcast transactions in kleverchain.
+Now we're ready to create, sign and broadcast transactions in klever blockchain.
 
-Lets begin with a simple transfer contract. Initially you must create a base transaction usign `NewBaseTX()`, note that is possible to customize some base transaction fields, in the example we change the asset used to pay the fee to "KDA-AB12". Then to create the transfer transaction we call it from klever chain provider, `kc.Send()`, then we need to pass the base transaction, bech32 address of the asset receiver, the amount and the asset ticker, but in that particular case we get the receiver address from loading its wallet from a .pem file with the method `NewWalletFromPEM()`, then sign and finally broadcast it on kleverchain.
+Lets begin with a simple transfer contract. Initially you must create a base transaction usign `NewBaseTX()`, note that is possible to customize some base transaction fields, in the example we change the asset used to pay the fee to "KDA-AB12". Then to create the transfer transaction we call it from klever chain provider, `kc.Send()`, then we need to pass the base transaction, bech32 address of the asset receiver, the amount and the asset ticker, but in that particular case we get the receiver address from loading its wallet from a .pem file with the method `NewWalletFromPEM()`, then sign and finally broadcast it on klever blockchain.
 
 ```go
 	// Send (transfer) example with fee payment in some KDA instead of KLV
@@ -248,7 +248,7 @@ Lets begin with a simple transfer contract. Initially you must create a base tra
 
 ## Deploy and invoke smart contracts
 
-Now lets see how to deploy a [lottery smart contract](https://github.com/klever-io/klever-vm-sdk-rs/tree/master/contracts/examples/lottery-kda) on kleverchain. We create a new base transaction as we did in transfer, then to the `kc.DeploySmartContract()` kleverchain provider method we passe the base tx, the path to the wasm file, contract boolean flags, `vmType` (always empty string), and then variadic arguments with its types (we'll see this later) needeb by `init()` function of your smart contract.
+Now lets see how to deploy a [lottery smart contract](https://github.com/klever-io/klever-vm-sdk-rs/tree/master/contracts/examples/lottery-kda) on klever blockchain. We create a new base transaction as we did in transfer, then to the `kc.DeploySmartContract()` klever blockchain provider method we passe the base tx, the path to the wasm file, contract boolean flags, `vmType` (always empty string), and then variadic arguments with its types (we'll see this later) needeb by `init()` function of your smart contract.
 
 ```go
 	// Deploy smart contract example
