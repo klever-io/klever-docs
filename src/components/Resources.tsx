@@ -30,7 +30,7 @@ const resources: Array<Resource> = [
     href: '/staking',
     name: 'Staking',
     description:
-      'Learn about the KleverChain staking model and how to freeze, delegate, claim and withdraw your staking rewards.',
+      'Learn about the Klever Blockchain staking model and how to freeze, delegate, claim and withdraw your staking rewards.',
     icon: GrLineChart,
     pattern: {
       y: 16,
@@ -44,7 +44,7 @@ const resources: Array<Resource> = [
     href: '/become-a-validator',
     name: 'Validator',
     description:
-      'Learn about KleverChain validating process and how to become a validator in your ecosystem.',
+      'Learn about Klever Blockchain validating process and how to become a validator in your ecosystem.',
     icon: PiGraphFill,
     pattern: {
       y: -6,
@@ -72,7 +72,7 @@ const resources: Array<Resource> = [
     href: '/multisignature',
     name: 'Multisignature',
     description:
-      'Learn about the KleverChain multisignature feature and how to sign transactions on shared accounts.',
+      'Learn about the Klever Blockchain multisignature feature and how to sign transactions on shared accounts.',
     icon: AiOutlineSignature,
     pattern: {
       y: 22,

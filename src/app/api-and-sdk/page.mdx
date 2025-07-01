@@ -48,15 +48,15 @@ import { CodeGroup } from '@/components/Code'
 
 # API & SDK
 
-Useful links and info for devs that want to integrate the Kleverchain to their projects
+Useful links and info for devs that want to integrate the Klever Blockchain to their projects
 
 ## Web SDK
 
-If you want to create a web app that communicates with the Kleverchain via the Klever web extension or via the Klever mobile app's built-in browser, you can find more info on our javascript library in this link:
+If you want to create a web app that communicates with the Klever Blockchain via the Klever web extension or via the Klever mobile app's built-in browser, you can find more info on our javascript library in this link:
 
-## Kleverchain API
+## Klever Blockchain API
 
-If you need more info on the Kleverchain APIs to interact directly with the blockchain, you can access the swagger documentation for the API endpoints through the following URLs:
+If you need more info on the Klever Blockchain APIs to interact directly with the blockchain, you can access the swagger documentation for the API endpoints through the following URLs:
 
 ### Proxy API endpoints
 
@@ -94,7 +94,7 @@ Using the explorer or the proxy api, you can check the status code of the transa
 
 If, for some reason, your transaction was broadcast but doesn't appear in the proxy api or in the explorer, you can check its status in the node api. It will help you identify if the node that you used to broadcast the transaction is faulty.
 
-## Sending a transaction to the KleverChain
+## Sending a transaction to the Klever Blockchain
 
 If you plan on using the raw endpoints, you'll need to do three main steps: building, signing and broadcasting the transaction.
 
@@ -111,7 +111,7 @@ const unsignedTransaction = await window.kleverWeb.buildTransaction([
 ])
 ```
 
-Even though you can use the window kleverWeb object directly, we suggest you [use the Kleverchain JS SDK,](/sdks) if you are using javascript.
+Even though you can use the window kleverWeb object directly, we suggest you [use the Klever Blockchain JS SDK,](/sdks) if you are using javascript.
 
 Alternatively you can send the params [through the `send` endpoint](https://node.mainnet.klever.org/swagger/index.html#/Transaction/post_transaction_send), and will receive an unsigned transaction as response.
 
@@ -124,7 +124,7 @@ const signedTransaction =
   await window.kleverWeb.signTransaction(unsignedTransaction)
 ```
 
-Alternatively, to sign the transaction, you will need to do it using a backend application, so you don't expose your private key. For instance, you can [use the GO SDK](https://github.com/klever-io/klever-go-sdk) or [the Kleverchain JS SDK](/node.js) with NodeJS.
+Alternatively, to sign the transaction, you will need to do it using a backend application, so you don't expose your private key. For instance, you can [use the GO SDK](https://github.com/klever-io/klever-go-sdk) or [the Klever Blockchain JS SDK](/node.js) with NodeJS.
 
 ### 3. Broadcast
 

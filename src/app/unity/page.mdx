@@ -15,11 +15,11 @@ BouncyCastle.Crypto.dll - ^1.8.9
 
 You can download it to extract the dlls at [the Nuget website](https://www.nuget.org/) or you can clone [the Unity example ](https://github.com/klever-io/kleverchain-unity-example)we've created.
 
-## Interacting with Kleverchain
+## Interacting with Klever Blockchain
 
 ### Initializing Klever Provider
 
-After doing the setup above in your project, it's very easy to start working with kleverchain, initially, you must create a KleverProvider to be able to use the functions of our package.
+After doing the setup above in your project, it's very easy to start working with klever blockchain, initially, you must create a KleverProvider to be able to use the functions of our package.
 
 ```csharp
 using kleversdk.core;
@@ -31,7 +31,7 @@ private KleverProvider kleverProvider;
 
 
 private void Awake(){
-        // need to instantiate the kleverProvider to use the kleverchain sdk
+        // need to instantiate the kleverProvider to use the klever blockchain sdk
         environment = new NetworkConfig(kleversdk.provider.Network.TestNet);
 	kleverProvider = new KleverProvider(environment);
   }
@@ -100,7 +100,7 @@ var broadcastResult = await this.kleverProvider.Broadcast(tx);
 Debug.Log(broadcastResult.String());
 ```
 
-Congratulations, you successfully sent a transaction through your game to Kleverchain!!
+Congratulations, you successfully sent a transaction through your game to Klever Blockchain!
 
 You can see the example game we've created using the c# sdk at [this link](https://github.com/klever-io/kleverchain-unity-example) and if you want a example of other uses of Klever Provider you can see in [this demo](https://github.com/klever-io/klever.net/blob/master/demo/Program.cs).
 

@@ -14,7 +14,7 @@ export const navigation: Array<NavGroup> = [
     links: [
       { title: 'Crowdfunding', href: '/tutorials/crowdfunding' },
       { title: 'Deposit KDA Pool', href: '/tutorials/kda-pool' },
-      { title: 'Kleverchain IDE', href: '/tutorials/kleverchain-ide' },
+      { title: 'Klever Blockchain IDE', href: '/tutorials/kleverchain-ide' },
     ],
   },
   {
@@ -135,10 +135,10 @@ export const navigation: Array<NavGroup> = [
     title: 'Klever SDK',
     links: [
       {
-        title: 'Introduction to KleverChain SDK',
+        title: 'Introduction to Klever Blockchain SDK',
         href: '/introduction-to-kleverchain-sdk',
       },
-      { title: 'KleverChain SDKs', href: '/sdks' },
+      { title: 'Klever Blockchain SDKs', href: '/sdks' },
       {
         title: "Go",
         href: "/go",
