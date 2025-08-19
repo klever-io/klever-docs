@@ -384,6 +384,28 @@ docker run -it --rm --user "$(id -u):$(id -g)" \
     137 --kda=KFI
 ```
 
+## How to Unjail a Validator
+Before attempting to unjail your validator, ensure you have:
+1. **Root Cause Resolution**: Fixed the underlying issue that caused the jailing
+2. **Node Synchronization**: Your validator node is running and fully synchronized
+3. **Owner Account Access**: Access to the validator owner's private key (.pem file)
+4. **Network Connectivity**: Stable connection to Klever network
+### Using Klever Operator CLI
+```bash
+# Unjail command format
+operator validator unjail [OWNER_ADDRESS] [flags]
+```
+### What Happens When Unjailing
+The unjailing process performs several important operations:
+1. **Immediate Effects**:
+   - **Rating Reset**: Validator's rating is reset to the starting rating (5,000,001)
+   - **Temporary Rating Clear**: Any temporary rating penalties are removed
+   - **List Migration**: Validator moves from "Jailed" to "Waiting" list
+2. **Post-Unjail Process**:
+   - **Queue Position**: Validator enters the waiting queue for selection
+   - **Index Assignment**: Gets a new position based on current block nonce
+   - **Eligibility Wait**: May take 1-3 epochs to become eligible for selection
+   - **Selection Process**: Must wait to be selected for active validation again
 
 ## All Cli Operations
 
