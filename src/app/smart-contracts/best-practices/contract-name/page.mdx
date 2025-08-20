@@ -1,0 +1,32 @@
+## How to Set a Contract Name
+
+Setting a contract name is an important practice for better identification and management of your smart contracts on the Klever Blockchain.
+
+## Step 1: Add the Name Change Endpoint
+
+Add this endpoint to your contract:
+
+```rust
+#[only_owner]
+#[endpoint(changeContractName)]
+fn change_contract_name(&self, new_name: ManagedBuffer) {
+    self.send().set_account_name(new_name);
+}
+```
+
+**NOTE**: If your contract is already deployed, you will need to upgrade your contract to include this new endpoint. You can learn how to upgrade your contract [here](/smart-contracts/reference/upgrading#how-to-upgrade-a-smart-contract).
+
+## Step 2: Set the Contract Name
+
+Once the upgrade is complete (or your contract is deployed), you can set the contract name using KleverScan ([mainnet](https://kleverscan.org) or [testnet](https://testnet.kleverscan.org/)).
+
+You will need to invoke the `changeContractName` endpoint with the desired name as an argument.
+
+## Step 3: Verification
+
+After setting the contract name, you can verify it was set correctly by:
+
+### Using Klever Explorer
+1. Search for your contract address on Klever Explorer ([mainnet](https://kleverscan.org) or [testnet](https://testnet.kleverscan.org/))
+2. Go to your contract page
+3. The new contract name should appear at the top of the page

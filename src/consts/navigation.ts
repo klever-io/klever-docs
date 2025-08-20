@@ -79,6 +79,7 @@ export const navigation: Array<NavGroup> = [
               { title: 'Basics', href: '/basics' },
               { title: 'BigUint Operations', href: '/biguint-operations' },
               { title: 'Dynamic Allocation', href: '/dynamic-allocation' },
+              { title: 'Contract Name', href: '/contract-name' },
             ],
           },
           {
