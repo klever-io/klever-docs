@@ -79,7 +79,6 @@ export const navigation: Array<NavGroup> = [
               { title: 'Basics', href: '/basics' },
               { title: 'BigUint Operations', href: '/biguint-operations' },
               { title: 'Dynamic Allocation', href: '/dynamic-allocation' },
-              { title: 'Contract Name', href: '/contract-name' },
             ],
           },
           {
@@ -165,5 +164,17 @@ export const navigation: Array<NavGroup> = [
       //Legacy
       { title: 'Legacy', href: '/legacy' },
     ],
+
+  },
+    {
+    title: 'Side Pill',
+    links: [
+      {
+        title: 'Calling Your Contract in the Front-End',
+        href: '/calling-your-contract-in-the-front-end',
+      },
+      { title: 'From JavaScript to Rust', href: '/from-javascript-to-rust' },
+    ],
+
   },
 ]

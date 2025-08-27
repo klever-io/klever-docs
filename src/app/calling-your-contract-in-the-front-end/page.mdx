@@ -1,0 +1,517 @@
+# How to Call Smart Contracts from the Frontend
+
+This side pill covers the integration of Klever smart contracts with frontend applications, including SDK setup, wallet connection, and transaction handling.
+
+### What You'll Learn
+
+By the end of this guide, you'll know how to:
+- Set up the Klever SDK in your frontend
+- Connect users' wallets securely
+- Call smart contract functions (both read and write)
+
+### What You Need Before Starting
+
+- Basic knowledge of Next.js/TypeScript
+- A smart contract deployed on Klever Blockchain
+- Node.js and npm installed
+- Klever Extension installed in your browser
+
+### Step 1: Project Setup
+
+Let's start by setting up your project with everything you need.
+
+### Create Your Next.js Project
+
+**Recommended Setup:** Use Next.js with TypeScript and the Pages Router (not App Router) for better compatibility with Klever SDK:
+
+```bash
+npx create-next-app@latest my-klever-dapp --typescript --eslint --tailwind --src-dir --no-app
+cd my-klever-dapp
+```
+
+This creates a project with:
+- TypeScript support
+- Pages Router
+- Tailwind CSS for styling
+- ESLint for code quality
+
+### Install the Klever SDK
+
+Open your terminal and run:
+
+```bash
+npm install @klever/sdk-web
+```
+
+### Configure Your Environment
+
+Create a `.env.local` file in your project root and add these variables:
+```bash
+# Klever Testnet URLs (use these for testing)
+NEXT_PUBLIC_NODE_URL=https://node.testnet.klever.org
+NEXT_PUBLIC_PROXY_URL=https://api.testnet.klever.org
+
+# Your smart contract address (replace with your actual contract)
+NEXT_PUBLIC_SC_ADDRESS=klv1your_contract_address_here
+```
+
+### Step 2: Setting Up State Management
+
+We'll create a React Context to manage wallet connection and user data across your entire app. Don't worry - I'll explain each part!
+
+Create a new file `contexts/SdkContext.tsx`:
+
+```typescript
+// contexts/SdkContext.tsx
+import { useState, createContext, useContext } from "react";
+
+// Define what data our context will store
+interface ISdkContext {
+  getAccount(): string | null;  // Get the connected wallet address
+  setAccount(account: string): void;  // Save the wallet address
+}
+
+// Create the context (think of it as a "global storage")
+const SdkContext = createContext({} as ISdkContext);
+
+// The provider component that wraps your app
+const SdkProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [account, setAccountState] = useState<string | null>(null);
+
+  const contextValue: ISdkContext = {
+    getAccount: () => account,
+    setAccount: (newAccount) => setAccountState(newAccount),
+  };
+
+  return (
+    <SdkContext.Provider value={contextValue}>
+      {children}
+    </SdkContext.Provider>
+  );
+};
+
+// Custom hook to use the context easily
+const useSdk = () => useContext(SdkContext);
+
+export { SdkContext, SdkProvider, useSdk };
+```
+
+**What's happening here?**
+- We create a "global state" to store the user's wallet address
+- The `SdkProvider` wraps your app and provides this data to all components
+- The `useSdk()` hook lets any component access the wallet data
+
+### Wrap Your App with the Provider
+
+In your `_app.tsx` (or main App component), wrap everything with the SdkProvider:
+
+```tsx
+// pages/_app.tsx
+import { SdkProvider } from '@/contexts/SdkContext'
+
+export default function App({ Component, pageProps }) {
+  return (
+    <SdkProvider>
+      <Component {...pageProps} />
+    </SdkProvider>
+  )
+}
+```
+
+### Step 3: Connecting the Wallet
+
+Now for the fun part - let's connect to the user's Klever wallet! This is like asking permission to interact with their blockchain account.
+
+Create a component for wallet connection (`components/ConnectWallet.tsx`):
+
+```typescript
+import { useState } from "react";
+import { web } from "@klever/sdk-web";
+import { useSdk } from "@/contexts/SdkContext";
+
+export default function ConnectWallet() {
+  const [loading, setLoading] = useState(false);
+  const [balance, setBalance] = useState(0);
+  const sdk = useSdk();
+  const walletAddress = sdk.getAccount();
+
+  const connectWallet = async () => {
+    setLoading(true);
+
+    try {
+      // Step 1: Check if Klever Extension is installed
+      if (typeof window === "undefined" || !window.kleverWeb) {
+        alert("Please install the Klever Extension first!");
+        return;
+      }
+
+      // Step 2: Initialize the extension
+      await window.kleverWeb.initialize();
+
+      // Step 3: Get the user's wallet address
+      const address = window.kleverWeb.getWalletAddress();
+      if (!address) {
+        throw new Error("Could not get wallet address");
+      }
+
+      // Step 4: Configure the SDK to use our network
+      const nodeUrl = process.env.NEXT_PUBLIC_NODE_URL;
+      const proxyUrl = process.env.NEXT_PUBLIC_PROXY_URL;
+
+      if (nodeUrl && proxyUrl) {
+        web.setProvider({
+          node: nodeUrl,
+          api: proxyUrl,
+        });
+      } else {
+        web.setProvider(window.kleverWeb.provider);
+      }
+
+      // Step 5: Get wallet balance (handle errors gracefully)
+      try {
+        const userBalance = await window.kleverWeb.getBalance();
+        setBalance(userBalance);
+      } catch (balanceError) {
+        console.warn("Could not get balance:", balanceError);
+        setBalance(0); // Set to 0 and continue
+      }
+
+      // Step 6: Save the address to our global state
+      sdk.setAccount(address);
+
+      alert("Wallet connected successfully! ✨");
+
+    } catch (error) {
+      console.error("Connection failed:", error);
+      alert("Failed to connect wallet. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // If wallet is connected, show wallet info
+  if (walletAddress) {
+    return (
+      <div className="wallet-info">
+        <p>✅ Connected: {walletAddress.slice(0, 8)}...{walletAddress.slice(-8)}</p>
+        <p>💰 Balance: {(balance / 1e6).toFixed(2)} KLV</p>
+      </div>
+    );
+  }
+
+  // If not connected, show connect button
+  return (
+    <button
+      onClick={connectWallet}
+      disabled={loading}
+      className="connect-btn"
+    >
+      {loading ? "Connecting..." : "🔗 Connect Wallet"}
+    </button>
+  );
+}
+```
+
+** Step-by-step breakdown:**
+1. **Check Extension**: Make sure user has Klever Extension installed
+2. **Initialize**: Wake up the extension
+3. **Get Address**: Request user's wallet address
+4. **Configure Network**: Tell SDK which Klever network to use
+5. **Get Balance**: Fetch user's KLV balance (optional)
+6. **Save State**: Store address in our global context
+
+### Step 4: Reading Data from Smart Contracts
+
+Smart contracts have two types of functions:
+1. **📄 Read functions** ("view" functions) - Just get data, don't change anything
+2. **✍️ Write functions** ("transactions") - Change the contract's state
+
+Let's start with the easier one - reading data!
+
+### Reading Contract Data (getView)
+
+Create `lib/get-view.ts`:
+
+```typescript
+// lib/get-view.ts
+const nodeUrl = process.env.NEXT_PUBLIC_NODE_URL;
+const scAddress = process.env.NEXT_PUBLIC_SC_ADDRESS;
+
+export async function getView(funcName: string, args: string[] = []) {
+  try {
+    const request = await fetch(`${nodeUrl}/vm/hex`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        scAddress,
+        funcName,
+        args,
+      }),
+    });
+    const { data } = await request.json();
+    return data.data;
+  } catch (error) {
+    console.error(error);
+    throw error;
+  }
+}
+```
+
+** How to use it:**
+
+```typescript
+// Example: Get a number from your contract
+import { getView } from '@/lib/get-view'
+import { abiDecoder } from '@klever/sdk-web'
+
+const getContractData = async () => {
+  try {
+    // Call the 'getBalance' function from your smart contract
+    const rawData = await getView('getBalance')
+
+    // Decode the raw data into a readable number
+    const balance = abiDecoder.decodeValue(rawData, 'BigUint')
+
+    console.log('Contract balance:', Number(balance))
+  } catch (error) {
+    console.error('Error:', error)
+  }
+}
+```
+
+### Step 5: Writing to Smart Contracts
+
+**⚠️ Important:** Write functions cost gas and require the user to sign a transaction!
+
+### Simple Example: Calling a Contract Function
+
+```typescript
+// lib/contract-functions.ts
+import { web, TransactionType, ISmartContract } from "@klever/sdk-web";
+
+/**
+ * Increment a counter in your smart contract
+ */
+export async function incrementCounter() {
+  try {
+    const contractAddress = process.env.NEXT_PUBLIC_SC_ADDRESS;
+
+    // Step 1: Create the transaction payload
+    const payload: ISmartContract = {
+      address: contractAddress as string,
+      scType: 0,  // Standard smart contract type
+    };
+
+    // Step 2: Create transaction data (function name)
+    const txData = Buffer.from("increment", "utf8").toString("base64");
+
+    // Step 3: Build the unsigned transaction
+    const unsignedTx = await web.buildTransaction(
+      [
+        {
+          type: TransactionType.SmartContract,
+          payload,
+        }
+      ],
+      [txData]
+    );
+
+    // Step 4: Ask user to sign the transaction
+    const signedTx = await web.signTransaction(unsignedTx);
+
+    // Step 5: Broadcast to the blockchain
+    const result = await web.broadcastTransactions([signedTx]);
+
+    console.log("Transaction sent! Hash:", result.data.txsHashes[0]);
+    return result;
+
+  } catch (error) {
+    console.error("Transaction failed:", error);
+    throw error;
+  }
+}
+```
+
+**🔄 What happens step by step:**
+1. **Create payload**: Tell the blockchain which contract to call
+2. **Function name**: "increment" is the function we want to call
+3. **Build transaction**: Package everything together
+4. **User signs**: Klever Extension asks user to approve
+5. **Broadcast**: Send to blockchain network
+
+### Advanced Example: Function with Parameters
+
+Sometimes your smart contract function needs parameters:
+
+```typescript
+import { abiEncoder } from "@klever/sdk-web";
+
+/**
+ * Set counter to specific value
+ * @param value - The number to set the counter to
+ */
+export async function setCounterValue(value: number) {
+  try {
+    const contractAddress = process.env.NEXT_PUBLIC_SC_ADDRESS;
+
+    // Step 1: Encode the parameters for the blockchain
+    const encodedParams = abiEncoder.encodeABIValue(value, "u32", false);
+
+    // Step 2: Create payload (same as before)
+    const payload: ISmartContract = {
+      address: contractAddress as string,
+      scType: 0,
+    };
+
+    // Step 3: Function name + parameters
+    const txData = Buffer.from(`setValue@${encodedParams}`, "utf8").toString("base64");
+
+    // Step 4-6: Same as before
+    const unsignedTx = await web.buildTransaction(
+      [
+        {
+          type: TransactionType.SmartContract,
+          payload,
+        }
+      ],
+      [txData]
+    );
+
+    const signedTx = await web.signTransaction(unsignedTx);
+    return await web.broadcastTransactions([signedTx]);
+
+  } catch (error) {
+    console.error("Set value failed:", error);
+    throw error;
+  }
+}
+```
+
+**Key difference:** We encode parameters using `abiEncoder` and join them with `@` symbols.
+
+### Complete Example: Counter Contract
+
+Let's put it all together with a real working example! Here's a simple counter contract that demonstrates both reading and writing:
+
+### Smart Contract (Rust)
+```rust
+#![no_std]
+
+klever_sc::imports!();
+
+#[klever_sc::contract]
+pub trait SimpleCounter {
+    #[init]
+    fn init(&self) {
+        self.counter().set(0u32);
+    }
+
+    #[endpoint]
+    fn increment(&self) {
+        let current_value = self.counter().get();
+        self.counter().set(current_value + 1u32);
+    }
+
+    #[endpoint]
+    fn decrement(&self) {
+        let current_value = self.counter().get();
+        if current_value > 0 {
+            self.counter().set(current_value - 1u32);
+        }
+    }
+
+    #[view(getCounter)]
+    fn get_counter(&self) -> u32 {
+        self.counter().get()
+    }
+
+    #[storage_mapper("counter")]
+    fn counter(&self) -> SingleValueMapper<u32>;
+}
+```
+
+### Frontend Component
+```typescript
+import { useState, useEffect } from "react";
+import { useSdk } from "@/contexts/SdkContext";
+import { getView } from "@/lib/get-view";
+import { web, TransactionType, ISmartContract, abiDecoder } from "@klever/sdk-web";
+
+export default function CounterComponent() {
+  const [counter, setCounter] = useState<number>(0);
+  const [loading, setLoading] = useState(false);
+  const sdk = useSdk();
+  const walletAddress = sdk.getAccount();
+
+  // Read counter value from contract
+  const readCounter = async () => {
+    try {
+      const rawData = await getView('getCounter');
+      const counterValue = abiDecoder.decodeValue(rawData, 'u32');
+      setCounter(Number(counterValue));
+    } catch (error) {
+      console.error('Error reading counter:', error);
+    }
+  };
+
+  // Increment counter
+  const incrementCounter = async () => {
+    if (!walletAddress) return;
+
+    setLoading(true);
+    try {
+      const payload: ISmartContract = {
+        address: process.env.NEXT_PUBLIC_SC_ADDRESS as string,
+        scType: 0,
+      };
+
+      const txData = Buffer.from("increment", "utf8").toString("base64");
+
+      const unsignedTx = await web.buildTransaction(
+        [{
+          type: TransactionType.SmartContract,
+          payload,
+        }],
+        [txData]
+      );
+
+      const signedTx = await web.signTransaction(unsignedTx);
+      await web.broadcastTransactions([signedTx]);
+
+      // Refresh counter after transaction
+      setTimeout(() => readCounter(), 2000);
+    } catch (error) {
+      console.error("Transaction failed:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (walletAddress) readCounter();
+  }, [walletAddress]);
+
+  return (
+    <div className="p-6 border rounded-lg">
+      <h2>Counter: {counter}</h2>
+      <button
+        onClick={incrementCounter}
+        disabled={loading || !walletAddress}
+      >
+        {loading ? "Processing..." : "Increment"}
+      </button>
+    </div>
+  );
+}
+```
+
+### What's Next?
+
+Congratulations! You now know the fundamentals of connecting frontends to Klever smart contracts. Here are some ideas to expand your dApp:
+
+- Add more contract functions (reset, set value)
+- Implement error handling and loading states
+- Add transaction status tracking
+- Create more complex contract interactions
