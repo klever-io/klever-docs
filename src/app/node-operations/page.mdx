@@ -337,6 +337,84 @@ Then you can recreate the node with a new image. Don't forget to delete  the con
 docker rm klever-node
 ```
 
+## How To Set Up A Fallback Node
+
+Set up a redundant backup node for high availability
+
+A fallback node (also known as a redundancy node) provides high availability by automatically taking over when the main node becomes inactive. This ensures continuous operation of your validator without manual intervention.
+
+### Understanding Redundancy Levels
+
+The Klever Blockchain supports different redundancy levels:
+
+- **-1**: Redundancy disabled
+- **0**: Main instance (default)
+- **1**: First backup node
+- **2**: Second backup node
+- **3+**: Additional backup levels
+
+### Configuration Steps
+
+#### 1. Configure the redundancyLevel in your `config.yaml` file
+
+```yaml
+preferences:
+  # RedundancyLevel represents the level of redundancy used by the node (-1 = disabled, 0 = main instance (default),
+  # 1 = first backup, 2 = second backup, etc.)
+  redundancyLevel: 1
+```
+
+#### 2. For main node (redundancyLevel: 0)
+
+Your main node should be configured with `redundancyLevel: 0` (which is the default). No additional configuration is needed.
+
+#### 3. For backup nodes (redundancyLevel: 1, 2, 3...)
+
+Configure backup nodes with the appropriate redundancy level. Higher numbers indicate lower priority backups.
+
+```yaml
+preferences:
+  redundancyLevel: 1  # First backup
+```
+
+### How It Works
+
+- **Main Node Active**: The main node (level 0) operates normally while backup nodes remain inactive
+- **Main Node Inactive**: If the main node fails to participate in consensus for 5 consecutive slots, the first backup node (level 1) automatically becomes active
+- **Cascading Failover**: If the first backup also fails, the second backup (level 2) takes over, and so on
+
+### Running Your Fallback Node
+
+Use the same docker command as a regular node, but ensure your `config.yaml` file has the correct `redundancyLevel`:
+
+```bash
+docker run -it --rm \
+    --user "$(id -u):$(id -g)" \
+    --name klever-fallback-node \
+    -v $(pwd)/node/config:/opt/klever-blockchain/config/node \
+    -v $(pwd)/node/db:/opt/klever-blockchain/db \
+    -v $(pwd)/node/logs:/opt/klever-blockchain/logs \
+    --network=host \
+    --entrypoint=/usr/local/bin/validator \
+    kleverapp/klever-go:latest \
+    '--log-save' '--rest-api-interface=0.0.0.0:8080'
+```
+
+### Monitoring Redundancy Status
+
+You can monitor your node's redundancy status through:
+
+- **Node logs**: Check if your node is active or in backup mode
+- **REST API**: Query the node status endpoint to see redundancy information
+- **Visual interface**: The node's terminal interface shows redundancy level and status
+
+### Best Practices
+
+1. **Geographic Distribution**: Deploy backup nodes in different locations for maximum availability
+2. **Network Connectivity**: Ensure all nodes have reliable internet connections
+3. **Regular Monitoring**: Monitor all nodes to ensure they're ready to take over when needed
+4. **Database Backups**: Keep database backups synchronized between main and backup nodes
+
 ## How To Send Using Cli
 
 To use your wallet with Klever Toolchain, you will need to map your wallet private key (the .pem file created in the session [How to create a wallet](/node-operations#how-to-create-a-wallet)) into the toolchain by adding:
