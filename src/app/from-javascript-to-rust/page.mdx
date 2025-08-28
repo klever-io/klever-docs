@@ -1,0 +1,294 @@
+# From JavaScript to Rust: Smart Contract Development
+
+This guide demonstrates how JavaScript development patterns translate to Rust smart contracts on Klever VM. We'll examine equivalent implementations of common functionality and highlight the key differences in blockchain development.
+
+### Token Rewards System Implementation
+
+The following example demonstrates a token rewards system implemented in both JavaScript and Rust. This pattern illustrates core concepts of smart contract development including state management, validation, and event logging.
+
+### JavaScript Implementation
+
+```javascript
+// Token rewards system - earn and spend tokens
+class TokenRewards {
+    constructor() {
+        this.balances = new Map();          // user → balance
+        this.userItems = new Map();         // user → items[]
+        this.totalSupply = 10000;
+        this.owner = "admin";
+    }
+
+    // Users earn tokens for completing tasks
+    earnTokens(user, amount) {
+        if (amount <= 0) throw new Error("Amount must be positive");
+        if (amount > 100) throw new Error("Max 100 tokens per earn");
+        if (amount > this.totalSupply) throw new Error("Not enough supply");
+
+        const currentBalance = this.balances.get(user) || 0;
+        this.balances.set(user, currentBalance + amount);
+        this.totalSupply -= amount;
+
+        console.log(`${user} earned ${amount} tokens`);
+    }
+
+    // Users spend tokens to buy items
+    spendTokens(user, amount, item) {
+        if (amount <= 0) throw new Error("Amount must be positive");
+        if (!item) throw new Error("Item name required");
+
+        const balance = this.balances.get(user) || 0;
+        if (balance < amount) throw new Error("Insufficient balance");
+
+        this.balances.set(user, balance - amount);
+
+        if (!this.userItems.has(user)) {
+            this.userItems.set(user, []);
+        }
+        this.userItems.get(user).push(item);
+
+        console.log(`${user} bought ${item} for ${amount} tokens`);
+    }
+
+    // Read-only functions
+    getBalance(user) { return this.balances.get(user) || 0; }
+    getTotalSupply() { return this.totalSupply; }
+    getUserItems(user) { return this.userItems.get(user) || []; }
+}
+
+// Usage Example
+const rewards = new TokenRewards();
+rewards.earnTokens("alice", 50);           // Alice earns 50 tokens
+rewards.spendTokens("alice", 20, "Coffee"); // Alice spends 20 tokens
+console.log(rewards.getBalance("alice"));   // Shows: 30 tokens
+```
+
+### Rust Smart Contract Implementation
+
+The Rust implementation provides equivalent functionality with blockchain-specific adaptations:
+
+```rust
+#![no_std]
+klever_sc::imports!();
+
+#[klever_sc::contract]
+pub trait TokenRewards {
+
+    #[init]  // Like constructor() but called once on deploy
+    fn init(&self) {
+        let caller = self.blockchain().get_caller();
+        self.owner().set(caller);
+        self.total_supply().set(BigUint::from(10_000u64));
+    }
+
+    // ENDPOINTS = Functions that CHANGE data (cost gas like database writes)
+
+    #[endpoint(earnTokens)]
+    fn earn_tokens(&self, amount: BigUint) {
+        let caller = self.blockchain().get_caller();  // Who called this?
+
+        // Same validation as JavaScript!
+        require!(amount > 0, "Amount must be positive");
+        require!(amount <= BigUint::from(100u64), "Max 100 tokens per earn");
+
+        let supply = self.total_supply().get();
+        require!(amount <= supply, "Not enough tokens in supply");
+
+        // Update user balance (like this.balances.set(user, newBalance))
+        let current_balance = self.balances(&caller).get();
+        self.balances(&caller).set(&current_balance + &amount);
+
+        // Reduce total supply
+        self.total_supply().set(&supply - &amount);
+
+        // Log event (instead of console.log)
+        self.earn_event(&caller, &amount);
+    }
+
+    #[endpoint(spendTokens)]
+    fn spend_tokens(&self, amount: BigUint, item: ManagedBuffer) {
+        let caller = self.blockchain().get_caller();
+
+        // Same validation!
+        require!(amount > 0, "Amount must be positive");
+        require!(!item.is_empty(), "Item name required");
+
+        let balance = self.balances(&caller).get();
+        require!(balance >= amount, "Insufficient balance");
+
+        // Deduct tokens (like JavaScript Map.set)
+        self.balances(&caller).set(&balance - &amount);
+
+        // Add item to user's list (like JavaScript array.push)
+        self.user_items(&caller).push(&item);
+
+        // Log the purchase
+        self.spend_event(&caller, &amount, &item);
+    }
+
+    // VIEWS = Functions that only READ data (FREE, like getters)
+
+    #[view(getBalance)]
+    fn get_balance(&self, user: ManagedAddress) -> BigUint {
+        self.balances(&user).get()  // Same as JS: this.balances.get(user) || 0
+    }
+
+    #[view(getTotalSupply)]
+    fn get_total_supply(&self) -> BigUint {
+        self.total_supply().get()
+    }
+
+    #[view(getUserItems)]
+    fn get_user_items(&self, user: ManagedAddress) -> MultiValueEncoded<ManagedBuffer> {
+        let items = self.user_items(&user);
+        let mut result = MultiValueEncoded::new();
+
+        for i in 1..=items.len() {
+            result.push(items.get(i));
+        }
+
+        result
+    }
+
+    // EVENTS = Like console.log but for blockchain (searchable logs)
+    #[event("earn")]
+    fn earn_event(&self, #[indexed] user: &ManagedAddress, #[indexed] amount: &BigUint);
+
+    #[event("spend")]
+    fn spend_event(&self, #[indexed] user: &ManagedAddress, #[indexed] amount: &BigUint, item: &ManagedBuffer);
+
+    // STORAGE = Like class properties but PERSISTENT on blockchain
+    #[storage_mapper("balances")]
+    fn balances(&self, user: &ManagedAddress) -> SingleValueMapper<BigUint>;
+
+    #[storage_mapper("totalSupply")]
+    fn total_supply(&self) -> SingleValueMapper<BigUint>;
+
+    #[storage_mapper("userItems")]
+    fn user_items(&self, user: &ManagedAddress) -> VecMapper<ManagedBuffer>;
+
+    #[storage_mapper("owner")]
+    fn owner(&self) -> SingleValueMapper<ManagedAddress>;
+}
+```
+
+### Breaking It Down: JavaScript → Rust Translation
+
+### 1. **Class Structure**
+```javascript
+// JavaScript
+class TokenRewards {
+    constructor() { /* setup */ }
+    earnTokens(user, amount) { /* logic */ }
+    getBalance(user) { return this.balances.get(user); }
+}
+
+// Rust
+#[klever_sc::contract]
+pub trait TokenRewards {
+    #[init] fn init(&self) { /* setup */ }
+    #[endpoint] fn earn_tokens(&self, amount: BigUint) { /* logic */ }
+    #[view] fn get_balance(&self, user: ManagedAddress) -> BigUint { /* return */ }
+}
+```
+
+### 2. **Data Storage: The Biggest Difference!**
+```javascript
+// JavaScript - Lives in RAM, dies when app stops
+this.balances = new Map();
+this.totalSupply = 10000;
+
+// Rust - Lives FOREVER on blockchain, persists between calls
+#[storage_mapper("balances")]
+fn balances(&self, user: &ManagedAddress) -> SingleValueMapper<BigUint>;
+```
+
+**Key Point:** In JavaScript, your data is temporary. In Rust smart contracts, every piece of data costs gas to store but lives forever!
+
+### 3. **Function Types: ENDPOINTS vs VIEWS**
+```javascript
+// JavaScript - All functions are "the same"
+earnTokens(user, amount) { /* changes data */ }
+getBalance(user) { /* reads data */ }
+
+// Rust - Two types with VERY different costs!
+#[endpoint] fn earn_tokens() { /* COSTS GAS - changes blockchain */ }
+#[view] fn get_balance() { /* FREE - only reads */ }
+```
+
+**Critical Decision:** When designing your contract, make reads FREE (views) and writes cost gas (endpoints).
+
+### 4. **Error Handling**
+```javascript
+// JavaScript
+if (amount <= 0) throw new Error("Amount must be positive");
+
+// Rust - Built for blockchain
+require!(amount > 0, "Amount must be positive");
+```
+
+**Rust Advantage:** `require!` automatically refunds gas on failure and provides better error messages.
+
+### 5. **Events vs Logging**
+```javascript
+// JavaScript - Just prints to console
+console.log(`${user} earned ${amount} tokens`);
+
+// Rust - Permanent searchable blockchain logs
+#[event("earn")]
+fn earn_event(&self, #[indexed] user: &ManagedAddress, #[indexed] amount: &BigUint);
+```
+
+### Quick Reference: JavaScript → Rust Cheat Sheet
+
+| JavaScript Pattern | Rust Smart Contract | Notes |
+|-------------------|---------------------|--------|
+| `class MyClass` | `#[klever_sc::contract] pub trait MyContract` | Contract definition |
+| `constructor()` | `#[init] fn init(&self)` | Called once on deploy |
+| `myMethod()` | `#[endpoint] fn my_method(&self)` | Costs gas, changes state |
+| `get data()` | `#[view] fn get_data(&self)` | Free to call, read-only |
+| `this.data = x` | `self.data().set(x)` | Persistent storage |
+| `new Map()` | `SingleValueMapper` or `MapMapper` | Key-value storage |
+| `new Array()` | `VecMapper` | Dynamic array storage |
+| `throw new Error()` | `require!(condition, msg)` | Validation with gas refund |
+| `console.log()` | `#[event] fn my_event()` | Permanent, searchable logs |
+| `string` | `ManagedBuffer` | Gas-optimized strings |
+| `number` | `u32`, `u64`, `BigUint` | Precise integer types |
+
+### Understanding the Klever VM Environment
+
+### Gas & Economics
+- **ENDPOINTS** cost gas (like database writes)
+- **VIEWS** are free (like database reads)
+- **Storage** costs gas but persists forever
+- **Events** cost minimal gas but provide permanent logs
+
+### Key Technical Differences
+
+**Storage Model:**
+- JavaScript: In-memory data structures, lost on application restart
+- Rust Smart Contracts: Persistent blockchain storage with gas costs for writes
+
+**Function Classification:**
+- Endpoints: State-modifying functions that require gas and user signatures
+- Views: Read-only functions that are free to call and don't require transactions
+
+**Type System:**
+- JavaScript: Dynamic typing with implicit conversions
+- Rust: Static typing with explicit numeric types (`u32`, `u64`, `BigUint`)
+
+**Error Handling:**
+- JavaScript: Exception-based error handling
+- Rust: `require!` macro with automatic gas refunds on validation failures
+
+**Event Logging:**
+- JavaScript: Temporary console output
+- Rust: Permanent, indexed blockchain events searchable by external systems
+
+### Implementation Considerations
+
+When migrating from JavaScript to Rust smart contracts, consider:
+
+- **Gas Optimization**: Minimize storage operations and prefer views for read operations
+- **Data Persistence**: All storage is permanent - design data structures accordingly
+- **Security**: Leverage Rust's type system for compile-time error detection
+- **Determinism**: Ensure contract behavior is predictable across all blockchain nodes
