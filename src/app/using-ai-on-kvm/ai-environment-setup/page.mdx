@@ -1,0 +1,131 @@
+# Installation Guide
+
+Get up and running with AI-assisted Klever development. This guide covers installation for both Claude Code and VS Code.
+
+## Claude Code
+
+### 1. Installation
+
+First, install Claude Code by following the [official documentation](https://docs.anthropic.com/en/docs/claude-code/overview).
+
+### 2. Clone the Klever MCP Server
+
+```bash
+git clone https://github.com/klever-io/mcp-klever-vm.git
+cd mcp-klever-vm
+```
+
+### 3. Install Dependencies
+
+```bash
+npm install
+npm run build
+```
+
+### 4. Configure MCP Server
+
+Edit the `mcp.json` file:
+
+```json
+{
+  "mcpServers": {
+    "klever-vm": {
+      "command": "node",
+      "args": [
+        "--experimental-vm-modules",
+        "dist/index.js"
+      ],
+      "env": {
+        "MODE": "mcp",
+        "STORAGE_TYPE": "memory"
+      }
+    }
+  }
+}
+```
+
+### 5. Start Claude Code with MCP
+
+```bash
+claude --mcp-config ./mcp.json
+```
+
+### 6. Verify Installation
+
+Test your setup with:
+```
+/mcp
+```
+
+Then try: "Do you have access to Klever knowledge base?"
+
+## Visual Studio Code
+
+For developers who prefer VS Code, you can use the built-in MCP support with GitHub Copilot Chat for AI assistance.
+
+### Prerequisites ✅
+
+- **Visual Studio Code 1.102 or newer** with built-in MCP support ([VS Code MCP Docs](https://code.visualstudio.com/docs/copilot/chat/mcp-servers))
+- **GitHub Copilot Chat** extension installed and enabled
+- Locally built `klever-vm` server (via `npm run build`)
+
+### 1. Clone and Build MCP Server
+
+```bash
+git clone https://github.com/klever-io/mcp-klever-vm.git
+cd mcp-klever-vm
+npm install
+npm run build
+```
+
+### 2. Configure MCP Server
+
+Create a `.vscode/mcp.json` file at the root of your project:
+
+```json
+{
+  "inputs": [],
+  "servers": {
+    "klever-vm": {
+      "type": "stdio",
+      "command": "node",
+      "args": [
+        "--experimental-vm-modules",
+        "./dist/index.js"
+      ],
+      "env": {
+        "MODE": "mcp",
+        "STORAGE_TYPE": "memory"
+      }
+    }
+  }
+}
+```
+
+**Note**: Update the path in `args` to point to your `mcp-klever-vm/dist/index.js` location.
+
+### 3. Start MCP Server in VS Code
+
+After configuring `mcp.json`, VS Code will show an option to **run the MCP server** directly. You can:
+
+- Click to start the server and view output within VS Code
+- Or restart VS Code to auto-discover and start your MCP server
+
+### 4. Using with Copilot Chat
+
+1. Open the **GitHub Copilot Chat** pane
+2. Test the connection: "Do you have Klever Blockchain knowledge?"
+3. Start using Klever-specific AI assistance for development
+
+### 5. Troubleshooting ⚠️
+
+**Tools don't appear?**
+- Verify MCP server is running in the Output panel
+
+**See errors in MCP output?**
+- Check logs in **Output → MCP** inside VS Code
+- Verify the path to `dist/index.js` is correct
+- Ensure `npm run build` completed successfully
+
+**Important Security Note:**
+Always review MCP server configuration before running - MCP servers can execute code on your machine.
