@@ -234,13 +234,14 @@ export const Header = forwardRef<
       <div className="flex items-center gap-5">
         <nav className="hidden md:block">
           <ul role="list" className="flex items-center gap-8">
-            <TopLevelNavItem
-              href="https://docs.klever.org/api-and-sdk"
-            >
+            <TopLevelNavItem href="https://docs.klever.org/api-and-sdk">
               API
             </TopLevelNavItem>
             <TopLevelNavItem href="#">Documentation</TopLevelNavItem>
             <TopLevelNavItem href="https://forum.klever.org/">
+              Forum
+            </TopLevelNavItem>
+            <TopLevelNavItem href="https://support.klever.org/">
               Support
             </TopLevelNavItem>
           </ul>

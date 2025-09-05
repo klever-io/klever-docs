@@ -141,9 +141,6 @@ function SmallPrint() {
         <SocialLink href="https://forum.klever.org" icon={KleverLogo}>
           Join our Forum
         </SocialLink>
-        {/* <SocialLink href="#" icon={DiscordIcon}>
-          Join our Discord server
-        </SocialLink> */}
       </div>
     </div>
   )
