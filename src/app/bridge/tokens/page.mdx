@@ -1,0 +1,39 @@
+# Tokens
+
+## Wrapped Tokens in Blockchain Bridges
+
+Wrapped tokens represent a fundamental concept in cross-blockchain interoperability. When a token from one blockchain needs to be used on another blockchain, it must be "wrapped" to maintain its value while operating within the technical constraints of the destination chain.
+
+In essence, a wrapped token is a tokenized version of another asset. The original asset is locked or held on its native blockchain by the Safe Smart Contract, while a corresponding token representing the same value is minted on the destination blockchain. This newly minted token is pegged 1:1 with the original asset, ensuring it maintains the same value.
+
+This mechanism allows users to effectively utilize assets across different blockchain ecosystems while maintaining the value and utility of the original asset. Common examples include WETH (Wrapped Ether), WBTC (Wrapped Bitcoin), and various wrapped stablecoins.
+
+## Klever Blockchain Wrapped Token Bridging Implementation
+
+In Klever's Blockchain Bridge, wrapped tokens serve a critical tracking function. When assets like USDC are transferred from Ethereum to Klever Blockchain, a two-step process occurs:
+
+1. First, a prefixed wrapped token (e.g., ETHUSDC) is minted on Klever Blockchain, representing the original token locked on Ethereum
+2. Then, this wrapped token is automatically converted into the standard wrappedUSDC token on Klever Blockchain
+
+This mechanism provides transparent accounting of cross-chain token origins while maintaining perfect parity with the locked tokens on the source blockchain. The entire process happens automatically, requiring no additional user intervention after initiating the bridge transaction.
+
+## Token Handling Strategies
+
+The bridge employs different strategies depending on the token's native blockchain:
+
+### Native Klever Tokens → Ethereum
+- **Lock/Release**: Native KDA tokens are locked in the Safe contract on Klever Blockchain
+- **Mint/Burn**: Equivalent wrapped tokens are minted on Ethereum
+
+### Native Ethereum Tokens → Klever
+- **Lock/Release**: Native ERC20 tokens are locked in the Safe contract on Ethereum
+- **Mint/Burn**: Equivalent wrapped tokens are minted on Klever Blockchain
+
+## Token Whitelisting
+
+Only whitelisted tokens can be bridged between networks. The whitelist is managed by:
+
+- **KDA-Safe Contract**: Maintains the whitelist on Klever Blockchain
+- **Safe Contract**: Maintains the whitelist on Ethereum
+
+

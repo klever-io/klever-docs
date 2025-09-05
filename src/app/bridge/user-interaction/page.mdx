@@ -1,0 +1,34 @@
+# User Interaction
+
+Note: This approach is only required if the user wants to interact directly with the contracts, dapps should use this process so users don't need to interact directly with the contract, improving the user expirience.
+
+## Requesting Bridge Transfer
+Since the contracts in each blockchain is different, the contract call to start this process will change depending in the source blockchain, bellow it is possible to see the options
+
+### EVM-Compatible Chain → Klever Blockchain
+In this case, to start the bridge process, the user needs to call the Safe smart contract on the ethereum side:
+```
+    deposit (address tokenAddress, uint256 amount, bytes32 recipientAddress)
+```
+
+Where the address is the token address that the user want's to bridge, amount refers to the value bridged and the 
+recipientAddress, as the name suggests, is the address that will receive the tokens in the Klever Blockchain.
+
+### Klever Blockchain → EVM-Compatible Chain
+
+For Klever Blockchain, the user can request the token bridge by interacting with the Safe Smart contract on Klever Blockchain side:
+
+```
+    #[payable("*")]
+    createTransaction (to EthAddress)
+```
+
+Where the "to" refers to the address that will receive the tokens on ETH side. This method is payable, which means it can receive a payment
+when calling the method, this payment needs to be the tokens the user want's to bridge.
+Keep in mind, in this case, there is a fee that the bridge will deduct from the payment, to pay the ETH transaction fees.
+
+
+### After the user deposit
+As mentioned in the [Transfer flow documentation](./transfer-flow), all relayers will be checking the Safe smart contract to check if there
+are pending transactions to be bridged, when a certain number of transactions is reached or a quantity of blocks has passed the relayers
+will realize the bridge process and the user will receive its tokens, there is no other interaction needed for the user.

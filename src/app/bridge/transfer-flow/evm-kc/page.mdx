@@ -1,0 +1,47 @@
+# EVM-Compatible Chain → Klever Blockchain
+
+When transferring tokens from an EVM-compatible blockchain (e.g., Ethereum) to Klever Blockchain, the process follows the relayer state machine:
+
+## User Interaction
+1. **Token Deposit**
+   - User deposits ERC20 tokens into the Safe contract on the EVM chain
+   - The contract acts as a secure vault for the original tokens
+
+## Relayer State Machine Process
+
+### Step 1: **GetPending**
+- **Purpose**: Monitor and collect pending transactions
+- **Action**: Relayers query the Safe smart contract on Ethereum to detect pending transactions
+- **Trigger**: Continues until the transaction batch reaches the predefined threshold
+- **Result**: Batch is ready for cross-chain processing
+
+### Step 2: **ProposeTransfer**
+- **Purpose**: Initiate cross-chain transfer proposal
+- **Action**: One relayer proposes the transfer on Klever Blockchain's multisig contract
+- **Result**: Transfer proposal is submitted and awaits approval
+
+### Step 3: **SignProposedTransfer**
+- **Purpose**: Collect relayer approvals
+- **Action**: Other relayers in the network sign and approve the proposed transfer
+- **Requirement**: Each relayer validates the proposal before signing
+- **Result**: Signatures are collected for consensus
+
+### Step 4: **WaitForQuorumOnTransfer**
+- **Purpose**: Ensure sufficient consensus
+- **Action**: Relayers wait for the minimum required signatures (quorum)
+- **Requirement**: Minimum of 7 out of 10 relayers must approve
+- **Result**: Quorum is reached, enabling execution
+
+### Step 5: **PerformActionID**
+- **Purpose**: Execute the approved transfer
+- **Action**: Call to the multisig contract to transfer tokens to destination accounts
+- **Result**: Batch is marked as finished, tokens are delivered to recipients
+
+## Final Delivery
+6. **Token Issuance & Recipient Delivery**
+   - On Klever Blockchain, the equivalent KDA tokens are either:
+     - Minted (for wrapped representations of foreign tokens)
+     - Released from reserves (for native Klever tokens)
+   - The destination address receives the exact equivalent amount of KDA tokens
+
+---

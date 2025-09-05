@@ -1,0 +1,13 @@
+# Relayers
+
+Relayers are specialized software components that form the backbone of Klever Bridge's cross-chain communication system. They serve several critical functions:
+
+- **Cross-Chain Connection**: Relayers connect with nodes of bridged blockchains, allowing them to monitor and interact with both blockchains.
+
+- **Transaction Monitoring**: Relayers continuously listen to contracts to check for pending batch transactions that need processing.
+
+- **Batch Processing**: When enough transactions accumulate to form a batch, relayers initiate the transfer process through the multisig contract.
+
+- **Consensus Mechanism**: For security purposes, operations proposed by one relayer require approval from multiple relayers in the network through the multisig contract to reach consensus, ensuring no single entity can control the bridge.
+
+The relayer network is maintained by both the Klever Blockchain Team and community participants. This distributed approach creates a decentralized validation system that functions similarly to a blockchain consensus mechanism, where majority agreement is required before any cross-chain transaction is executed.
