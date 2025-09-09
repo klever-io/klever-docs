@@ -12,7 +12,6 @@ export const navigation: Array<NavGroup> = [
   {
     title: 'Tutorials',
     links: [
-      { title: 'Crowdfunding', href: '/tutorials/crowdfunding' },
       { title: 'Deposit KDA Pool', href: '/tutorials/kda-pool' },
       { title: 'Klever Blockchain IDE', href: '/tutorials/kleverchain-ide' },
     ],
@@ -82,6 +81,15 @@ export const navigation: Array<NavGroup> = [
             ],
           },
           {
+            title: 'How To',
+            href: '/how-to',
+            children: [
+              { title: 'Call Smart Contracts from Frontend', href: '/calling-your-contract-in-the-front-end' },
+              { title: 'From JavaScript to Rust', href: '/from-javascript-to-rust' },
+              { title: 'Create a Crowdfunding', href: '/crowdfunding' },
+            ],
+          },
+          {
             title: 'Config & Tooling',
             href: '/config-and-tooling',
             children: [
@@ -136,8 +144,8 @@ export const navigation: Array<NavGroup> = [
       { title: 'Contracts', href: '/contracts' },
       { title: 'Exchange Integration', href: '/exchange-integration' },
       { title: 'Node Operations', href: '/node-operations' },
-      { 
-        title: 'Bridge', 
+      {
+        title: 'Bridge',
         href: '/bridge',
         children: [
           {
@@ -205,11 +213,6 @@ export const navigation: Array<NavGroup> = [
     {
     title: 'Side Pill',
     links: [
-      {
-        title: 'Calling Your Contract in the Front-End',
-        href: '/calling-your-contract-in-the-front-end',
-      },
-      { title: 'From JavaScript to Rust', href: '/from-javascript-to-rust' },
       { title: 'Converting Contract from ETH to Klever', href: '/converting-contract-from-eth-to-klever' }
     ],
 
