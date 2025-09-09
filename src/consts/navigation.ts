@@ -174,6 +174,7 @@ export const navigation: Array<NavGroup> = [
         href: '/calling-your-contract-in-the-front-end',
       },
       { title: 'From JavaScript to Rust', href: '/from-javascript-to-rust' },
+      { title: 'Converting Contract from ETH to Klever', href: '/converting-contract-from-eth-to-klever' }
     ],
 
   },

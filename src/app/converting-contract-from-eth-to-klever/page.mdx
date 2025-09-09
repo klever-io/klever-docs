@@ -1,0 +1,245 @@
+# Converting Contract from ETH to Klever
+This document provides comprehensive guidance on the conversion of smart contracts originally developed for the Ethereum (EVM) network to the Klever Blockchain.
+It details the principal differences between the two platforms, outlines the essential steps required for the conversion process, and presents comparative code examples to support developers in ensuring a smooth and accurate migration.
+
+## Types
+
+When migrating smart contracts from Ethereum to Klever, a critical step involves adapting the data types used within each ecosystem.
+Ethereum contracts are implemented in Solidity and make extensive use of EVM-native types such as uint256, address, and mapping, which are intrinsically tied to the Ethereum Virtual Machine’s storage model.
+In contrast, Klever contracts are developed in Rust using the klever-vm-sdk-rs framework, which introduces managed types (e.g., ManagedAddress, ManagedBuffer) and storage mappers (SingleValueMapper, VecMapper, UnorderedSetMapper, MapMapper). These abstractions are essential for the safe encoding, decoding, and persistence of data within the Klever blockchain.
+
+| Concept          | Ethereum (Solidity)                        | Klever              | Notes |
+|--------------------------|---------------------------------------------|-------------------------------------------------|-------|
+| **Unsigned Integers**   | `uint8`, `uint16`, `uint32`, `uint64`, `uint128`, `uint256` | `u8`, `u16`, `u32`, `u64`, `u128` | Klever does not use 256-bit integers natively; usually `u128` is enough. |
+| **Signed Integers**     | `int8` … `int256`                          | `i8`, `i16`, `i32`, `i64`, `i128`              | Similar limits as unsigned types. |
+| **Boolean**             | `bool`                                     | `bool`                                         | Fully compatible. |
+| **Address**             | `address` (20-byte Ethereum address)        | `ManagedAddress`                               | Managed type to handle Bech32 addresses (`klv1...`). |
+| **String**              | `string`                                   | `ManagedBuffer`                                | `ManagedBuffer` is a dynamically sized byte buffer, used for strings/binary. |
+| **Bytes (fixed)**       | `bytes1`, `bytes32`, etc.                  | `[u8; N]` (fixed-size array) or `ManagedBuffer` | Rust arrays are used for fixed length; `ManagedBuffer` for flexible data. |
+| **Bytes (dynamic)**     | `bytes`                                    | `ManagedBuffer`                                | Works as a variable-length byte array. |
+| **Mapping (Key → Value)** | `mapping(address => uint)`                 | `MapMapper<K, V>` or multi-parameter mappers   | Klever uses `storage_mapper` attributes with typed keys. |
+| **Array (dynamic)**     | `uint[]`, `address[]`                      | `VecMapper<T>`                                 | Similar semantics, with iteration and pagination built-in. |
+| **Set**                 | No native type (simulate via `mapping(addr => bool)`) | `UnorderedSetMapper<T>`                        | Klever provides a built-in set type. |
+| **Struct**              | `struct { uint x; address y; }`            | `#[derive(TopEncode, TopDecode, TypeAbi)] struct {...}` | Must derive encoding traits for serialization. |
+| **Enum**                | `enum State { Active, Paused }`            | `enum State { Active, Paused }` (with derives) | Works similarly, but must derive encode/decode traits. |
+| **Optional Values**     | Not explicit, use `mapping` tricks or `0` as sentinel | `OptionalValue<T>`                             | Proper optional handling (`Some`/`None`). |
+
+# Initialization
+### ETH
+
+In Ethereum, smart contract initialization occurs through a special function known as the constructor.
+This function is invoked automatically a single time, at the moment the contract is deployed on the blockchain.
+The constructor may receive parameters—such as the owner’s address or an initial value—that are stored in the contract’s state.
+Once executed, it cannot be called again, ensuring that the initialization logic remains immutable after deployment.
+```rust
+pragma solidity ^0.8.0;
+
+contract Example {
+    address public owner;
+    uint256 public initialValue;
+
+    constructor(uint256 _value) {
+        owner = msg.sender;
+        initialValue = _value;
+    }
+}
+```
+
+### Klever
+
+In Klever, initialization is performed through a dedicated function called init, which serves as the equivalent of a constructor.
+This function can receive configuration parameters and define the contract’s initial state—for instance, the contract owner or the initial balance.
+After deployment, the init function cannot be invoked again, ensuring that the contract cannot be reinitialized.
+```rust
+#[klever_sc::contract]
+pub trait Example {
+    #[storage_mapper("owner")]
+    fn owner(&self) -> SingleValueMapper<ManagedAddress>;
+
+    #[storage_mapper("initialValue")]
+    fn initial_value(&self) -> SingleValueMapper<u64>;
+
+    #[init]
+    fn init(&self, initial_value: u64) {
+        let caller = self.blockchain().get_caller();
+        self.owner().set(&caller);
+        self.initial_value().set(initial_value);
+    }
+}
+```
+<br/>
+## Functions and Views
+
+### ETH
+In Ethereum, functions can be declared with different visibility levels, such as public, external, internal, or private.
+Functions that modify the blockchain state require a transaction, which incurs a gas fee.
+Conversely, functions marked as view or pure do not alter the state and can be executed free of charge, as they are read-only operations.
+```rust
+pragma solidity ^0.8.0;
+
+contract Counter {
+    uint256 private count;
+
+    // State-changing function (transaction required)
+    function increment() public {
+        count += 1;
+    }
+
+    // Read-only function (free call)
+    function getCount() public view returns (uint256) {
+        return count;
+    }
+}
+```
+
+* increment() modifies the state, so you must send a transaction and pay gas.
+* getCount() is a view function that just reads the state, so it can be called off-chain without gas.
+
+### Klever
+In Klever, functions are defined either as endpoints, marked with #[endpoint], or as #[views].
+Endpoints are capable of modifying the contract’s state and therefore require a transaction to be executed.
+Views, on the other hand, are read-only and can be invoked without submitting a transaction.
+```rust
+#[klever_sc::contract]
+pub trait Counter {
+    #[storage_mapper("count")]
+    fn count(&self) -> SingleValueMapper<u64>;
+
+    // State-changing function (transaction required)
+    #[endpoint(increment)]
+    fn increment(&self) {
+        let value = self.count().get();
+        self.count().set(value + 1);
+    }
+
+    // Read-only function (free call)
+    #[view(getCount)]
+    fn get_count(&self) -> u64 {
+        self.count().get()
+    }
+}
+```
+* #[endpoint(increment)] defines a function that changes state, requiring a transaction.
+* #[view(getCount)] defines a read-only query that returns the value directly and costs no gas.
+
+<br/>
+## Events and Logs
+
+### ETH
+
+In Ethereum, events are defined using the event keyword in Solidity.
+They are triggered with the emit statement and recorded in the transaction receipt.
+```rust
+pragma solidity ^0.8.0;
+
+contract Dice {
+    event Roll(address indexed player, uint256 result);
+
+    function play() public {
+        uint256 result = uint256(
+            keccak256(abi.encodePacked(block.timestamp, msg.sender))
+        ) % 6 + 1;
+
+        emit Roll(msg.sender, result);
+    }
+}
+```
+
+### Klever
+
+In Klever, contracts use the #[event] attribute in Rust to define structured logs.
+These events are embedded in the transaction results and can be retrieved through the network API or accessed via SDKs.
+```rust
+#[klever_sc::contract]
+pub trait Dice {
+
+    #[event("roll")]
+    fn roll_event(
+        &self,
+        #[indexed] player: &ManagedAddress,
+        result: u64,
+    );
+
+    #[endpoint(play)]
+    fn play(&self) {
+        let caller = self.blockchain().get_caller();
+        let seed = self.blockchain().get_block_timestamp() as u64;
+        let result = (seed % 6) + 1;
+
+        // emit event
+        self.roll_event(&caller, result);
+    }
+}
+```
+<br/>
+## Storage
+
+### ETH
+
+In Ethereum, contract storage is defined by state variables declared within the Solidity contract.
+These variables are stored permanently on-chain at specific storage slots, and developers can interact with them directly, for example through a declaration such as uint256 public count;
+
+```rust
+pragma solidity ^0.8.0;
+
+contract StorageExample {
+    // Single value
+    uint256 public count;
+
+    // Mapping (key-value)
+    mapping(address => uint256) public balances;
+
+    // Update count
+    function setCount(uint256 _count) public {
+        count = _count;
+    }
+
+    // Update balance for msg.sender
+    function deposit(uint256 amount) public {
+        balances[msg.sender] += amount;
+    }
+
+    // Read balance
+    function getBalance(address user) public view returns (uint256) {
+        return balances[user];
+    }
+}
+```
+### Klever
+
+In Klever, contract storage is managed through storage mappers.
+These abstractions define how data is stored on-chain, providing a structured and safe interface for persistence.
+A complete reference of the available storage mappers can be found in the official documentation [here](https://docs.klever.org/smart-contracts/reference/storage-mappers) .
+
+```rust
+#[klever_sc::contract]
+pub trait StorageExample {
+    // Single value
+    #[storage_mapper("count")]
+    fn count(&self) -> SingleValueMapper<u64>;
+
+    // Key-value map
+    #[storage_mapper("balances")]
+    fn balances(&self, user: &ManagedAddress) -> SingleValueMapper<u64>;
+
+    // Update count
+    #[endpoint(setCount)]
+    fn set_count(&self, value: u64) {
+        self.count().set(value);
+    }
+
+    // Update balance for caller
+    #[endpoint(deposit)]
+    fn deposit(&self, amount: u64) {
+        let caller = self.blockchain().get_caller();
+        let current = self.balances(&caller).get();
+        self.balances(&caller).set(current + amount);
+    }
+
+    // Read balance
+    #[view(getBalance)]
+    fn get_balance(&self, user: ManagedAddress) -> u64 {
+        self.balances(&user).get()
+    }
+}
+```
