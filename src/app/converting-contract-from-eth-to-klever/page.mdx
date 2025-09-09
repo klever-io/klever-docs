@@ -31,7 +31,7 @@ In Ethereum, smart contract initialization occurs through a special function kno
 This function is invoked automatically a single time, at the moment the contract is deployed on the blockchain.
 The constructor may receive parameters—such as the owner’s address or an initial value—that are stored in the contract’s state.
 Once executed, it cannot be called again, ensuring that the initialization logic remains immutable after deployment.
-```rust
+```
 pragma solidity ^0.8.0;
 
 contract Example {
@@ -78,7 +78,7 @@ pub trait Example {
 In Ethereum, functions can be declared with different visibility levels, such as public, external, internal, or private.
 Functions that modify the blockchain state require a transaction, which incurs a gas fee.
 Conversely, functions marked as view or pure do not alter the state and can be executed free of charge, as they are read-only operations.
-```rust
+```
 pragma solidity ^0.8.0;
 
 contract Counter {
@@ -140,7 +140,7 @@ pub trait Counter {
 
 In Ethereum, events are defined using the event keyword in Solidity.
 They are triggered with the emit statement and recorded in the transaction receipt.
-```rust
+```
 pragma solidity ^0.8.0;
 
 contract Dice {
@@ -196,7 +196,7 @@ pub trait Dice {
 In Ethereum, contract storage is defined by state variables declared within the Solidity contract.
 These variables are stored permanently on-chain at specific storage slots, and developers can interact with them directly, for example through a declaration such as uint256 public count;
 
-```rust
+```
 pragma solidity ^0.8.0;
 
 contract StorageExample {
