@@ -6,6 +6,8 @@ import { usePathname } from 'next/navigation'
 import { Button } from '@/components/Button'
 import { findActivePageRecursive } from '@/components/Navigation'
 import { navigation } from '@/consts/navigation'
+import { Logo } from './Logo'
+import { KleverLogo } from './KleverLogo'
 
 function PageLink({
   label,
@@ -87,6 +89,8 @@ function TwitterIcon(props: React.ComponentPropsWithoutRef<'svg'>) {
   )
 }
 
+
+
 function GitHubIcon(props: React.ComponentPropsWithoutRef<'svg'>) {
   return (
     <svg viewBox="0 0 20 20" aria-hidden="true" {...props}>
@@ -131,14 +135,11 @@ function SmallPrint() {
         &copy; Copyright {new Date().getFullYear()}. All rights reserved.
       </p>
       <div className="flex gap-4">
-        <SocialLink href="#" icon={TwitterIcon}>
+        <SocialLink href="https://x.com/klever_org" icon={TwitterIcon}>
           Follow us on Twitter
         </SocialLink>
-        <SocialLink href="#" icon={GitHubIcon}>
-          Follow us on GitHub
-        </SocialLink>
-        <SocialLink href="#" icon={DiscordIcon}>
-          Join our Discord server
+        <SocialLink href="https://forum.klever.org" icon={KleverLogo}>
+          Join our Forum
         </SocialLink>
       </div>
     </div>
