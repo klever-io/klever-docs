@@ -1,0 +1,186 @@
+# How to Call Smart Contracts from the Frontend
+
+In this guide, you will learn how to interact with Klever smart contracts from your frontend application.
+
+### Prerequisites
+- Klever Extension installed in browser
+- A deployed smart contract on Klever Blockchain
+- Basic JavaScript/TypeScript knowledge
+
+### Setup
+
+Install the Klever SDK:
+
+```bash
+npm install @klever/sdk-web
+```
+
+Initialize the extension and configure the SDK:
+
+```javascript
+import { web } from "@klever/sdk-web";
+
+// Check if extension is available
+if (!window.kleverWeb) {
+  throw new Error("Klever Extension not found");
+}
+
+// Initialize extension
+await window.kleverWeb.initialize();
+
+// Configure SDK
+web.setProvider({
+  node: "https://node.testnet.klever.org",
+  api: "https://api.testnet.klever.org"
+});
+
+// Get user's wallet address
+const walletAddress = window.kleverWeb.getWalletAddress();
+```
+
+### Reading Contract Data (View Functions)
+
+View functions don't modify state and are free to call:
+
+```javascript
+// Read data from smart contract
+async function readContractData(contractAddress, functionName, args = []) {
+  const response = await fetch("https://node.testnet.klever.org/vm/hex", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      scAddress: contractAddress,
+      funcName: functionName,
+      args: args
+    })
+  });
+
+  const { data } = await response.json();
+  return data.data;
+}
+
+// Example: Read a counter value
+import { abiDecoder } from '@klever/sdk-web';
+
+const rawData = await readContractData("klv1contract_address", "getCounter");
+const counterValue = abiDecoder.decodeValue(rawData, 'u32');
+console.log('Counter:', Number(counterValue));
+```
+
+### Writing to Smart Contracts (State-Changing Functions)
+
+Write functions require gas and user approval:
+
+```javascript
+import { web, TransactionType } from "@klever/sdk-web";
+
+async function callContractFunction(contractAddress, functionName, parameters = []) {
+  // Build transaction data
+  let txData = functionName;
+  if (parameters.length > 0) {
+    txData += "@" + parameters.join("@");
+  }
+
+  // Create transaction payload
+  const payload = {
+    address: contractAddress,
+    scType: 0
+  };
+
+  // Build unsigned transaction
+  const unsignedTx = await web.buildTransaction([{
+    type: TransactionType.SmartContract,
+    payload
+  }], [Buffer.from(txData, "utf8").toString("base64")]);
+
+  // Sign transaction (user approval required)
+  const signedTx = await web.signTransaction(unsignedTx);
+
+  // Broadcast to blockchain
+  const result = await web.broadcastTransactions([signedTx]);
+
+  return result.data.txsHashes[0]; // Transaction hash
+}
+
+// Example: Call increment function
+const txHash = await callContractFunction("klv1contract_address", "increment");
+console.log("Transaction hash:", txHash);
+```
+
+### Functions with Parameters
+
+For functions that require parameters, encode them first:
+
+```javascript
+import { abiEncoder } from "@klever/sdk-web";
+
+// Example: Set counter to a specific value
+async function setCounterValue(contractAddress, value) {
+  // Encode the parameter
+  const encodedValue = abiEncoder.encodeABIValue(value, "u32", false);
+
+  // Call function with parameter
+  return await callContractFunction(contractAddress, "setValue", [encodedValue]);
+}
+
+// Usage
+const txHash = await setCounterValue("klv1contract_address", 42);
+```
+
+### Complete Example
+
+Here's a minimal working example that reads and writes to a counter contract:
+
+```javascript
+import { web, TransactionType, abiDecoder } from "@klever/sdk-web";
+
+const CONTRACT_ADDRESS = "klv1your_contract_address";
+
+// Initialize SDK
+await window.kleverWeb.initialize();
+web.setProvider({
+  node: "https://node.testnet.klever.org",
+  api: "https://api.testnet.klever.org"
+});
+
+// Read counter value
+async function getCounter() {
+  const response = await fetch("https://node.testnet.klever.org/vm/hex", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      scAddress: CONTRACT_ADDRESS,
+      funcName: "getCounter",
+      args: []
+    })
+  });
+
+  const { data } = await response.json();
+  return abiDecoder.decodeValue(data.data, 'u32');
+}
+
+// Increment counter
+async function increment() {
+  const payload = { address: CONTRACT_ADDRESS, scType: 0 };
+  const txData = Buffer.from("increment", "utf8").toString("base64");
+
+  const unsignedTx = await web.buildTransaction([{
+    type: TransactionType.SmartContract,
+    payload
+  }], [txData]);
+
+  const signedTx = await web.signTransaction(unsignedTx);
+  const result = await web.broadcastTransactions([signedTx]);
+
+  return result.data.txsHashes[0];
+}
+
+// Usage
+const currentValue = await getCounter();
+console.log("Current counter:", Number(currentValue));
+
+const txHash = await increment();
+console.log("Transaction sent:", txHash);
+```
+
+That's it! You now know how to call Klever smart contract functions from your frontend.
