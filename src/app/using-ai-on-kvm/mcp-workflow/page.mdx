@@ -1,0 +1,170 @@
+# MCP Development Workflow Example
+
+In this guide you will learn how to use AI tools to create, build, and deploy a simple Klever smart contract from scratch. This end-to-end example demonstrates how AI can assist at every step of the development process.
+
+**Critical Reminder**: AI provides suggestions and generates code, but you are fully responsible for reviewing, testing, and validating the final contract before deployment.
+
+## Contract Overview
+
+We'll create a simple counter contract that demonstrates:
+- Global state management
+- Access control with admin functions
+- Event emission
+- View functions for state reading
+- Proper error handling
+
+## Step 1: Project Initialization
+
+### AI Prompt
+```
+Initialize a new Klever project called "simple-counter"
+```
+
+### What Happens
+- AI calls `init_klever_project` function
+- Creates complete project structure with all directories
+- Generates all helper scripts (build, deploy, query, interact)
+- Sets up basic Rust contract template in `src/lib.rs`
+
+### Your Action
+**Review the generated structure**:
+```
+simple-counter/
+├── src/lib.rs
+├── Cargo.toml
+├── tests/
+├── scenarios/
+├── scripts/ (7 scripts generated)
+└── knowledge-notes.md
+```
+
+**Verify all files exist and have correct permissions**
+
+## Step 2: Contract Development
+
+### AI Prompt
+```
+Create a simple counter contract with these features:
+- Store a global counter value
+- Increment endpoint that adds 1 to counter
+- Get counter endpoint for reading current value
+- Reset endpoint (admin only) that sets counter to 0
+- Emit events when counter changes
+```
+
+### Generated Contract Code
+AI generates this complete contract (`src/lib.rs`):
+
+```rust
+klever_sc::imports!();
+
+#[klever_sc::contract]
+pub trait SimpleCounter: klever_sc_modules::only_admin::OnlyAdminModule {
+    #[init]
+    fn init(&self) {
+        self.counter().set(0);
+    }
+
+    #[endpoint]
+    fn increment(&self) {
+        let current = self.counter().get();
+        let new_value = current + 1;
+        self.counter().set(new_value);
+
+        self.counter_changed_event(current, new_value);
+    }
+
+    #[view(getCounter)]
+    fn get_counter(&self) -> u64 {
+        self.counter().get()
+    }
+
+    #[endpoint]
+    #[only_admin]
+    fn reset(&self) {
+        let old_value = self.counter().get();
+        self.counter().set(0);
+
+        self.counter_reset_event(old_value);
+    }
+
+    #[storage_mapper("counter")]
+    fn counter(&self) -> SingleValueMapper<u64>;
+
+    #[event("counterChanged")]
+    fn counter_changed_event(&self, #[indexed] old_value: u64, #[indexed] new_value: u64);
+
+    #[event("counterReset")]
+    fn counter_reset_event(&self, #[indexed] old_value: u64);
+}
+```
+
+## Step 3: Build Contract
+
+### AI Prompt
+```
+Build the counter contract
+```
+
+### What Happens
+AI runs the build script: `./scripts/build.sh`
+- Compiles Rust source to optimized WASM
+- Creates `output/simple-counter.wasm`
+- Generates metadata files
+
+### Verification Steps
+**Check build output**:
+```bash
+ls -la output/
+# Should see: simple-counter.wasm
+```
+
+**Verify no errors**:
+- Build completes without compilation errors
+- No warnings about unused imports
+
+## Step 4: Deploy to Testnet
+
+### AI Prompt
+```
+Deploy my counter contract to Klever testnet
+```
+
+### What the AI Generates
+The AI uses the deployment script that:
+- Uses the built WASM file from the output directory
+- Configures the contract as upgradeable, readable, and payable
+- Provides the deployed contract address for later use
+
+### Pre-deployment Verification
+**Environment Setup**:
+- Klever wallet configured with `~/klever-sdk/koperator account create`
+- Sufficient KLV balance for deployment (check with `~/klever-sdk/koperator account balance`)
+- Network set to "testnet" ✓
+
+**Deploy and Save Address**:
+```bash
+./scripts/deploy.sh
+```
+
+## Step 5: Call Contract Functions
+
+### AI Prompt
+```
+Call my counter contract functions to test it. First get the current counter value, then increment it, then check the value again.
+```
+
+### What the AI Does
+The AI will:
+- Update the CONTRACT_ADDRESS in the interaction script with your deployed address
+- Execute the get function to check initial value (should be 0)
+- Call the increment function to add 1 to the counter
+- Query again to verify the counter increased to 1
+
+
+## Final Notes
+- You are the developer; AI is your assistant.
+- Always review generated code line by line.
+- Test thoroughly before any mainnet deployment.
+- Security first: validate all inputs and access patterns.
+- The AI workflow accelerates development but never replaces careful engineering and security practices.

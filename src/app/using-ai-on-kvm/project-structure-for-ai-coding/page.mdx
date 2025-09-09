@@ -1,0 +1,76 @@
+# Project Structure for AI-Assisted Development
+
+The most effective way to leverage MCP (Model Context Protocol) is through the **Project Specification Template**. This structured approach helps AI understand your requirements and generate appropriate code for your smart contract project.
+
+The template is available in the [Klever MCP GitHub repository](https://github.com/klever-io/mcp-klever-vm/blob/develop/docs/project-specification-template.md).
+
+**Key Benefits:**
+- Provides clear project structure and requirements
+- Ensures consistent development approach
+- Reduces ambiguity in AI-generated code
+- Follows smart contract best practices
+
+> **Note:** Always customize the template to match your specific project needs. The template uses a Dice Game contract as an example, which you can replace with your own project concept.
+
+## How to Use the Template
+
+### Basic Prompt Structure
+
+To initialize a new project using the template, use this prompt format:
+
+```text
+Create a new Klever smart contract using the project specification template.
+
+Project: [Your Project Name]
+Requirements:
+- [List your specific requirements]
+- [Define functionality needed]
+- [Include any constraints or special considerations]
+
+Please follow the complete template workflow including Phase 0 knowledge discovery.
+```
+
+### Practical Example
+
+Here's a complete example for a gaming contract:
+
+```text
+Create a new Klever smart contract using the project specification template.
+
+Project: Decentralized Dice Game
+Requirements:
+- Players can bet KLV tokens on dice outcomes (1-6)
+- Secure random number generation for each roll
+- 5.88x payout multiplier with 2% house edge
+- Betting limits: minimum 10 KLV, maximum 1000 KLV
+- Administrative functions for profit withdrawal and game management
+- Pause/resume functionality for maintenance
+
+Please follow the complete template workflow including:
+1. Phase 0: Blockchain fundamentals discovery using MCP queries
+2. Knowledge documentation in knowledge-notes.md
+3. Complete project initialization with automation scripts
+4. Test scenarios and deployment preparation
+```
+
+## Template Components
+
+### Phase 0: Knowledge Discovery
+
+Before implementation begins, the template conducts comprehensive research:
+
+- **Blockchain Fundamentals**: Query MCP for core Klever blockchain concepts
+- **Token Systems**: Document KLV token mechanics and precision handling
+- **Command Syntax**: Learn proper command structure and parameter usage
+- **Event Limitations**: Understand event system constraints and workarounds
+- **Best Practices**: Research proven storage patterns and security measures
+- **Common Pitfalls**: Identify and document frequently encountered issues
+
+## When to Use the Template
+
+The Project Specification Template is ideal for:
+
+- **Complex Contracts**: Multi-feature projects requiring systematic planning
+- **Production Systems**: Applications needing robust architecture and testing
+- **Learning Projects**: Following established best practices and patterns
+- **Team Development**: Ensuring consistent approach across team members
