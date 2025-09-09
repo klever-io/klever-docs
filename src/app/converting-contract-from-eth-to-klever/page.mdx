@@ -24,7 +24,7 @@ In contrast, Klever contracts are developed in Rust using the klever-vm-sdk-rs f
 | **Enum**                | `enum State { Active, Paused }`            | `enum State { Active, Paused }` (with derives) | Works similarly, but must derive encode/decode traits. |
 | **Optional Values**     | Not explicit, use `mapping` tricks or `0` as sentinel | `OptionalValue<T>`                             | Proper optional handling (`Some`/`None`). |
 
-# Initialization
+## Initialization
 ### ETH
 
 In Ethereum, smart contract initialization occurs through a special function known as the constructor.
@@ -71,7 +71,7 @@ pub trait Example {
 
 }
 ```
-<br/>
+ 
 ## Functions and Views
 
 ### ETH
@@ -133,7 +133,7 @@ pub trait Counter {
 * #[endpoint(increment)] defines a function that changes state, requiring a transaction.
 * #[view(getCount)] defines a read-only query that returns the value directly and costs no gas.
 
-<br/>
+ 
 ## Events and Logs
 
 ### ETH
@@ -188,7 +188,6 @@ pub trait Dice {
     fn upgrade(&self) {}
 }
 ```
-<br/>
 ## Storage
 
 ### ETH
