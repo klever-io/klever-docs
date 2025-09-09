@@ -65,6 +65,10 @@ pub trait Example {
         self.owner().set(&caller);
         self.initial_value().set(initial_value);
     }
+
+    #[upgrade]
+    fn upgrade(&self) {}
+
 }
 ```
 <br/>
@@ -117,6 +121,13 @@ pub trait Counter {
     fn get_count(&self) -> u64 {
         self.count().get()
     }
+
+    #[init]
+    fn init(&self) {}
+
+    #[upgrade]
+    fn upgrade(&self) {}
+
 }
 ```
 * #[endpoint(increment)] defines a function that changes state, requiring a transaction.
@@ -169,6 +180,12 @@ pub trait Dice {
         // emit event
         self.roll_event(&caller, result);
     }
+
+    #[init]
+    fn init(&self) {}
+
+    #[upgrade]
+    fn upgrade(&self) {}
 }
 ```
 <br/>
@@ -241,5 +258,11 @@ pub trait StorageExample {
     fn get_balance(&self, user: ManagedAddress) -> u64 {
         self.balances(&user).get()
     }
+
+    #[init]
+    fn init(&self) {}
+
+    #[upgrade]
+    fn upgrade(&self) {}
 }
 ```
