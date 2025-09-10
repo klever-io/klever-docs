@@ -1,0 +1,35 @@
+name: Security Scan
+
+on:
+  push:
+    branches: [master, develop]
+  pull_request:
+    branches: [master]
+  schedule:
+    - cron: '30 2 * * 1'  # Weekly on Monday at 2:30 AM
+
+jobs:
+  dependency-audit:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+    
+    - name: Install pnpm
+      uses: pnpm/action-setup@v4
+      with:
+        version: 10
+    
+    - name: Run pnpm audit
+      run: |
+        pnpm audit --audit-level=moderate || true
+        echo "Check the audit report above for vulnerabilities"
+    
+    - name: Check for outdated dependencies
+      run: |
+        echo "📦 Checking for outdated packages..."
+        pnpm outdated || true

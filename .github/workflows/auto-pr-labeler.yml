@@ -1,0 +1,52 @@
+name: Auto PR Labeler
+
+on:
+  pull_request:
+    types: [opened, edited, synchronize]
+
+permissions:
+  pull-requests: write
+  contents: read
+
+jobs:
+  label:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Label PR based on files changed
+      uses: actions/labeler@v5
+      with:
+        repo-token: "${{ secrets.GITHUB_TOKEN }}"
+        configuration-path: .github/labeler.yml
+    
+    - name: Add KLC label if branch contains KLC
+      if: contains(github.head_ref, 'KLC-')
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const issueNumber = context.issue.number;
+          const klcMatch = context.payload.pull_request.head.ref.match(/KLC-(\d+)/);
+          
+          if (klcMatch) {
+            // Just add a generic "klever-jira" label instead of specific KLC numbers
+            await github.rest.issues.addLabels({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: issueNumber,
+              labels: ['klever-jira']
+            });
+            
+            // Add KLC reference to PR title if not already present
+            const pr = context.payload.pull_request;
+            const klcRef = `[KLC-${klcMatch[1]}]`;
+            if (!pr.title.includes(klcRef)) {
+              await github.rest.pulls.update({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: issueNumber,
+                title: `${klcRef} ${pr.title}`
+              });
+            }
+          }
+    

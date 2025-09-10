@@ -1,0 +1,43 @@
+name: Lighthouse CI
+
+on:
+  pull_request:
+    branches: [master, develop]
+  push:
+    branches: [master]
+
+jobs:
+  lighthouse:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+    
+    - name: Install pnpm
+      uses: pnpm/action-setup@v4
+      with:
+        version: 10
+    
+    - name: Install dependencies
+      run: pnpm install --frozen-lockfile
+    
+    - name: Build site
+      run: pnpm build
+    
+    - name: Run Lighthouse CI
+      uses: treosh/lighthouse-ci-action@v11
+      with:
+        urls: |
+          http://localhost:3000
+          http://localhost:3000/getting-started-with-klever-blockchain
+          http://localhost:3000/smart-contracts
+          http://localhost:3000/tutorials/crowdfunding
+          http://localhost:3000/api-and-sdk
+        uploadArtifacts: true
+        temporaryPublicStorage: true
+        runs: 3
+        configPath: '.github/lighthouse/lighthouserc.json'
