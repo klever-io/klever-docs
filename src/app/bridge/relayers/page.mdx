@@ -11,3 +11,29 @@ Relayers are specialized software components that form the backbone of Klever Br
 - **Consensus Mechanism**: For security purposes, operations proposed by one relayer require approval from multiple relayers in the network through the multisig contract to reach consensus, ensuring no single entity can control the bridge.
 
 The relayer network is maintained by both the Klever Blockchain Team and community participants. This distributed approach creates a decentralized validation system that functions similarly to a blockchain consensus mechanism, where majority agreement is required before any cross-chain transaction is executed.
+
+## Prerequisites to Become a Valid Relayer
+
+To participate as a relayer in the Klever Bridge network, certain requirements must be met to ensure the security and reliability of the cross-chain system:
+
+### KFI Staking Requirement
+
+All relayers must stake a specific amount of KFI tokens as a prerequisite to join the network. This staking mechanism serves multiple purposes:
+
+- **Proof of Stake**: The staked KFI acts as a form of proof of stake, demonstrating the relayer's commitment to the network and providing economic incentive to act honestly.
+
+- **Security Deposit**: The stake functions as a security deposit that can be subject to penalties if the relayer fails to perform their duties correctly or attempts to compromise the bridge's integrity.
+
+- **Network Participation**: Only relayers with the required stake are authorized to participate in the consensus mechanism and vote on cross-chain transactions.
+
+### Slashing Mechanism
+
+The network implements a slashing mechanism to maintain security and discourage malicious behavior:
+
+- **Misbehavior Detection**: When a relayer exhibits malicious behavior or fails to fulfill their responsibilities, other relayers in the network can initiate a slash proposal.
+
+- **Consensus-Based Slashing**: Slashing requires consensus from the relayer network. Multiple relayers must vote in favor of the slash before any penalties are applied.
+
+- **Stake Reduction**: Upon reaching consensus, a portion of the misbehaving relayer's staked KFI can be slashed (reduced or removed), serving as both punishment and deterrent.
+
+This staking and slashing system ensures that relayers have a strong economic incentive to operate honestly and maintain the security of the bridge network.
