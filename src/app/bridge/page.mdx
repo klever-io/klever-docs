@@ -33,5 +33,27 @@ For comprehensive state machine details, see the [Bridge Transfer Flow documenta
 
 - **Bridge Contract**: Used by bridge relayers to retrieve information and execute batches of cross-chain transactions. It serves as the main interface for the Ethereum side of the bridge operations.
 
+## Source Code
+
+The Klever Bridge implementation consists of three main components, all available as open source:
+
+### Smart Contract (Klever Blockchain)
+The smart contract that handles bridge operations on the Klever Blockchain side.
+- **Repository**: [klv-bridge-eth-sc-rs](https://github.com/klever-io/klv-bridge-eth-sc-rs/)
+- **Language**: Rust
+- **Purpose**: Manages token deposits, withdrawals, and bridge state on Klever Blockchain
+
+### Smart Contract (Ethereum)
+The smart contract that handles bridge operations on the Ethereum blockchain side.
+- **Repository**: [klv-bridge-eth-sc-sol](https://github.com/klever-io/klv-bridge-eth-sc-sol)
+- **Language**: Solidity
+- **Purpose**: Manages token locking/releasing, minting/burning, and bridge operations on Ethereum
+
+### Bridge Relayer
+The relayer service that monitors both chains and facilitates cross-chain transfers.
+- **Repository**: [klv-bridge-eth-go](https://github.com/klever-io/klv-bridge-eth-go)
+- **Language**: Go
+- **Purpose**: Orchestrates transfers, validates transactions, and maintains consensus across the relayer network
+
 ## Supported Blockchains
 - Ethereum
