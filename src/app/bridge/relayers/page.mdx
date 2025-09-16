@@ -57,3 +57,16 @@ All cross-chain transactions processed through the Klever Bridge incur fees that
 The collected fees from bridge transactions are distributed among active relayers in the networ. 
 This fee-sharing mechanism ensures that relayers are fairly compensated for their infrastructure 
 costs and efforts in maintaining the security and functionality of the cross-chain bridge.
+
+### Safe Smart Contract and Fee Reserve
+
+When transferring from Klever Blockchain to EVM blockchains, part of the bridged amount stays in the safe smart contract on Klever Blockchain. This reserved amount is used to pay relayer fees.
+
+- **Fee Reserve**: A portion of each transfer is held in the safe smart contract instead of being sent to the destination chain.
+
+- **Relayer Payment**: The reserved funds create a pool that pays relayers for processing transactions.
+
+- **Later Distribution**: Fees are distributed to relayers after the transaction completes, not during the transfer.
+
+This ensures relayers get paid for their work maintaining the bridge network.
+

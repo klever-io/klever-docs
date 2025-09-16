@@ -25,7 +25,8 @@ For Klever Blockchain, the user can request the token bridge by interacting with
 
 Where the "to" refers to the address that will receive the tokens on the ETH side. This method is payable, which means it can receive a payment
 when calling the method, this payment needs to be the tokens the user wants to bridge.
-Keep in mind, in this case, there is a fee that the bridge will deduct from the payment, to pay the ETH transaction fees.
+
+**User Fee for Relayer Services**: During transfers from Klever Blockchain to EVM chains, users pay a fee that compensates relayers for processing and validating the cross-chain transaction. This fee is automatically deducted from the bridged amount and held in the safe smart contract for later distribution to relayers. For more details about how relayer fees work, see the [Relayers documentation](./relayers).
 
 
 ### After the user deposit
