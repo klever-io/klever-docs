@@ -247,6 +247,11 @@ function NavigationGroup({
                       {sections.map((section) => (
                         <li key={section.id}>
                           <NavLink
+                            onClick={() =>
+                              sendGAEvent('event', 'buttonClicked', {
+                                value: 'xyz',
+                              })
+                            }
                             href={`${link.href}#${section.id}`}
                             tag={section.tag}
                             isAnchorLink

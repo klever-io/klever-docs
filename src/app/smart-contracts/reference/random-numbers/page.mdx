@@ -1,3 +1,9 @@
+export const metadata = {
+  title: 'Understanding Randomness in Blockchain Contracts',
+  description:
+    'Explains how randomness works in Klever smart contracts using Golang’s seeded RNG with block seeds and tx hash. Covers generating random numbers and bytes with ManagedBuffer and RandomnessSource, shuffling with Fisher-Yates, assigning random hashes to NFTs, and best practices to avoid exploitable logic.',
+}
+
 # Understanding Randomness in Blockchain Contracts
 
 Randomness in the blockchain environment poses a unique challenge due to the need for all nodes to have the same "random" generator to achieve consensus. This challenge is addressed by employing Golang's standard seeded random number generator directly within the VM. You can find the relevant library [here](https://cs.opensource.google/go/go/+/refs/tags/go1.17.5:src/math/rand/).
