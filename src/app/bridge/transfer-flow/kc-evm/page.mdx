@@ -1,0 +1,91 @@
+# Klever Blockchain → EVM-Compatible Chain
+
+When transferring tokens from Klever Blockchain to an EVM-compatible blockchain (e.g., Ethereum), the process follows a more complex 10-step relayer state machine:
+
+<div className="my-10 flex justify-center">
+    <img 
+        src="/bridge/diagram-kc-evm-light.svg" 
+        alt="EVM to Klever Blockchain Transfer Flow" 
+        className="max-w-full dark:hidden"
+    />
+    <img 
+        src="/bridge/diagram-kc-evm-dark.svg" 
+        alt="EVM to Klever Blockchain Transfer Flow" 
+        className="max-w-full hidden dark:block"
+    />
+</div>
+
+## User Interaction
+**Token Deposit**
+   - User deposits KDA tokens into the Safe contract on Klever Blockchain
+   - The contract securely locks or burns the tokens depending on configuration
+
+## Relayer State Machine Process
+
+### Step 1: **GetPending**
+- **Purpose**: Monitor pending transactions on Klever
+- **Action**: Query the Safe smart contract on Klever Blockchain
+- **Trigger**: Continues until transaction batch size reaches threshold
+- **Result**: Batch is ready for processing
+
+### Step 2: **SignProposedTransfer**
+- **Purpose**: Initial signature collection
+- **Action**: Each relayer signs the transaction independently
+- **Distribution**: Relayers broadcast their signatures to other relayers
+- **Result**: Signature collection begins
+
+### Step 3: **WaitForQuorumOnTransfer**
+- **Purpose**: Collect sufficient signatures
+- **Action**: Relayers wait for remaining signatures from the network
+- **Requirement**: Minimum signature threshold must be met
+- **Result**: Enough signatures collected for transfer execution
+
+### Step 4: **PerformTransfer**
+- **Purpose**: Execute the cross-chain transfer
+- **Action**: One relayer performs the actual transfer to Ethereum
+- **Coordination**: Other relayers monitor the execution
+- **Result**: Transfer transaction is submitted to Ethereum
+
+### Step 5: **WaitTransferConfirmation**
+- **Purpose**: Ensure transfer finality
+- **Action**: Wait for Ethereum network confirmation of the transfer
+- **Monitoring**: Relayers track transaction status on Ethereum
+- **Result**: Transfer is confirmed on the destination chain
+
+### Step 6: **ResolveSetStatus**
+- **Purpose**: Verify transfer completion
+- **Action**: Relayers retrieve and verify the transfer status confirmation
+- **Validation**: Cross-reference transfer success on Ethereum
+- **Result**: Transfer status is confirmed and verified
+
+### Step 7: **ProposeSetStatus**
+- **Purpose**: Initiate status update
+- **Action**: Relayers propose changing the batch status in the Klever contract
+- **Objective**: Mark the batch as successfully completed
+- **Result**: Status change proposal is submitted
+
+### Step 8: **SignProposedSetStatus**
+- **Purpose**: Approve status change
+- **Action**: Relayers sign the proposed status change
+- **Validation**: Each relayer confirms the transfer was successful
+- **Result**: Status change signatures are collected
+
+### Step 9: **WaitForQuorumOnSetStatus**
+- **Purpose**: Ensure consensus on status change
+- **Action**: Wait for sufficient signatures on the status change
+- **Requirement**: Quorum must be reached for status update
+- **Result**: Consensus achieved for finalizing batch status
+
+### Step 10: **PerformSetStatus**
+- **Purpose**: Finalize the batch
+- **Action**: Execute the status change in the Klever contract
+- **Result**: Batch is marked as completed, process is finalized
+
+### Final Delivery
+**Token Issuance & Recipient Delivery**
+   - On the EVM-compatible blockchain, the equivalent tokens are either:
+     - Minted as wrapped tokens (for Klever-native assets)
+     - Released from reserves (if already native to the EVM chain)
+   - The destination address receives the equivalent amount of tokens (minus any applicable bridge fees)
+
+---

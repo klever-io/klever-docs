@@ -136,6 +136,32 @@ export const navigation: Array<NavGroup> = [
       { title: 'Contracts', href: '/contracts' },
       { title: 'Exchange Integration', href: '/exchange-integration' },
       { title: 'Node Operations', href: '/node-operations' },
+      { 
+        title: 'Bridge', 
+        href: '/bridge',
+        children: [
+          {
+            title: 'Relayers',
+            href: '/relayers',
+          },
+          {
+            title: 'Tokens',
+            href: '/tokens',
+          },
+          {
+            title: 'Transfer Flow',
+            href: '/transfer-flow',
+            children: [
+              { title: 'From Klever Blockchain', href: '/kc-evm' },
+              { title: 'To Klever Blockchain', href: '/evm-kc' },
+            ],
+          },
+          {
+            title: 'User Interaction',
+            href: '/user-interaction',
+          }
+        ]
+      },
       { title: 'Become a validator', href: '/become-a-validator' },
       { title: 'About Our Technology', href: '/about-our-technology' },
     ],
