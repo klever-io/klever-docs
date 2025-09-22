@@ -75,8 +75,8 @@ Create and handle transactions with multiple signatures accounts:
 
 ### WebSocket
 
-Receive blocks, addresses and transactions from our WebSocket:
-[Websocket Reference](https://docs.klever.org/api-and-sdk/websocket-reference)
+Receive blocks, addresses and transactions from WebSocket:
+[Websocket Reference](https://docs.klever.org/api-and-sdk#websocket-reference)
 
 ## Checking the status of the transaction
 
@@ -246,7 +246,11 @@ If, for some reason, your transaction was broadcast but doesn't appear in the pr
 
 ## Websocket Reference
 
-Here you will find a guide on establishing a connection to the Blockchain WebSocket client. You must run your node with indexer option to have events subscription. This guide will walk you through the step-by-step process of connecting and receiving messages.
+Here you will find a guide on establishing a connection to the Blockchain WebSocket client. This guide will walk you through the step-by-step process of connecting and receiving messages.
+
+**Important:** You need to set up and run your own Klever node with the indexer option enabled to use WebSocket subscriptions.
+
+For detailed instructions on setting up your indexer, see: [How to Set Up Your Own Indexer](/node-operations#how-to-set-up-your-own-indexer)
 
 ### How to receive messages:
 
@@ -289,6 +293,7 @@ type Event struct {
 }
 
 func main() {
+	// your indexer node
 	u := url.URL{Scheme: "ws", Host: "127.0.0.1:8080", Path: "/subscribe"}
 	log.Printf("connecting to %s", u.String())
 

@@ -337,6 +337,160 @@ Then you can recreate the node with a new image. Don't forget to delete  the con
 docker rm klever-node
 ```
 
+## How to Set Up Your Own Indexer
+
+A Indexer is a specialized node that connects to Elasticsearch to store and organize blockchain data in a searchable format. This allows for efficient querying and retrieval of blockchain information such as transactions, blocks, accounts, and other network data. Additionally, once you have an indexer running, you can enable WebSocket subscriptions for real-time blockchain data monitoring.
+
+### Prerequisites
+
+- Docker and Docker Compose installed on your system
+- Basic understanding of Klever node operations
+- Sufficient system resources, especially for Elasticsearch (minimum 4GB RAM recommended)
+- Elasticsearch knowledge for production setups
+
+### Setting Up the Indexer
+
+What you will learn:
+
+1. **Enable and configure the Elasticsearch connector** in the `external.yaml` file
+2. **Start your node** with the external.yaml configuration properly set with Elasticsearch connector enabled
+3. **Verify the setup** by checking for the confirmation message: "Node is running with a valid indexer"
+
+#### 1. Set Up Elasticsearch
+
+The most resource-intensive part is Elasticsearch itself. Here's a Docker Compose setup for development:
+
+**Folder Structure:**
+```
+your-folder/
+├── docker-compose.yml
+└── elasticsearch/
+    ├── elasticsearch.yml
+    └── jvm.options
+```
+
+**docker-compose.yml:**
+```yaml
+version: '3'
+
+services:
+  es01:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.2.3
+    container_name: es01
+    environment:
+      - node.name=es01
+      - cluster.name=klever-cluster
+      - cluster.routing.allocation.disk.threshold_enabled=false
+      - bootstrap.memory_lock=true
+      - xpack.security.enabled=false
+      - xpack.security.http.ssl.enabled=false
+      - network.host=0.0.0.0
+      - discovery.type=single-node
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    volumes:
+      - data01:/usr/share/elasticsearch/data
+      - ./elasticsearch/elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml
+      - ./elasticsearch/jvm.options:/usr/share/elasticsearch/config/jvm.options.d/jvm.options
+    ports:
+      - 9200:9200
+volumes:
+  data01:
+    driver: local
+```
+
+**elasticsearch/jvm.options:**
+```
+-Xms4g
+-Xmx4g
+```
+
+**elasticsearch/elasticsearch.yml:**
+```yaml
+cluster.name: klever-cluster
+node.name: klever-es-node-1
+bootstrap.memory_lock: true
+http.cors.enabled: true
+http.cors.allow-origin: "*"
+http.cors.allow-methods: OPTIONS, HEAD, GET, POST, PUT, DELETE
+http.cors.allow-headers: X-Requested-With,X-Auth-Token,Content-Type,Content-Length
+xpack.security.enabled: false
+xpack.license.self_generated.type: basic
+```
+
+#### 2. Start Elasticsearch
+
+Run in your folder:
+```bash
+docker-compose up -d
+```
+
+This will expose Elasticsearch on port 9200. Verify it's running:
+```bash
+docker ps
+```
+
+#### 3. Configure external.yaml
+
+Configure your node's `external.yaml` file to connect to Elasticsearch:
+
+```yaml
+elasticSearchConnector:
+  enabled: true
+  indexerCacheSize: 100
+  url: http://localhost:9200
+  useKibana: true
+  username:
+  password:
+  enabledIndexes:
+    - transactions
+    - blocks
+    - accounts
+    - accountshistory
+    - assets
+    - proposals
+    - marketplaces
+    - network-parameters
+    - rating
+    - epoch
+    - accountskda
+    - peersaccounts
+    - marketplaceorders
+    - itos
+    - kdapools
+    - logs
+    - scdeploys
+```
+
+#### 4. Start Your Node
+
+Start your Klever node with the updated configuration. On startup, you should see the confirmation message:
+
+```
+"Node is running with a valid indexer"
+```
+
+This confirms that your node is now acting as an indexer.
+
+#### 5. WebSocket Endpoint
+Once the indexer is running, your node will expose a WebSocket endpoint for real-time data:
+```
+ws://your-node-ip:8080/subscribe
+```
+### Important Notes
+
+**Production Considerations:**
+- **Its is recommended to not run a node as both validator and indexer** - use a dedicated observer node for indexing
+- **Resource intensive** - Elasticsearch requires considerable RAM and storage
+- **Production clusters** - Setting up a production-grade Elasticsearch cluster is beyond the scope of this tutorial. Please refer to the official documentation for detailed instructions.
+
+**Resource Requirements:**
+- Minimum 4GB RAM for Elasticsearch JVM
+- Additional storage for indexed data
+- Network bandwidth for real-time data processing
+
 ## How To Set Up A Fallback Node
 
 Set up a redundant backup node for high availability
