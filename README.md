@@ -5,6 +5,7 @@ Welcome to the **Klever** open-source documentation repository! This project is 
 ---
 
 ## Table of Contents
+
 1. [Getting Started](#getting-started)
 2. [Installation](#installation)
 3. [Running the Project](#running-the-project)
@@ -15,6 +16,7 @@ Welcome to the **Klever** open-source documentation repository! This project is 
 ## Getting Started
 
 ### Prerequisites
+
 - **Node.js** (version 20 or higher recommended)
 - **npm** (comes bundled with Node.js) or [Yarn](https://classic.yarnpkg.com/) (optional)
 
@@ -31,20 +33,18 @@ If you do not have Node.js installed, you can download it from the official [Nod
 ## Installation
 
 1. **Clone the repository** (or download the ZIP)
+
    ```bash
    git clone https://github.com/klever-io/klever-docs.git
    ```
 
 2. **Navigate to the project folder**
+
    ```bash
    cd klever-docs
    ```
 
 3. **Install dependencies**
-   ```bash
-   npm install
-   ```
-   or
    ```bash
    yarn
    ```
@@ -73,6 +73,7 @@ We welcome and appreciate all contributions, big or small! Here’s how you can 
 
 2. **Create a New Branch**  
    Once you have forked the project, create a new branch for your feature or bug fix.
+
    ```bash
    git checkout -b feature-or-bugfix-name
    ```
@@ -82,6 +83,7 @@ We welcome and appreciate all contributions, big or small! Here’s how you can 
 
 4. **Commit and Push**  
    Commit your changes with a clear message describing the update:
+
    ```bash
    git add .
    git commit -m "Add some awesome feature to the documentation"
@@ -92,6 +94,7 @@ We welcome and appreciate all contributions, big or small! Here’s how you can 
    Go to your fork on GitHub, and you’ll see a button to “Compare & pull request.” Open a PR against the original **klever-io/klever-docs** repository. Provide a clear description of the changes you've made and why they should be merged.
 
 ### Guidelines
+
 - Provide a clear and concise commit message.
 - Write clear and descriptive PR descriptions.
 - Adhere to the project structure and formatting conventions.

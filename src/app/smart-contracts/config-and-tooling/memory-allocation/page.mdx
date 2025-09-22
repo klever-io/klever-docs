@@ -1,3 +1,9 @@
+export const metadata = {
+  title: 'Memory Allocation',
+  description:
+    'Explanation of memory allocation in Klever smart contracts: managed types, allocator limitations, available allocator options (FailAllocator, StaticAllocator64k, LeakingAllocator, wee_alloc), and best practices.',
+}
+
 # Memory Allocation
 
 Klever smart contracts are compiled into WebAssembly (Wasm), which does not inherently provide memory allocation capabilities. Typically, WebAssembly programs require specialized memory allocation functionality to work with the heap.

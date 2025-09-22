@@ -23,6 +23,7 @@ import Highlighter from 'react-highlight-words'
 
 import { navigation } from '@/consts/navigation'
 import { type Result } from '@/mdx/search.mjs'
+import { sendGAEvent } from '@next/third-parties/google'
 
 type EmptyObject = Record<string, never>
 
@@ -67,6 +68,9 @@ function useAutocomplete({ close }: { close: () => void }) {
       defaultActiveItemId: 0,
       onStateChange({ state }) {
         setAutocompleteState(state)
+        if (state.query) {
+          sendGAEvent('event', 'search_query', { query: state.query })
+        }
       },
       shouldPanelOpen({ state }) {
         return state.query !== ''
@@ -434,6 +438,7 @@ function useSearchProps() {
     buttonProps: {
       ref: buttonRef,
       onClick() {
+        sendGAEvent('event', 'search_opened')
         setOpen(true)
       },
     },

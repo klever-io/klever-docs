@@ -1,3 +1,9 @@
+export const metadata = {
+  title: 'BigUint Operations Demystified',
+  description:
+    'Explanation of how BigUint handles work in Klever smart contracts, ownership implications in Rust, and efficient patterns to minimize unnecessary cloning and memory usage.',
+}
+
 # BigUint Operations Demystified
 
 In the realm of `BigUint` operations, it's crucial to understand that a `BigUint` is essentially a handle, akin to how system file handles operate. It's essentially a struct with an `i32` member representing the handle. All operations must be carried out through API functions by passing handles for the result, the first operand, and the second operand. Leveraging Rust's operator overloading feature, we can redefine arithmetic operators, making it convenient to add `BigUint` values, much like primitive number types.
