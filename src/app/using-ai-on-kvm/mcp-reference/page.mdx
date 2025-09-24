@@ -1,0 +1,210 @@
+# Klever MCP Server Functions Reference
+
+Complete reference for all available functions and capabilities of the Klever MCP (Model Context Protocol) Server.
+
+## Overview
+
+The Klever MCP Server provides AI agents with 8 specialized functions and access to contexts for Klever smart contract development.
+
+## Available Functions
+
+### Project Management
+
+#### `init_klever_project`
+**Purpose**: Initialize a complete Klever smart contract project with structure and helper scripts
+
+**Parameters**:
+- `name` (required): Contract name
+- `template` (optional): Template type (default: "empty")
+- `noMove` (optional): Don't move files to current directory (default: false)
+
+**What it creates**:
+```
+project-name/
+├── src/lib.rs              # Contract source code
+├── Cargo.toml              # Rust project configuration
+├── tests/                  # Test directory
+├── scenarios/              # Test scenarios
+├── scripts/
+│   ├── build.sh           # Build contract to WASM
+│   ├── deploy.sh          # Deploy to network
+│   ├── upgrade.sh         # Upgrade existing contract
+│   ├── query.sh           # Query contract state
+│   ├── interact.sh        # Interact with endpoints
+│   └── common.sh          # Shared utilities
+└── knowledge-notes.md     # Development notes
+```
+
+#### `add_helper_scripts`
+**Purpose**: Add helper scripts to existing Klever project
+
+**Parameters**:
+- `contractName` (optional): Contract name
+
+**Generated Scripts**:
+- **build.sh**: Compiles Rust code to WASM with proper optimization
+- **deploy.sh**: Deploys contract to testnet/mainnet with network configuration
+- **upgrade.sh**: Upgrades existing contract preserving state
+- **query.sh**: Queries contract state with returnData parsing
+- **interact.sh**: Interactive endpoint calls with parameter encoding
+- **common.sh**: Shared utilities (data conversion, formatting, network helpers)
+
+### Knowledge Management
+
+#### `query_context`
+**Purpose**: Search the knowledge base for development guidance and examples
+
+**Parameters**:
+- `query` (required): Search query string
+- `types` (optional): Filter by context types array
+- `tags` (optional): Filter by tags array
+- `contractType` (optional): Filter by contract type
+- `limit` (optional): Results limit (default: 10)
+- `offset` (optional): Results offset (default: 0)
+
+**Available Context Types**:
+- `code_example` (25): Complete contract implementations
+- `best_practice` (24): Development guidelines
+- `security_tip` (3): Security recommendations
+- `optimization` (3): Performance optimizations
+- `documentation` (24): API and framework references
+- `error_pattern` (5): Common errors and solutions
+- `deployment_tool` (15): Deployment and tooling guides
+- `runtime_behavior` (0): VM runtime information
+
+#### `add_context`
+**Purpose**: Add new development context to knowledge base
+
+**Parameters**:
+- `type` (required): Context type (see types above)
+- `content` (required): The content/code/documentation
+- `metadata` (required): Object with title, description, tags, author, contractType
+
+#### `get_context`
+**Purpose**: Retrieve specific context by ID
+
+**Parameters**:
+- `id` (required): Context ID string
+
+#### `find_similar`
+**Purpose**: Find contexts similar to a given context
+
+**Parameters**:
+- `id` (required): Reference context ID
+- `limit` (optional): Results limit (default: 5)
+
+#### `get_knowledge_stats`
+**Purpose**: Get statistics about the knowledge base
+
+**Returns**:
+- Total contexts count
+- Breakdown by context type
+- Example entries from each category
+
+### AI Enhancement
+
+#### `enhance_with_context`
+**Purpose**: Enhance user queries with relevant Klever VM development context
+
+**Parameters**:
+- `query` (required): User query to enhance
+- `autoInclude` (optional): Auto-include relevant contexts (default: true)
+
+**Process**:
+1. Analyzes the user query for Klever-specific keywords
+2. Searches knowledge base for most relevant contexts (limit: 3)
+3. Combines query with relevant examples and best practices
+4. Returns enhanced query with context for better AI responses
+
+**Keyword Extraction**: Recognizes 30+ Klever-specific terms:
+- Technical: `storage`, `mapper`, `endpoint`, `payable`, `deploy`, `upgrade`
+- Tools: `koperator`, `ksc`, `testnet`, `mainnet`
+- Access: `admin`, `only_admin`, `only_owner`, `permission`
+- Types: `bigint`, `biguint`, `managed`, `token`
+- Patterns: `singlemapper`, `setmapper`, `mapmapper`, `vecmapper`
+
+## Knowledge Base Contents
+
+### Statistics
+- **Total Contexts**: 99 entries
+- **Coverage**: 11 categories across all aspects of Klever development
+- **Languages**: Primarily Rust with bash scripts
+- **Contract Types**: Gaming, DeFi, NFT, Token, Governance
+
+### Key Areas Covered
+
+#### Contract Architecture
+- Contract structure templates and patterns
+- Module integration (admin, pause, governance)
+- Proxy patterns and upgradeability
+- Cross-contract communication
+
+#### Storage Patterns
+- Storage mapper selection and performance comparison
+- Namespace usage and data organization
+- View functions and read optimization
+- State migration patterns
+
+#### Event Handling
+- Event annotation best practices
+- Parameter indexing strategies
+- Event-driven architecture patterns
+- Logging and monitoring
+
+#### Payment Processing
+- KLV and KDA token handling
+- Multi-token payment validation
+- Payment splitting and escrow patterns
+- Fee calculation and distribution
+
+#### Security & Best Practices
+- **Critical**: Use built-in admin module (never create custom)
+- Input validation and sanitization
+- Access control patterns
+- Common vulnerability prevention
+- Gas optimization techniques
+
+#### Development Tools
+- koperator CLI usage and parameters
+- ksc compilation and optimization
+- Network configuration (testnet/mainnet)
+- Return data parsing and formatting
+- Interactive contract management
+
+#### Common Errors & Solutions
+- **Most Critical**: `--values` NOT `--value` for payments
+- Deployment configuration issues
+- Contract upgrade failures
+- Query parameter encoding errors
+- Gas limit calculation mistakes
+
+## Integration Examples
+
+### Basic Context Query
+```typescript
+const result = await mcp.callTool('query_context', {
+  query: 'staking contract example',
+  types: ['code_example'],
+  limit: 5
+});
+```
+
+### Enhanced Query Processing
+```typescript
+const enhanced = await mcp.callTool('enhance_with_context', {
+  query: 'How do I implement token staking with rewards?',
+  autoInclude: true
+});
+// Returns query enhanced with relevant staking examples and best practices
+```
+
+### Project Initialization
+```typescript
+const project = await mcp.callTool('init_klever_project', {
+  name: 'my-defi-protocol',
+  template: 'empty'
+});
+// Creates complete project structure with all helper scripts
+```
+
+Remember: The MCP server is a development assistant. Always review, test, and validate all generated code and suggestions before deployment.

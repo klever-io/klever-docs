@@ -12,7 +12,6 @@ export const navigation: Array<NavGroup> = [
   {
     title: 'Tutorials',
     links: [
-      { title: 'Crowdfunding', href: '/tutorials/crowdfunding' },
       { title: 'Deposit KDA Pool', href: '/tutorials/kda-pool' },
       { title: 'Klever Blockchain IDE', href: '/tutorials/kleverchain-ide' },
     ],
@@ -82,6 +81,15 @@ export const navigation: Array<NavGroup> = [
             ],
           },
           {
+            title: 'How To',
+            href: '/how-to',
+            children: [
+              { title: 'Call Smart Contracts from Frontend', href: '/calling-your-contract-in-the-front-end' },
+              { title: 'From JavaScript to Rust', href: '/from-javascript-to-rust' },
+              { title: 'Create a Crowdfunding', href: '/crowdfunding' },
+            ],
+          },
+          {
             title: 'Config & Tooling',
             href: '/config-and-tooling',
             children: [
@@ -117,6 +125,16 @@ export const navigation: Array<NavGroup> = [
           },
         ],
       },
+      {
+        title: 'Using AI on KVM',
+        href: '/using-ai-on-kvm',
+        children: [
+              { title: 'Installation Guide', href: '/ai-environment-setup' },
+              { title: 'Reference', href: '/mcp-reference' },
+              { title: 'Workflow Example', href: '/mcp-workflow' },
+              { title: 'Project structure for I.A coding', href: '/project-structure-for-ai-coding' },
+            ],
+          },
       { title: 'Staking', href: '/staking' },
       { title: 'Delegation', href: '/delegation' },
       { title: 'Account Permissions', href: '/account-permissions' },
@@ -126,6 +144,32 @@ export const navigation: Array<NavGroup> = [
       { title: 'Contracts', href: '/contracts' },
       { title: 'Exchange Integration', href: '/exchange-integration' },
       { title: 'Node Operations', href: '/node-operations' },
+      {
+        title: 'Bridge',
+        href: '/bridge',
+        children: [
+          {
+            title: 'Relayers',
+            href: '/relayers',
+          },
+          {
+            title: 'Tokens',
+            href: '/tokens',
+          },
+          {
+            title: 'Transfer Flow',
+            href: '/transfer-flow',
+            children: [
+              { title: 'From Klever Blockchain', href: '/kc-evm' },
+              { title: 'To Klever Blockchain', href: '/evm-kc' },
+            ],
+          },
+          {
+            title: 'User Interaction',
+            href: '/user-interaction',
+          }
+        ]
+      },
       { title: 'Become a validator', href: '/become-a-validator' },
       { title: 'About Our Technology', href: '/about-our-technology' },
     ],
@@ -164,5 +208,13 @@ export const navigation: Array<NavGroup> = [
       //Legacy
       { title: 'Legacy', href: '/legacy' },
     ],
+
+  },
+    {
+    title: 'Side Pill',
+    links: [
+      { title: 'Converting Contract from ETH to Klever', href: '/converting-contract-from-eth-to-klever' }
+    ],
+
   },
 ]

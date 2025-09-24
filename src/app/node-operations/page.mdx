@@ -337,6 +337,238 @@ Then you can recreate the node with a new image. Don't forget to delete  the con
 docker rm klever-node
 ```
 
+## How to Set Up Your Own Indexer
+
+A Indexer is a specialized node that connects to Elasticsearch to store and organize blockchain data in a searchable format. This allows for efficient querying and retrieval of blockchain information such as transactions, blocks, accounts, and other network data. Additionally, once you have an indexer running, you can enable WebSocket subscriptions for real-time blockchain data monitoring.
+
+### Prerequisites
+
+- Docker and Docker Compose installed on your system
+- Basic understanding of Klever node operations
+- Sufficient system resources, especially for Elasticsearch (minimum 4GB RAM recommended)
+- Elasticsearch knowledge for production setups
+
+### Setting Up the Indexer
+
+What you will learn:
+
+1. **Enable and configure the Elasticsearch connector** in the `external.yaml` file
+2. **Start your node** with the external.yaml configuration properly set with Elasticsearch connector enabled
+3. **Verify the setup** by checking for the confirmation message: "Node is running with a valid indexer"
+
+#### 1. Set Up Elasticsearch
+
+The most resource-intensive part is Elasticsearch itself. Here's a Docker Compose setup for development:
+
+**Folder Structure:**
+```
+your-folder/
+├── docker-compose.yml
+└── elasticsearch/
+    ├── elasticsearch.yml
+    └── jvm.options
+```
+
+**docker-compose.yml:**
+```yaml
+version: '3'
+
+services:
+  es01:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.2.3
+    container_name: es01
+    environment:
+      - node.name=es01
+      - cluster.name=klever-cluster
+      - cluster.routing.allocation.disk.threshold_enabled=false
+      - bootstrap.memory_lock=true
+      - xpack.security.enabled=false
+      - xpack.security.http.ssl.enabled=false
+      - network.host=0.0.0.0
+      - discovery.type=single-node
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    volumes:
+      - data01:/usr/share/elasticsearch/data
+      - ./elasticsearch/elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml
+      - ./elasticsearch/jvm.options:/usr/share/elasticsearch/config/jvm.options.d/jvm.options
+    ports:
+      - 9200:9200
+volumes:
+  data01:
+    driver: local
+```
+
+**elasticsearch/jvm.options:**
+```
+-Xms4g
+-Xmx4g
+```
+
+**elasticsearch/elasticsearch.yml:**
+```yaml
+cluster.name: klever-cluster
+node.name: klever-es-node-1
+bootstrap.memory_lock: true
+http.cors.enabled: true
+http.cors.allow-origin: "*"
+http.cors.allow-methods: OPTIONS, HEAD, GET, POST, PUT, DELETE
+http.cors.allow-headers: X-Requested-With,X-Auth-Token,Content-Type,Content-Length
+xpack.security.enabled: false
+xpack.license.self_generated.type: basic
+```
+
+#### 2. Start Elasticsearch
+
+Run in your folder:
+```bash
+docker-compose up -d
+```
+
+This will expose Elasticsearch on port 9200. Verify it's running:
+```bash
+docker ps
+```
+
+#### 3. Configure external.yaml
+
+Configure your node's `external.yaml` file to connect to Elasticsearch:
+
+```yaml
+elasticSearchConnector:
+  enabled: true
+  indexerCacheSize: 100
+  url: http://localhost:9200
+  useKibana: true
+  username:
+  password:
+  enabledIndexes:
+    - transactions
+    - blocks
+    - accounts
+    - accountshistory
+    - assets
+    - proposals
+    - marketplaces
+    - network-parameters
+    - rating
+    - epoch
+    - accountskda
+    - peersaccounts
+    - marketplaceorders
+    - itos
+    - kdapools
+    - logs
+    - scdeploys
+```
+
+#### 4. Start Your Node
+
+Start your Klever node with the updated configuration. On startup, you should see the confirmation message:
+
+```
+"Node is running with a valid indexer"
+```
+
+This confirms that your node is now acting as an indexer.
+
+#### 5. WebSocket Endpoint
+Once the indexer is running, your node will expose a WebSocket endpoint for real-time data:
+```
+ws://your-node-ip:8080/subscribe
+```
+### Important Notes
+
+**Production Considerations:**
+- **Its is recommended to not run a node as both validator and indexer** - use a dedicated observer node for indexing
+- **Resource intensive** - Elasticsearch requires considerable RAM and storage
+- **Production clusters** - Setting up a production-grade Elasticsearch cluster is beyond the scope of this tutorial. Please refer to the official documentation for detailed instructions.
+
+**Resource Requirements:**
+- Minimum 4GB RAM for Elasticsearch JVM
+- Additional storage for indexed data
+- Network bandwidth for real-time data processing
+
+## How To Set Up A Fallback Node
+
+Set up a redundant backup node for high availability
+
+A fallback node (also known as a redundancy node) provides high availability by automatically taking over when the main node becomes inactive. This ensures continuous operation of your validator without manual intervention.
+
+### Understanding Redundancy Levels
+
+The Klever Blockchain supports different redundancy levels:
+
+- **-1**: Redundancy disabled
+- **0**: Main instance (default)
+- **1**: First backup node
+- **2**: Second backup node
+- **3+**: Additional backup levels
+
+### Configuration Steps
+
+#### 1. Configure the redundancyLevel in your `config.yaml` file
+
+```yaml
+preferences:
+  # RedundancyLevel represents the level of redundancy used by the node (-1 = disabled, 0 = main instance (default),
+  # 1 = first backup, 2 = second backup, etc.)
+  redundancyLevel: 1
+```
+
+#### 2. For main node (redundancyLevel: 0)
+
+Your main node should be configured with `redundancyLevel: 0` (which is the default). No additional configuration is needed.
+
+#### 3. For backup nodes (redundancyLevel: 1, 2, 3...)
+
+Configure backup nodes with the appropriate redundancy level. Higher numbers indicate lower priority backups.
+
+```yaml
+preferences:
+  redundancyLevel: 1  # First backup
+```
+
+### How It Works
+
+- **Main Node Active**: The main node (level 0) operates normally while backup nodes remain inactive
+- **Main Node Inactive**: If the main node fails to participate in consensus for 5 consecutive slots, the first backup node (level 1) automatically becomes active
+- **Cascading Failover**: If the first backup also fails, the second backup (level 2) takes over, and so on
+
+### Running Your Fallback Node
+
+Use the same docker command as a regular node, but ensure your `config.yaml` file has the correct `redundancyLevel`:
+
+```bash
+docker run -it --rm \
+    --user "$(id -u):$(id -g)" \
+    --name klever-fallback-node \
+    -v $(pwd)/node/config:/opt/klever-blockchain/config/node \
+    -v $(pwd)/node/db:/opt/klever-blockchain/db \
+    -v $(pwd)/node/logs:/opt/klever-blockchain/logs \
+    --network=host \
+    --entrypoint=/usr/local/bin/validator \
+    kleverapp/klever-go:latest \
+    '--log-save' '--rest-api-interface=0.0.0.0:8080'
+```
+
+### Monitoring Redundancy Status
+
+You can monitor your node's redundancy status through:
+
+- **Node logs**: Check if your node is active or in backup mode
+- **REST API**: Query the node status endpoint to see redundancy information
+- **Visual interface**: The node's terminal interface shows redundancy level and status
+
+### Best Practices
+
+1. **Geographic Distribution**: Deploy backup nodes in different locations for maximum availability
+2. **Network Connectivity**: Ensure all nodes have reliable internet connections
+3. **Regular Monitoring**: Monitor all nodes to ensure they're ready to take over when needed
+4. **Database Backups**: Keep database backups synchronized between main and backup nodes
+
 ## How To Send Using Cli
 
 To use your wallet with Klever Toolchain, you will need to map your wallet private key (the .pem file created in the session [How to create a wallet](/node-operations#how-to-create-a-wallet)) into the toolchain by adding:
@@ -384,6 +616,40 @@ docker run -it --rm --user "$(id -u):$(id -g)" \
     137 --kda=KFI
 ```
 
+## How to Unjail a Validator
+
+Understanding these common causes will help you prevent future jailing incidents:
+
+- **Low Rating**: Rating drops below minimum threshold due to missed blocks/signatures
+- **Consecutive Missed Blocks**: Failing to propose blocks when selected as leader
+- **Poor Validator Performance**: Missing validator signatures consistently
+- **Network Issues**: Connection problems preventing participation in consensus
+
+### Prerequisites
+Before attempting to unjail your validator, ensure you have:
+
+1. **Root Cause Resolution**: Fixed the underlying issue that caused the jailing
+2. **Node Synchronization**: Your validator node is running and fully synchronized
+3. **Owner Account Access**: Access to the validator owner's private key (.pem file)
+4. **Network Connectivity**: Stable connection to Klever network
+5. **Sufficient KLV Balance**: Ensure the owner account has enough KLV to cover transaction fees
+
+### Using Klever Operator CLI
+```bash
+operator validator unjail [OWNER_ADDRESS] [flags]
+```
+
+### What Happens When Unjailing
+The unjailing process performs several important operations:
+1. **Immediate Effects**:
+   - **Rating Reset**: Validator's rating is reset to the starting rating (5,000,001)
+   - **Temporary Rating Clear**: Any temporary rating penalties are removed
+   - **List Migration**: Validator moves from "Jailed" to "Waiting" list
+2. **Post-Unjail Process**:
+   - **Queue Position**: Validator enters the waiting queue for selection
+   - **Index Assignment**: Gets a new position based on current block nonce
+   - **Eligibility Wait**: May take 1-3 epochs to become eligible for selection
+   - **Selection Process**: Must wait to be selected for active validation again
 
 ## All Cli Operations
 

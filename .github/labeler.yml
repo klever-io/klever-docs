@@ -1,0 +1,65 @@
+# Configuration for GitHub labeler action
+
+documentation:
+  - changed-files:
+    - any-glob-to-any-file:
+      - '**/*.md'
+      - '**/*.mdx'
+
+smart-contracts:
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'src/app/smart-contracts/**'
+      - 'src/app/klever-vm/**'
+
+tutorials:
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'src/app/tutorials/**'
+
+blockchain:
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'src/app/contracts/**'
+      - 'src/app/contract-details/**'
+      - 'src/app/getting-started-with-klever-blockchain/**'
+
+sdks:
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'src/app/introduction-to-kleverchain-sdk/**'
+      - 'src/app/api-and-sdk/**'
+      - 'src/app/go/**'
+      - 'src/app/csharp/**'
+      - 'src/app/node.js/**'
+      - 'src/app/sdks/**'
+      - 'src/app/unity/**'
+
+
+frontend:
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'src/components/**'
+      - 'src/styles/**'
+      - '*.css'
+      - 'tailwind.config.ts'
+
+dependencies:
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'package.json'
+      - 'package-lock.json'
+      - 'pnpm-lock.yaml'
+
+config:
+  - changed-files:
+    - any-glob-to-any-file:
+      - '*.config.*'
+      - 'tsconfig.json'
+      - '.eslintrc.json'
+
+github-actions:
+  - changed-files:
+    - any-glob-to-any-file:
+      - '.github/workflows/**'
+      - '.github/**/*.yml'

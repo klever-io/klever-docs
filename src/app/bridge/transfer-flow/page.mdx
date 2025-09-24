@@ -1,0 +1,42 @@
+# Transfer Flow
+
+The Klever Bridge enables seamless cross-chain token transfers between Klever Blockchain and EVM-compatible blockchains (such as Ethereum, BSC, Polygon, etc.). The transfer process is orchestrated by a network of relayers that follow a sophisticated state machine to ensure security, consensus, and finality across chains.
+
+## How It Works
+
+The bridge operates using a **relayer network** that monitors transactions on both chains and facilitates secure cross-chain transfers. When a user initiates a transfer, the relayers work together to:
+
+1. **Monitor** pending transactions on the source chain
+2. **Validate** and reach consensus on transfer requests
+3. **Execute** transfers on the destination chain
+4. **Confirm** transaction finality and update batch status
+
+The process varies depending on the transfer direction, with each requiring different numbers of steps and validation mechanisms to ensure maximum security.
+
+## Transfer Directions
+
+Choose the documentation that matches your transfer direction:
+
+### 📤 EVM-Compatible Chain → Klever Blockchain
+Transfer tokens from Ethereum, BSC, Polygon, or other EVM chains to Klever Blockchain.
+- **Mechanism**: Deposit ERC20 tokens → Receive KDA tokens
+- **[View EVM→Klever Blockchain Transfer Flow](./transfer-flow/evm-kc)**
+
+### 📥 Klever Blockchain → EVM-Compatible Chain  
+Transfer tokens from Klever Blockchain to Ethereum, BSC, Polygon, or other EVM chains.
+- **Mechanism**: Deposit KDA tokens → Receive ERC20 tokens
+- **[View Klever Blockchain→EVM Transfer Flow](./transfer-flow/kc-evm)**
+
+## Key Features
+
+- **Decentralized Validation**: Minimum 7 out of 10 relayers must approve each transfer
+- **Secure Asset Handling**: Tokens are locked/burned on source chain and minted/released on destination
+- **Batch Processing**: Multiple transactions are processed together for efficiency
+- **Cross-Chain Finality**: Complete confirmation on both chains before marking transfers complete
+
+---
+
+## Additional Resources
+
+> For detailed information about the user interaction, see the [User Interaction documentation](./user-interaction).
+> For more details on bridge architecture, contracts, and token types, visit the [Klever Bridge main documentation](./)
