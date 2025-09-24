@@ -1,0 +1,14 @@
+User-agent: *
+Allow: /
+
+# Allow all robots to crawl the entire site
+# Sitemap location
+Sitemap: https://docs.klever.io/sitemap.xml
+
+# Common crawl delay to be respectful
+Crawl-delay: 1
+
+# Disallow common non-content files
+Disallow: /_next/static/
+Disallow: /api/
+Disallow: /*.json$
