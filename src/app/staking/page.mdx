@@ -36,7 +36,8 @@ This means that the owner of the KDA with FPR will be responsible to their staki
 In order to freeze KLV, you should type the following code:
 
 ```bash
-docker run -it --rm --user "$(id -u):$(id -g)" \
+chown -R 999 .
+docker run -it --rm \
     -v $(pwd)/wallet:/opt/klever-blockchain \
     --network=host \
     --entrypoint=/usr/local/bin/operator \
@@ -60,7 +61,8 @@ The minimum amount allowed to stake KLV is 1000 KLV.
 To unfreeze assets, you need to run the follwoing command, signaling the bucket ID, which was generated when you first staked those assets:
 
 ```bash
-docker run -it --rm --user "$(id -u):$(id -g)" \
+chown -R 999 .
+docker run -it --rm \
     -v $(pwd)/wallet:/opt/klever-blockchain \
     --network=host \
     --entrypoint=/usr/local/bin/operator \
@@ -79,7 +81,8 @@ docker run -it --rm --user "$(id -u):$(id -g)" \
 Withdrawing assets will remove the values of all the unfrozen buckets automatically. This is how you should do it:
 
 ```bash
-docker run -it --rm --user "$(id -u):$(id -g)" \
+chown -R 999 .
+docker run -it --rm \
     -v $(pwd)/wallet:/opt/klever-blockchain \
     --network=host \
     --entrypoint=/usr/local/bin/operator \
@@ -95,7 +98,8 @@ docker run -it --rm --user "$(id -u):$(id -g)" \
 You can claim rewards either from Staking (with no delegation) or Allowance (from delegation):
 
 ```bash
-docker run -it --rm --user "$(id -u):$(id -g)" \
+chown -R 999 .
+docker run -it --rm \
     -v $(pwd)/wallet:/opt/klever-blockchain \
     --network=host \
     --entrypoint=/usr/local/bin/operator \
@@ -127,13 +131,14 @@ First of all, you need to create a KDA. Use the Create Asset Contract to create 
 PS: You can not upgrade an existing KDA from APR to FPR Support.
 
 ```bash
-docker run -it --rm --user "$(id -u):$(id -g)" \\
-    -v $(pwd)/wallet:/opt/klever-blockchain \\
-    --network=host \\
-    --entrypoint=/usr/local/bin/operator \\
-    kleverapp/klever-go:latest \\
-    --key-file=./walletKey.pem \\
-    --node=https://node.mainnet.klever.org \\
+chown -R 999 .
+docker run -it --rm \
+    -v $(pwd)/wallet:/opt/klever-blockchain \
+    --network=host \
+    --entrypoint=/usr/local/bin/operator \
+    kleverapp/klever-go:latest \
+    --key-file=./walletKey.pem \
+    --node=https://node.mainnet.klever.org \
     kda create 0 --canBurn=true --canMint=true --canFreeze=true --canPause=true --canWipe=true --logo=LOGO_URL --maxSupply=AMOUNT_MAX --precision=6 --name=KDA_NAME --ticker=KDA_TICKER —-interestType 1
 ```
 
@@ -144,13 +149,14 @@ After you created or updated your KDA, you need to deposit KDA to your FPR pool 
 PS: you can deposit multiple KDAs to your FPR pool to pay rewards with them.
 
 ```bash
-docker run -it --rm --user "$(id -u):$(id -g)" \\
-    -v $(pwd)/wallet:/opt/klever-blockchain \\
-    --network=host \\
-    --entrypoint=/usr/local/bin/operator \\
-    kleverapp/klever-go:latest \\
-    --key-file=./walletKey.pem \\
-    --node=https://node.mainnet.klever.org \\
+chown -R 999 .
+docker run -it --rm \
+    -v $(pwd)/wallet:/opt/klever-blockchain \
+    --network=host \
+    --entrypoint=/usr/local/bin/operator \
+    kleverapp/klever-go:latest \
+    --key-file=./walletKey.pem \
+    --node=https://node.mainnet.klever.org \
     kda deposit AMOUNT --depositType=0 --kdaID=YOUR_KDA_ID --currencyID=KDA_YOU_WANT_TO_PAY_REWARDS
 ```
 
@@ -163,13 +169,14 @@ If you are a holder and want to receive rewards.
 To be able to receive rewards of a KDA with FPR you need to freeze this KDA with the following command. Make sure the asset you’re freezing supports FPR.
 
 ```bash
-docker run -it --rm --user "$(id -u):$(id -g)" \\
-    -v $(pwd)/wallet:/opt/klever-blockchain \\
-    --network=host \\
-    --entrypoint=/usr/local/bin/operator \\
-    kleverapp/klever-go:latest \\
-    --key-file=./walletKey.pem \\
-    --node=https://node.mainnet.klever.org \\
+chown -R 999 .
+docker run -it --rm \
+    -v $(pwd)/wallet:/opt/klever-blockchain \
+    --network=host \
+    --entrypoint=/usr/local/bin/operator \
+    kleverapp/klever-go:latest \
+    --key-file=./walletKey.pem \
+    --node=https://node.mainnet.klever.org \
     account freeze AMOUNT --kda=KDA_id_YOU_WANT_TO_FREEZE
 ```
 
@@ -180,7 +187,8 @@ After the reward is generated, you can claim it with the following command:
 PS: You need to claim your rewards at least 100 epochs after the reward is generated.
 
 ```bash
-docker run -it --rm --user "$(id -u):$(id -g)" \
+chown -R 999 .
+docker run -it --rm \
     -v $(pwd)/wallet:/opt/klever-blockchain \
     --network=host \
     --entrypoint=/usr/local/bin/operator \
