@@ -15,8 +15,8 @@ For this tutorial the default will be 2 validators.
 To generate the necessary keys you will need to execute the command below. If you want to generate a different number of validator nodes, just change the value in **--num-keys=2**
 
 ```bash
+    chown -R 999 .
     docker run -it --rm -v $(pwd):/opt/klever-blockchain \
-        --user "$(id -u):$(id -g)" \
         --entrypoint='' kleverapp/klever-go:latest keygenerator --num-keys=2 --key-type=both
 ```
 

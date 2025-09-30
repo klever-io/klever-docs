@@ -132,7 +132,8 @@ Finally, it's worth noting that PermID is passed when creating the transaction b
 For you to create the permissions of your account it is necessary to carry out an UpdateAccountPermission transaction
 
 ```bash
-docker run -it --rm --user "$(id -u):$(id -g)" \
+chown -R 999 .
+docker run -it --rm \
     -v $(pwd)/wallet:/opt/klever-blockchain \
     --network=host \
     --entrypoint=/usr/local/bin/operator \
@@ -145,7 +146,8 @@ docker run -it --rm --user "$(id -u):$(id -g)" \
 Instead of putting **your-permission-here**, you should put your permissions based on the permission data shown above.
 
 ```bash
-docker run -it --rm --user "$(id -u):$(id -g)" \
+chown -R 999 .
+docker run -it --rm \
     -v $(pwd)/wallet:/opt/klever-blockchain \
     --network=host \
     --entrypoint=/usr/local/bin/operator \
