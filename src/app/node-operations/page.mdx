@@ -59,6 +59,10 @@ To download Klever Toolchain, type:
 docker pull kleverapp/klever-go:latest
 ```
 
+<Note color="yellow">
+    **Warning:** Before running the following Docker commands, you'll need to change the ownership of your local files to user ID 999: `chown -R 999 .`
+</Note>
+
 ## How To Create A Wallet
 
 To create a wallet, choosing the output folder, first create the output folder and then run the operator with `create-wallet` command:
@@ -68,7 +72,7 @@ mkdir wallet
 ```
 
 ```bash
-docker run -it --rm --user "$(id -u):$(id -g)" \
+docker run -it --rm \
     -v $(pwd)/wallet:/opt/klever-blockchain \
     --entrypoint=/usr/local/bin/operator \
     kleverapp/klever-go:latest account create
@@ -83,7 +87,7 @@ If the output directory does not exist, it will be created but you may run into 
 To check your wallet certificate and address, type:
 
 ```bash
-docker run -it --rm --user "$(id -u):$(id -g)" \
+docker run -it --rm \
     -v $(pwd)/wallet:/opt/klever-blockchain \
     --entrypoint=/usr/local/bin/operator \
     kleverapp/klever-go:latest account address
@@ -133,7 +137,6 @@ Execute a command inside the docker container to create wallets for validators. 
 
 ```bash
 docker run -it --rm -v $(pwd)/node/config:/opt/klever-blockchain \
-    --user "$(id -u):$(id -g)" \
     --entrypoint='' kleverapp/klever-go:latest keygenerator
 ```
 
@@ -145,7 +148,6 @@ _MainNet_
 
 ```bash
 docker run -it --rm \
-    --user "$(id -u):$(id -g)" \
     --name klever-node \
     -v $(pwd)/node/config:/opt/klever-blockchain/config/node \
     -v $(pwd)/node/db:/opt/klever-blockchain/db \
@@ -183,7 +185,6 @@ When running in the background, add parameter `--use-log-view` and replace `--rm
 
 ```bash
 docker run -it -d --restart unless-stopped \
-    --user "$(id -u):$(id -g)" \
     --name klever-node \
     -v $(pwd)/node/config:/opt/klever-blockchain/config/node \
     -v $(pwd)/node/db:/opt/klever-blockchain/db \
@@ -256,7 +257,6 @@ Execute a command inside the docker container to create wallets for validators. 
 
 ```bash
 docker run -it --rm -v $(pwd)/node:/opt/klever-blockchain \
-    --user "$(id -u):$(id -g)" \
     --entrypoint='' kleverapp/klever-go:latest keygenerator
 ```
 
@@ -266,7 +266,6 @@ The command for running a node comes with a few settings: it includes mappings f
 
 ```bash
 docker run -it --rm \
-    --user "$(id -u):$(id -g)" \
     --name klever-node \
     -v $(pwd)/node/confgi:/opt/klever-blockchain/config/node \
     -v $(pwd)/node/db:/opt/klever-blockchain/db \
@@ -543,7 +542,6 @@ Use the same docker command as a regular node, but ensure your `config.yaml` fil
 
 ```bash
 docker run -it --rm \
-    --user "$(id -u):$(id -g)" \
     --name klever-fallback-node \
     -v $(pwd)/node/config:/opt/klever-blockchain/config/node \
     -v $(pwd)/node/db:/opt/klever-blockchain/db \
@@ -582,7 +580,7 @@ Or if you are using a self-hosted node, use `--network=host` to access the local
 Send tokens with the following code:
 
 ```bash
-docker run -it --rm --user "$(id -u):$(id -g)" \
+docker run -it --rm \
     -v $(pwd)/wallet:/opt/klever-blockchain \
     --network=host \
     --entrypoint=/usr/local/bin/operator \
@@ -605,7 +603,7 @@ If no `--kda` is passed, as in the example above, the default KDA is KLV.
 Here is another example, sending KFI:
 
 ```bash
-docker run -it --rm --user "$(id -u):$(id -g)" \
+docker run -it --rm \
     -v $(pwd)/wallet:/opt/klever-blockchain \
     --network=host \
     --entrypoint=/usr/local/bin/operator \
@@ -662,7 +660,7 @@ operator [command] [arguments] --[flags]
 If you are using the docker image operator, use the generic command version:
 
 ```bash
-docker run -it --rm --user "$(id -u):$(id -g)" \
+docker run -it --rm \
     -v $(pwd)/wallet:/opt/klever-blockchain \
     --network=host \
     --entrypoint=/usr/local/bin/operator \

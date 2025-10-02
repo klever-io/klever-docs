@@ -42,10 +42,21 @@ function InfoIcon(props: React.ComponentPropsWithoutRef<'svg'>) {
   )
 }
 
-export function Note({ children }: { children: React.ReactNode }) {
+export function Note({ children, color = 'fuchsia' }: { children: React.ReactNode; color?: 'fuchsia' | 'yellow' }) {
+  const colorClasses = {
+    fuchsia: {
+      container: "border-fuchsia-500/20 bg-fuchsia-50/50 text-fuchsia-900 dark:border-fuchsia-500/30 dark:bg-fuchsia-500/5 dark:text-fuchsia-200 dark:[--tw-prose-links-hover:theme(colors.fuchsia.300)] dark:[--tw-prose-links:theme(colors.white)]",
+      icon: "fill-fuchsia-500 stroke-white dark:fill-fuchsia-200/20 dark:stroke-fuchsia-200"
+    },
+    yellow: {
+      container: "border-yellow-500/20 bg-yellow-50/50 text-yellow-900 dark:border-yellow-500/30 dark:bg-yellow-500/5 dark:text-yellow-200 dark:[--tw-prose-links-hover:theme(colors.yellow.300)] dark:[--tw-prose-links:theme(colors.white)]",
+      icon: "fill-yellow-500 stroke-white dark:fill-yellow-200/20 dark:stroke-yellow-200"
+    }
+  }
+
   return (
-    <div className="my-6 flex gap-2.5 rounded-2xl border border-fuchsia-500/20 bg-fuchsia-50/50 p-4 leading-6 text-fuchsia-900 dark:border-fuchsia-500/30 dark:bg-fuchsia-500/5 dark:text-fuchsia-200 dark:[--tw-prose-links-hover:theme(colors.fucshia.300)] dark:[--tw-prose-links:theme(colors.white)]">
-      <InfoIcon className="mt-1 h-4 w-4 flex-none fill-fuchsia-500 stroke-white dark:fill-fuchsia-200/20 dark:stroke-fuchsia-200" />
+    <div className={`my-6 flex gap-2.5 rounded-2xl border p-4 leading-6 ${colorClasses[color].container}`}>
+      <InfoIcon className={`mt-1 h-4 w-4 flex-none ${colorClasses[color].icon}`} />
       <div className="[&>:first-child]:mt-0 [&>:last-child]:mb-0">
         {children}
       </div>
