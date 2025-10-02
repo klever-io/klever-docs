@@ -150,8 +150,10 @@ Use the `Asset Trigger` Contract, with the `UpdateKDAFeePool` Trigger, to activa
 
 Optional: create a routine that does this periodically, updating the price based on the desired ratio conversion of your KDA and the KLV one for example.
 
+<Note color="yellow">
+    **Warning:** Before running the following Docker commands, you'll need to change the ownership of your local files to user ID 999: `chown -R 999 .`
+</Note>
 ```bash
-chown -R 999 .
 docker run -it --rm \
     -v $(pwd)/wallet:/opt/klever-blockchain \
     --network=host \
@@ -167,7 +169,6 @@ docker run -it --rm \
 Use the `Deposit` Contract, with `depositType 1` to deposit KLV in the KDA Fee Pool, this is where the blockchain will get the fees payed from, while you buy back your asset from circulation, reducing inflation.
 
 ```bash
-chown -R 999 .
 docker run -it --rm \
     -v $(pwd)/wallet:/opt/klever-blockchain \
     --network=host \
@@ -272,8 +273,11 @@ KFI holders will be able to vote for the following topics:
 
 To create an asset in Klever Blockchain use the follow command, ch
 
+<Note color="yellow">
+    **Warning:** Before running the following Docker commands, you'll need to change the ownership of your local files to user ID 999: `chown -R 999 .`
+</Note>
+
 ```bash
-chown -R 999 .
 docker run -it --rm \
     -v $(pwd)/wallet:/opt/klever-blockchain \
     --network=host \

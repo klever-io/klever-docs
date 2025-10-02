@@ -2,8 +2,10 @@
 
 Upgrading a smart contract is quite simple, although the effects might not be very clear. Just run this command to upgrade it:
 
+<Note color="yellow">
+    **Warning:** Before running the following Docker commands, you'll need to change the ownership of your local files to user ID 999: `chown -R 999 .`
+</Note>
 ```
-chown -R 999 .
 docker run -it --rm \
     -v $(pwd):/opt/klever-blockchain \
     --network=host \
