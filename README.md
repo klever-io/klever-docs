@@ -96,3 +96,11 @@ We welcome and appreciate all contributions, big or small! Here’s how you can 
 - Write clear and descriptive PR descriptions.
 - Adhere to the project structure and formatting conventions.
 - Ensure that your changes do not break the build (the site should still run locally with `npm run dev`).
+
+---
+
+## Additional documentation
+
+- Contributing guide: [CONTRIBUTING.md](./CONTRIBUTING.md)
+- Code of Conduct: [CODE_OF_CONDUCT.md](./CODE_OF_CONDUCT.md)
+- Security Policy: [SECURITY.md](./SECURITY.md)
