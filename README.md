@@ -15,8 +15,8 @@ Welcome to the **Klever** open-source documentation repository! This project is 
 ## Getting Started
 
 ### Prerequisites
-- **Node.js** (version 20 or higher recommended)
-- **npm** (comes bundled with Node.js) or [Yarn](https://classic.yarnpkg.com/) (optional)
+- Node.js 20.x (project includes `.nvmrc`)
+- pnpm (standard package manager for this repo)
 
 Make sure you have Node.js installed on your machine. You can verify this by running:
 
@@ -25,6 +25,14 @@ node -v
 ```
 
 If you do not have Node.js installed, you can download it from the official [Node.js website](https://nodejs.org/).
+
+To install pnpm:
+
+```bash
+corepack enable
+corepack prepare pnpm@10 --activate
+pnpm -v
+```
 
 ---
 
@@ -40,13 +48,9 @@ If you do not have Node.js installed, you can download it from the official [Nod
    cd klever-docs
    ```
 
-3. **Install dependencies**
+3. **Install dependencies (pnpm)**
    ```bash
-   npm install
-   ```
-   or
-   ```bash
-   yarn
+   pnpm install
    ```
 
 ---
@@ -56,7 +60,7 @@ If you do not have Node.js installed, you can download it from the official [Nod
 To run the development server locally:
 
 ```bash
-npm run dev
+pnpm dev
 ```
 
 This starts the Next.js development server on [http://localhost:3000](http://localhost:3000).  
@@ -95,7 +99,7 @@ We welcome and appreciate all contributions, big or small! Here’s how you can 
 - Provide a clear and concise commit message.
 - Write clear and descriptive PR descriptions.
 - Adhere to the project structure and formatting conventions.
-- Ensure that your changes do not break the build (the site should still run locally with `npm run dev`).
+- Ensure that your changes do not break the build (the site should still run locally with `pnpm dev`).
 
 ---
 
