@@ -1,0 +1,157 @@
+export const metadata = {
+  title: 'Token Comparison - FT vs NFT vs SFT',
+  description: 'Understanding the differences between Fungible Tokens, Non-Fungible Tokens, and Semi-Fungible Tokens on Klever Blockchain',
+}
+
+# Token Comparison
+
+Understanding the differences between the three token types available on Klever Blockchain is essential before choosing the right one for your project.
+
+## The Three Pillars of Blockchain Assets
+
+Before diving into SFTs, it's essential to understand how they fit alongside their siblings: Fungible Tokens (FTs) and Non-Fungible Tokens (NFTs). Each serves distinct purposes, and SFTs bridge the gap between them.
+
+## Fungible Tokens (FT)
+
+**Fungible Tokens** are completely interchangeable, just like dollar bills. One KLV equals any other KLV; one USDT equals any other USDT.
+
+### Characteristics
+
+- **Completely interchangeable** - Any unit is identical to any other
+- **Divisible** - You can send 0.001 tokens
+- **Uniform value** - Each token has the same worth
+- **Balance-based tracking** - Wallets show amounts, not individual tokens
+- **One contract = one token type**
+
+### Best For
+
+- Cryptocurrencies and stablecoins
+- Governance tokens
+- DeFi protocols
+- Utility tokens
+- Payment systems
+
+### Example
+
+Think of fungible tokens as currency—you don't care *which* specific dollar you receive, only *how many*.
+
+## Non-Fungible Tokens (NFT)
+
+**Non-Fungible Tokens** occupy the opposite end of the spectrum. Each NFT is unique, with its own identifier, metadata, and ownership history.
+
+### Characteristics
+
+- **Each token is unique** - Individual identifier and properties
+- **Not divisible** - You own whole units only
+- **Individual ownership history** - Provenance is tracked
+- **One contract = one collection** of unique items
+- **Identity-based tracking** - "Which one" matters, not just "how many"
+
+### Best For
+
+- Digital art and collectibles
+- Property deeds and certificates
+- Identity documents
+- Unique gaming items
+- Domain names
+
+### Example
+
+NFTs answer the question "which specific one do you own?" rather than "how much do you have?"
+
+## Semi-Fungible Tokens (SFT)
+
+**Semi-Fungible Tokens** combine both behaviors within a single collection. Tokens sharing the same nonce (ID) are fungible with each other, while different nonces represent distinct asset types.
+
+### Characteristics
+
+- **Fungible within nonce** - All tokens with the same ID are interchangeable
+- **Non-fungible across nonces** - Different IDs represent distinct assets
+- **Configurable supply per nonce** - Set supply to 1 (unique) or many (edition)
+- **One collection = unlimited token types** - Maximum efficiency
+- **Batch operations** - Transfer multiple types in single transaction
+- **Metadata-driven state** - Applications interpret token state via attributes
+
+### Best For
+
+- Gaming (currencies + items in one contract)
+- Event tickets (interchangeable before, collectible after)
+- Limited editions (all copies identical within edition)
+- Loyalty programs (multiple point types)
+- Supply chain (batch tracking)
+
+### Example
+
+Concert tickets: All General Admission tickets (same nonce) are interchangeable—swap yours for any other GA ticket. After the event, the ticket's metadata can be updated (e.g., "redeemed: true"), and applications interpret it as a collectible. The token type doesn't change; how it's used does.
+
+## Comparison Table
+
+| Property | Fungible (FT) | Non-Fungible (NFT) | Semi-Fungible (SFT) |
+|----------|---------------|--------------------|--------------------|
+| Interchangeability | Always identical | Always unique | Fungible within nonce, unique across nonces |
+| Divisibility | Yes (decimals) | No (whole units) | Configurable per nonce |
+| Structure | Balance-based | Each nonce = supply 1 | Each nonce = configurable supply |
+| Tracking method | Balance only | Individual nonce | Both (nonce + balance) |
+| Best for | Currency, DeFi, governance | Art, identity, property | Gaming, tickets, editions, batches |
+
+## The Technical Foundation
+
+### ERC-1155: The Standard Behind SFTs
+
+The **ERC-1155 standard** forms the backbone of modern SFT implementations. Created by Enjin and adopted by Ethereum in June 2019, it was born from gaming's need to manage thousands of different item types efficiently.
+
+The standard's power lies in its **token ID architecture**. Each unique `uint256` identifier can have any supply:
+- Set supply to **one million** for a fungible currency
+- Set supply to exactly **one** for a unique collectible
+- The same contract manages both
+
+### Batch Operations
+
+Instead of executing multiple separate transfers, batch operations handle everything in a single transaction:
+
+```
+Transfer: [sword #42, 100 gold coins, healing potion x50]
+To: recipient_address
+Result: 1 transaction instead of 3
+```
+
+On Ethereum, this delivers **46-90% gas savings** compared to individual operations. On Klever, the benefit is different: since fees are fixed per operation (not gas-based), batch operations provide **atomicity** (all succeed or fail together) and **convenience** (single signature) rather than cost savings.
+
+### Advanced Standards
+
+**ERC-3525** (approved September 2022) extends SFT capabilities with its ID-SLOT-VALUE structure:
+- Tokens sharing the same "slot" remain fungible with each other
+- Tokens in different slots are non-fungible against each other
+- Perfect for fractional ownership where shares in *the same property* are interchangeable, but shares in *different properties* are not
+
+## Choosing the Right Token Type
+
+### Use Fungible Tokens (FT) when:
+
+- Every unit should be identical and interchangeable
+- You need divisibility (fractional amounts)
+- Use cases include currency, payments, or simple utility
+- You only need one token type per contract
+
+### Use Non-Fungible Tokens (NFT) when:
+
+- Each item must be completely unique
+- Provenance and ownership history matter
+- Items cannot be divided or merged
+- Identity of the specific token is crucial
+
+### Use Semi-Fungible Tokens (SFT) when:
+
+- You need multiple token types in one collection
+- Items exist in limited editions (identical within same nonce)
+- You want to track both "which type" and "how many"
+- Batch operations are important for efficiency
+- You're building gaming, ticketing, loyalty, or supply chain systems
+- Token state changes via metadata (e.g., redeemed tickets, used vouchers)
+
+## Related Resources
+
+- [Semi-Fungible Tokens Overview](/semi-fungible-tokens)
+- [Use Cases](/semi-fungible-tokens/use-cases) - See SFTs in action
+- [Application Guide](/semi-fungible-tokens/application-guide) - Build with SFTs
+- [Contracts](/contracts) - Creating and managing tokens on Klever

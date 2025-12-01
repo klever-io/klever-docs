@@ -1,0 +1,103 @@
+export const metadata = {
+  title: 'Semi-Fungible Tokens (SFT)',
+  description: 'Understanding Semi-Fungible Tokens on Klever Blockchain - the flexible asset type that unlocks blockchain\'s full potential',
+}
+
+# Semi-Fungible Tokens (SFT)
+
+**Semi-Fungible Tokens (SFTs) represent blockchain's most versatile asset class**—combining the interchangeability of cryptocurrencies with the uniqueness of NFTs in a single, efficient standard. For Klever Blockchain builders and users, SFTs open doors that neither fungible tokens nor NFTs can unlock alone: concert tickets that transform into collectibles, gaming currencies that coexist with unique weapons, and fractional ownership of real-world assets—all managed from one smart contract with dramatically lower costs.
+
+## What are Semi-Fungible Tokens?
+
+Semi-Fungible Tokens combine both fungible and non-fungible behaviors within a single collection. Tokens sharing the same nonce (ID) are fungible with each other, while different nonces represent distinct, non-fungible asset types.
+
+**The classic example: concert tickets.** Before the show, all General Admission tickets (same nonce) are interchangeable—you can swap yours for any other GA ticket. After the event, applications can interpret the ticket differently based on metadata (e.g., marking it as "redeemed"), turning it into a collectible. The token itself doesn't change type—its metadata and how applications interpret it does.
+
+## Key Characteristics
+
+The core SFT principle: **tokens that share an ID are fungible within that class, while different IDs represent distinct assets**. This enables sophisticated systems using a single contract.
+
+- **Fungible within nonce** - All tokens with the same nonce/ID are interchangeable
+- **Non-fungible across nonces** - Different nonces represent distinct asset types
+- **Configurable supply** - Set supply per nonce (1 for unique, many for editions)
+- **Single collection efficiency** - One collection manages unlimited token types
+- **Metadata-driven state** - Application logic interprets token state via attributes
+
+### State Transition Triggers
+
+State transitions in SFTs are handled through application logic rather than token-level changes. Common triggers include:
+
+- **Time-based**: Event passes expire, becoming historical artifacts
+- **Redemption-based**: Vouchers are used, becoming proof-of-purchase NFTs
+- **Action-based**: Gaming items gain unique attributes through player actions
+- **Attribute acquisition**: Standard items become unique when signed or modified
+
+## Klever Blockchain's Native SFT Advantage
+
+Klever Blockchain takes SFT implementation further than Ethereum-based solutions by **building SFT support directly into the protocol**. Rather than requiring developers to deploy complex smart contracts, Klever's **KDA (Klever Digital Assets) framework** offers native token creation with SFT capabilities out of the box.
+
+The KDA framework supports three token types:
+
+- **Fungible** — Traditional interchangeable tokens (balance-based)
+- **NonFungible** — Unique one-of-one assets (each nonce has supply of 1)
+- **SemiFungible** — Multiple nonces with configurable supply per nonce
+
+### No Smart Contract Required
+
+**Creating SFTs on Klever requires no smart contract expertise.** The 3-step process through Klever Wallet or KleverScan handles everything: define token properties, configure permissions, and deploy. For developers wanting deeper control, the Rust-based KVM (Klever Virtual Machine) provides full programmability.
+
+### On-Chain Metadata Storage
+
+Klever stores comprehensive token data directly on-chain:
+
+```rust
+KdaTokenData {
+    token_type: SemiFungible,
+    amount: BigUint,           // Current balance
+    name: ManagedBuffer,       // Display name
+    attributes: ManagedBuffer, // Custom user-defined data
+    royalties: BigUint,        // Built-in creator royalties
+    creator: ManagedAddress,   // Immutable creator record
+    uris: ManagedVec,          // Links to media
+}
+```
+
+This hybrid approach—critical data on-chain, media off-chain—ensures token integrity while maintaining efficiency. The `attributes` field accepts any serializable struct, giving developers complete flexibility over what data lives permanently on Klever's ledger.
+
+### Built-in Royalties
+
+Where Ethereum marketplaces must voluntarily honor royalty requests (and increasingly don't), Klever enforces royalties at the protocol level with **0-100% precision** (stored as integers: 5566 = 55.66%).
+
+### Performance Comparison
+
+| Feature | ERC-1155 (Ethereum) | Klever SFT |
+|---------|---------------------|------------|
+| Smart contract required | Yes | Optional (native KDA available) |
+| Royalty enforcement | Voluntary (marketplace-dependent) | Protocol-level |
+| Metadata location | Primarily off-chain | On-chain + URIs |
+| Programming language | Solidity | Rust |
+| Throughput | ~15-30 TPS | **3,000 TPS** |
+| Block time | ~12 seconds | **4 seconds** |
+| Transaction cost | Variable (gas) | **Fixed fee (currently 3 KLV)** |
+
+## Creating SFTs on Klever Blockchain
+
+To create an SFT collection, use the [Create Asset](/contract-details#create-asset) contract. Cost: **20,000 KLV** (configurable by governance).
+
+Define token properties, set permissions (`canBurn`, `canMint`, `canFreeze`, `canPause`, `canWipe`), configure royalties, and deploy.
+
+## Managing SFTs
+
+SFTs can be managed using the [Asset Trigger](/contract-details#asset-trigger) contract for operations such as:
+
+- Minting new tokens within the collection
+- Updating metadata
+- Managing roles and permissions
+
+For more details on available triggers, see the [Contracts](/contracts#asset-triggers) page.
+
+## Next Steps
+
+- [Token Comparison](/semi-fungible-tokens/token-comparison) - Understand the differences between FT, NFT, and SFT
+- [Use Cases](/semi-fungible-tokens/use-cases) - Explore 20+ practical applications for SFTs
+- [Application Guide](/semi-fungible-tokens/application-guide) - Learn how to build applications with SFTs
