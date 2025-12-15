@@ -1,0 +1,371 @@
+# Running a Relayer
+
+This guide explains how to run a Klever Bridge Relayer using Docker.
+
+## Overview
+
+The Klever Bridge Relayer is responsible for relaying transactions between the Klever blockchain and Ethereum networks. It participates in a P2P network with other relayers to achieve consensus on cross-chain transactions.
+
+## Prerequisites
+
+- Docker installed on your machine
+- Ethereum private key (`.sk` file)
+- Klever wallet private key (`.pem` file)
+- Access to Ethereum and Klever blockchain nodes
+
+## Directory Structure
+
+Before running the relayer, you need to set up the following directory structure:
+
+```
+/path/to/relayer/
+├── config/
+│   ├── config.toml
+│   └── api.toml
+├── keys/
+│   ├── ethereum.sk
+│   └── walletKey.pem
+└── db/
+```
+
+### Keys Directory
+
+The `keys` directory must contain:
+
+- **`ethereum.sk`**: Your Ethereum private key in hex format (64 hex characters)
+- **`walletKey.pem`**: Your Klever wallet private key in PEM format
+
+### Config Directory
+
+The `config` directory must contain the configuration files described in the sections below.
+
+## Configuration Files
+
+### config.toml
+
+Main configuration file:
+
+```toml
+[Eth]
+    Chain = "Ethereum"
+    NetworkAddress = "http://your-ethereum-node:8545" # a network address
+    MultisigContractAddress = "0xdE28...1177" # the eth address for the bridge contract
+    SafeContractAddress = "0x154f...F1D5"
+    PrivateKeyFile = "keys/ethereum.sk" # the path to the file containing the relayer eth private key
+    GasLimitBase = 350000
+    GasLimitForEach = 30000
+    IntervalToWaitForTransferInSeconds = 600 # 10 minutes
+    MaxRetriesOnQuorumReached = 3
+    ClientAvailabilityAllowDelta = 10
+    [Eth.GasStation]
+        Enabled = false
+        URL = "https://api.etherscan.io/v2/api?chainid=1&module=gastracker&action=gasoracle" # gas station URL. Suggestion to provide the api-key here
+        GasPriceMultiplier = 1000000000 # the value to be multiplied with the fetched value. Useful in test chains. On production chain should be 1000000000
+        PollingIntervalInSeconds = 60 # number of seconds between gas price polling
+        RequestRetryDelayInSeconds = 5 # number of seconds of delay after one failed request
+        MaxFetchRetries = 3 # number of fetch retries before printing an error
+        RequestTimeInSeconds = 2 # maximum timeout (in seconds) for the gas price request
+        MaximumAllowedGasPrice = 300 # maximum value allowed for the fetched gas price value
+        # GasPriceSelector available options: "SafeGasPrice", "ProposeGasPrice", "FastGasPrice"
+        GasPriceSelector = "SafeGasPrice" # selector used to provide the gas price
+
+[Klever]
+    NetworkAddress = "http://your-klever-node:8080" # the network address
+    MultisigContractAddress = "klv1qqq...hmqm" # the Klever Blockchain address for the bridge contract
+    SafeContractAddress = "klv1qqq...fldu" # the Klever Blockchain address for the safe contract
+    PrivateKeyFile = "keys/walletKey.pem" # the path to the pem file containing the relayer Klever Blockchain wallet
+    IntervalToResendTxsInSeconds = 60 # the time in seconds between nonce reads
+    MaxRetriesOnQuorumReached = 3
+    MaxRetriesOnWasTransferProposed = 3
+    ClientAvailabilityAllowDelta = 10
+    [Klever.Proxy]
+        CacherExpirationSeconds = 600 # the caching time in seconds
+        # valid options for RestAPIEntityType are "observer" and "proxy". Any other value will trigger an error.
+        # "observer" is useful when querying an observer directly and "proxy" is useful when querying a squad's proxy (gateway)
+        RestAPIEntityType = "observer"
+        FinalityCheck = true
+        MaxNoncesDelta = 7 # the number of maximum blocks allowed to be "in front" of what the metachain has notarized
+    [Klever.GasMap]
+        Sign = 8000000
+        ProposeTransferBase = 11000000
+        ProposeTransferForEach = 5500000
+        ProposeStatusBase = 10000000
+        ProposeStatusForEach = 7000000
+        PerformActionBase = 40000000
+        PerformActionForEach = 5500000
+        ScCallPerByte = 100000 # 1500 tx data field + the rest for the actual storage in the contract
+        ScCallPerformForEach = 10000000
+
+[P2P]
+    Port = "10010"
+    InitialPeerList = ["/ip4/PEER_IP/tcp/10010/p2p/PEER_ID"] # peer addresses follow multiaddr format
+    ProtocolID = "/klv/relay/1.0.0"
+    [P2P.Transports]
+        QUICAddress = "" # optional QUIC address. If this transport should be activated, should be in this format: /ip4/0.0.0.0/udp/%d/quic-v1
+        WebSocketAddress = "" # optional WebSocket address. If this transport should be activated, should be in this format: /ip4/0.0.0.0/tcp/%d/ws
+        WebTransportAddress = "" # optional WebTransport address. If this transport should be activated, should be in this format: /ip4/0.0.0.0/udp/%d/quic-v1/webtransport
+        [P2P.Transports.TCP]
+            ListenAddress = "/ip4/0.0.0.0/tcp/%d" # TCP listen address
+            PreventPortReuse = false
+        [P2P.ResourceLimiter]
+            Type = "default autoscale" # available options "default autoscale", "infinite", "default with manual scale"
+            ManualSystemMemoryInMB = 0 # not taken into account if the type is not "default with manual scale"
+            ManualMaximumFD = 0 # not taken into account if the type is not "default with manual scale"
+    [P2P.AntifloodConfig]
+        Enabled = true
+        NumConcurrentResolverJobs = 50
+        [P2P.AntifloodConfig.FastReacting]
+            IntervalInSeconds = 1
+            ReservedPercent = 20.0
+            [P2P.AntifloodConfig.FastReacting.PeerMaxInput]
+                BaseMessagesPerInterval = 10
+                TotalSizePerInterval = 1048576 # 1MB/s
+                [P2P.AntifloodConfig.FastReacting.PeerMaxInput.IncreaseFactor]
+                    Threshold = 10 # if consensus size will exceed this value, then
+                    Factor = 1.0   # increase the base value with [factor*consensus size]
+            [P2P.AntifloodConfig.FastReacting.BlackList]
+                ThresholdNumMessagesPerInterval = 70
+                ThresholdSizePerInterval = 2097154 # 2MB/s
+                NumFloodingRounds = 10
+                PeerBanDurationInSeconds = 300
+        [P2P.AntifloodConfig.SlowReacting]
+            IntervalInSeconds = 30
+            ReservedPercent = 20.0
+            [P2P.AntifloodConfig.SlowReacting.PeerMaxInput]
+                BaseMessagesPerInterval = 400
+                TotalSizePerInterval = 10485760 # 10MB/interval
+                [P2P.AntifloodConfig.SlowReacting.PeerMaxInput.IncreaseFactor]
+                    Threshold = 10 # if consensus size will exceed this value, then
+                    Factor = 0.0   # increase the base value with [factor*consensus size]
+            [P2P.AntifloodConfig.SlowReacting.BlackList]
+                ThresholdNumMessagesPerInterval = 800
+                ThresholdSizePerInterval = 20971540 # 20MB/interval
+                NumFloodingRounds = 2
+                PeerBanDurationInSeconds = 3600
+        [P2P.AntifloodConfig.OutOfSpecs]
+            IntervalInSeconds = 1
+            ReservedPercent = 0.0
+            [P2P.AntifloodConfig.OutOfSpecs.PeerMaxInput]
+                BaseMessagesPerInterval = 140
+                TotalSizePerInterval = 4194304 # 4MB/s
+                [P2P.AntifloodConfig.OutOfSpecs.PeerMaxInput.IncreaseFactor]
+                    Threshold = 0 # if consensus size will exceed this value, then
+                    Factor = 0.0  # increase the base value with [factor*consensus size]
+            [P2P.AntifloodConfig.OutOfSpecs.BlackList]
+                ThresholdNumMessagesPerInterval = 200
+                ThresholdSizePerInterval = 6291456 # 6MB/s
+                NumFloodingRounds = 2
+                PeerBanDurationInSeconds = 3600
+        [P2P.AntifloodConfig.PeerMaxOutput]
+            BaseMessagesPerInterval = 5
+            TotalSizePerInterval = 524288 # 512KB/s
+        [P2P.AntifloodConfig.Cache]
+            Name = "Antiflood"
+            Capacity = 7000
+            Type = "LRU"
+        [P2P.AntifloodConfig.Topic]
+            DefaultMaxMessagesPerSec = 300 # default number of messages per interval for a topic
+            MaxMessages = [
+                { Topic = "EthereumToKleverBlockchain_join", NumMessagesPerSec = 100 },
+                { Topic = "EthereumToKleverBlockchain_sign", NumMessagesPerSec = 100 }
+            ]
+
+[Relayer]
+    [Relayer.Marshalizer]
+        Type = "gogo protobuf"
+        SizeCheckDelta = 10
+    [Relayer.RoleProvider]
+        PollingIntervalInMillis = 60000 # 1 minute
+    [Relayer.StatusMetricsStorage]
+        [Relayer.StatusMetricsStorage.Cache]
+            Name = "StatusMetricsStorage"
+            Capacity = 1000
+            Type = "LRU"
+        [Relayer.StatusMetricsStorage.DB]
+            FilePath = "StatusMetricsStorageDB"
+            Type = "LvlDBSerial"
+            BatchDelaySeconds = 2
+            MaxBatchSize = 100
+            MaxOpenFiles = 10
+
+[StateMachine]
+    [StateMachine.EthereumToKleverBlockchain]
+        StepDurationInMillis = 12000 # 12 seconds
+        IntervalForLeaderInSeconds = 120 # 2 minutes
+    [StateMachine.KleverBlockchainToEthereum]
+        StepDurationInMillis = 12000 # 12 seconds
+        IntervalForLeaderInSeconds = 720 # 12 minutes
+
+[Logs]
+    LogFileLifeSpanInSec = 86400 # 24 hours
+    LogFileLifeSpanInMB = 1024 # 1GB
+
+[WebAntiflood]
+    Enabled = true
+    [WebAntiflood.WebServer]
+        # SimultaneousRequests represents the number of concurrent requests accepted by the web server
+        # this is a global throttler that acts on all http connections regardless of the originating source
+        SimultaneousRequests = 100
+        # SameSourceRequests defines how many requests are allowed from the same source in the specified
+        # time frame (SameSourceResetIntervalInSec)
+        SameSourceRequests = 10000
+        # SameSourceResetIntervalInSec time frame between counter reset, in seconds
+        SameSourceResetIntervalInSec = 1
+
+[PeersRatingConfig]
+    TopRatedCacheCapacity = 5000
+    BadRatedCacheCapacity = 5000
+```
+
+### api.toml
+
+API routes configuration:
+
+```toml
+[Logging]
+    LoggingEnabled = false
+    ThresholdInMicroSeconds = 1000
+
+[APIPackages]
+
+[APIPackages.node]
+    Routes = [
+        { Name = "/status", Open = true },
+        { Name = "/status/list", Open = true },
+        { Name = "/peerinfo", Open = true }
+    ]
+```
+
+## Running the Relayer
+
+### Basic Command
+
+```bash
+docker run --rm --name=bridge \
+  -v /path/to/keys:/app/keys \
+  -v /path/to/config:/app/config \
+  -v /path/to/db:/app/db \
+  -p 10010:10010 \
+  -p 8080:8080 \
+  kleverapp/klv-bridge:latest \
+  --rest-api-interface=:8080
+```
+
+### Port Mappings
+
+| Port | Description | Required |
+|------|-------------|----------|
+| `10010` | P2P communication port | **Yes** - Required for relayer consensus |
+| `8080` | REST API port | No - Only for monitoring/status |
+
+> ⚠️ **Important**: The P2P port (`10010`) must be exposed and accessible by other relayers for the bridge to function correctly.
+
+### Command Line Flags
+
+| Flag | Description | Default |
+|------|-------------|---------|
+| `--config` | Path to main configuration file | `config/config.toml` |
+| `--config-api` | Path to API configuration file | `config/api.toml` |
+| `--rest-api-interface` | REST API bind address | `localhost:8080` |
+| `--log-level` | Log level (DEBUG, INFO, WARN, ERROR) | `*:DEBUG` |
+| `--log-save` | Enable log file saving | `false` |
+| `--working-directory` | Directory for databases and logs | Current directory |
+| `--profile-mode` | Enable profiling endpoints | `false` |
+| `--disable-ansi-color` | Disable colored logging | `false` |
+
+### Running in Background
+
+```bash
+docker run -d --name=bridge \
+  --restart=unless-stopped \
+  -v /path/to/keys:/app/keys \
+  -v /path/to/config:/app/config \
+  -v /path/to/db:/app/db \
+  -p 10010:10010 \
+  -p 8080:8080 \
+  kleverapp/klv-bridge:latest \
+  --rest-api-interface=:8080
+```
+
+## REST API Endpoints
+
+When the REST API is enabled (`--rest-api-interface=:8080`), the following endpoints are available:
+
+### Get Status Metrics
+
+```
+GET /node/status?name={metric}
+```
+
+**Parameters:**
+- `name`: Specific metric to retrieve
+  - `KleverBlockchainToEthereum` - Klever to Ethereum bridge status
+  - `EthereumToKleverBlockchain` - Ethereum to Klever bridge status
+  - `klever-client` - Klever client status
+  - `eth-client` - Ethereum client status
+
+**Example:**
+```bash
+curl http://localhost:8080/node/status?name=EthereumToKleverBlockchain
+```
+
+### Get Available Metrics List
+
+```
+GET /node/status/list
+```
+
+Returns a list of all available metrics.
+
+**Example:**
+```bash
+curl http://localhost:8080/node/status/list
+```
+
+### Get Peer Info
+
+```
+GET /node/peerinfo
+```
+
+Returns P2P peer information.
+
+## Monitoring
+
+### View Logs
+
+```bash
+docker logs -f bridge
+```
+
+### Check Container Status
+
+```bash
+docker ps -a | grep bridge
+```
+
+## Troubleshooting
+
+### Common Issues
+
+1. **P2P Connection Failed**
+   - Ensure port `10010` is open and accessible
+   - Verify the peer addresses in `InitialPeerList` are correct
+   - Check firewall rules
+
+2. **Transaction Signing Failed**
+   - Verify the private key files are correctly formatted
+   - Ensure the relayer address is whitelisted in the bridge contracts
+
+3. **Node Connection Issues**
+   - Verify `NetworkAddress` for both Ethereum and Klever are reachable
+   - Check that the nodes are fully synced
+
+
+## Security Recommendations
+
+1. **Use Secure Networks**: Run the relayer on a secure, private network when possible
+
+2. **Firewall Configuration**: Only expose necessary ports (10010 for P2P, optionally 8080 for API)
+
+3. **Regular Updates**: Keep the Docker image updated to the latest version
