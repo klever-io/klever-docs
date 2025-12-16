@@ -160,6 +160,9 @@ export const navigation: Array<NavGroup> = [
           {
             title: 'Relayers',
             href: '/relayers',
+            children: [
+              { title: 'Running a Relayer', href: '/running-a-relayer' },
+            ],
           },
           {
             title: 'Tokens',
