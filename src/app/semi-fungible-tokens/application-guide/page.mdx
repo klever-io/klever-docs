@@ -1,0 +1,335 @@
+export const metadata = {
+  title: 'SFT Application Guide',
+  description: 'Developer guide for building applications with Semi-Fungible Tokens on Klever Blockchain',
+}
+
+# SFT Application Guide
+
+A practical guide for developers building applications that leverage Semi-Fungible Tokens on Klever Blockchain.
+
+## Overview
+
+This guide covers everything you need to design, build, and deploy SFT-powered applications on Klever. You'll learn about data modeling, metadata design, integration patterns, and best practices specific to Klever's native SFT implementation.
+
+**On Klever, SFTs benefit from:**
+- Native protocol support (no smart contract required for basic use cases)
+- On-chain metadata storage for critical attributes
+- Built-in royalty enforcement (0-100% precision)
+- Low transaction fees (currently 3 KLV, configurable by governance)
+- 4-second block finality for real-time verification
+- 3,000 TPS throughput
+
+---
+
+## Understanding SFT Design Principles
+
+The core SFT principle: **tokens sharing the same nonce (ID) are fungible with each other, while different nonces represent distinct, non-fungible asset types**. This enables sophisticated systems using a single collection.
+
+### Token ID Architecture
+
+Each unique token ID can have any supply:
+- Set supply to **unlimited** for a fungible currency
+- Set supply to **500** for a limited edition item
+- Set supply to **1** for a unique collectible
+- The same collection manages all types
+
+### Example: Gaming Economy
+
+```
+Collection: "My Game Assets"
+├── ID 1: Gold Coins (supply: unlimited, fungible)
+├── ID 2: Health Potions (supply: 100,000, fungible within type)
+├── ID 3: Epic Sword v1 (supply: 500, all identical stats)
+├── ID 4: Epic Sword v2 (supply: 100, upgraded stats)
+└── ID 5: Legendary Dragon Blade (supply: 1, unique)
+```
+
+---
+
+## Data Model Considerations
+
+### Collection Structure
+
+Plan your token IDs before deployment. Consider:
+
+1. **Category grouping** - Reserve ID ranges for categories
+   - IDs 1-99: Currencies and consumables
+   - IDs 100-999: Common items
+   - IDs 1000-9999: Rare items
+   - IDs 10000+: Unique/legendary items
+
+2. **Version management** - Plan for item updates
+   - "Epic Sword v1" (ID 3) vs "Epic Sword v2" (ID 4)
+   - Don't modify existing IDs; create new versions
+
+3. **Expansion capacity** - Leave room for future token types
+
+### Metadata Design
+
+Klever stores metadata on-chain via the `attributes` field. Design your schema carefully:
+
+**Gaming Item Example:**
+```json
+{
+  "token_id": 3,
+  "name": "Epic Sword v1",
+  "type": "weapon",
+  "rarity": "epic",
+  "stats": {
+    "damage": 150,
+    "speed": 1.2,
+    "durability": 100
+  },
+  "tradeable": true,
+  "level_requirement": 25
+}
+```
+
+**Event Ticket Example:**
+```json
+{
+  "token_id": 1,
+  "event": "Summer Concert 2025",
+  "category": "general_admission",
+  "date": "2025-07-15",
+  "venue": "Central Arena",
+  "redeemed": false,
+  "redeemed_at": null
+}
+```
+
+**Loyalty Points Example:**
+```json
+{
+  "program": "Klever Rewards",
+  "tier": "gold",
+  "point_value": 0.01,
+  "expiration": "2026-12-31",
+  "transferable": true,
+  "partner_redeemable": ["store_a", "store_b"]
+}
+```
+
+### On-Chain vs Off-Chain Data
+
+| Data Type | Storage | Reason |
+|-----------|---------|--------|
+| Token properties (stats, rarity) | On-chain | Immutable proof |
+| Ownership history | On-chain | Automatic |
+| High-res images/media | Off-chain (IPFS/Arweave) | Size efficiency |
+| Real-time game state | Off-chain (your backend) | Frequent updates |
+| Legal/sensitive documents | Off-chain + proof on-chain | Privacy + verification |
+
+**Privacy-Preserving Verification**: For sensitive data (legal docs, personal info, credentials), consider these cryptographic techniques:
+- **Hash on-chain** — Store document hash for tamper-proof verification without exposing content
+- **Merkle trees** — Prove specific data inclusion without revealing the full dataset
+- **Zero-knowledge proofs** — Verify claims (e.g., "user is over 18") without exposing underlying data
+
+---
+
+## Building on Klever
+
+### Entry Points
+
+Klever provides multiple entry points for SFT development:
+
+**1. No-Code Creation (KleverScan/Wallet)**
+- Define token properties
+- Set permissions (`canBurn`, `canMint`, `canFreeze`, `canPause`, `canWipe`)
+- Configure royalties
+- Deploy cost: **20,000 KLV** (configurable by governance)
+
+**2. SDK Integration**
+- `@klever/sdk` (JavaScript/TypeScript)
+- `klever-go-sdk` (Go)
+- `klever-connect` (TypeScript with React hooks)
+
+**3. KVM Smart Contracts (Rust)**
+Full programmability with the `klever-sc` framework:
+
+```rust
+// Create SFT with custom attributes
+kda_nft_create(
+    token_id,
+    amount,        // >1 for SFT, =1 for NFT
+    name,
+    royalties,     // 0-10000 (percentage × 100)
+    hash,
+    attributes,    // Any serializable struct
+    uris           // Media links
+)
+
+// Batch transfer multiple token types
+direct_multi(recipients, token_ids, amounts)
+
+// Update metadata post-mint
+nft_update_attributes(token_id, nonce, new_attributes)
+```
+
+### Creating SFT Collections
+
+**Step 1: Plan your collection**
+- Define all initial token IDs and their supplies
+- Design metadata schema
+- Set royalty structure
+
+**Step 2: Create the collection**
+Use the [Create Asset](/contract-details#create-asset) contract with:
+- Token type: `SemiFungible`
+- Initial supply per token ID
+- Permissions configuration
+- Royalty settings
+
+**Step 3: Mint tokens**
+Use the [Asset Trigger](/contract-details#asset-trigger) contract with `Mint` trigger type.
+
+### Batch Operations
+
+Batch operations provide atomicity and convenience:
+
+```
+// Instead of 3 separate transactions:
+Transfer: sword #42 → recipient
+Transfer: 100 gold → recipient
+Transfer: 50 potions → recipient
+
+// Use 1 batch transaction:
+BatchTransfer: [sword #42, 100 gold, 50 potions] → recipient
+```
+
+**Benefits on Klever:**
+- **Atomicity** - All transfers succeed or all fail together
+- **Single signature** - User signs once instead of multiple times
+- **Simpler UX** - One transaction to track
+
+Note: Unlike Ethereum where batch operations save gas, Klever uses fixed fees per operation, so cost is similar to individual transfers.
+
+---
+
+## Best Practices
+
+### Security Considerations
+
+1. **Permission Configuration**
+   - `canMint` must be enabled to create new nonces (required for NFT/SFT collections)
+   - Use `canPause` for emergency stops
+   - Consider `canWipe` carefully (stablecoin use cases)
+
+2. **Royalty Safety**
+   - Use `StopRoyaltiesChange` after finalizing royalties
+   - Protects collectors from unexpected changes
+
+3. **Metadata Immutability**
+   - Use `StopNFTMetadataChange` for collections where immutability matters
+   - Consider versioning instead of updating
+
+4. **Access Control**
+   - Implement role-based permissions for admin functions
+   - Use multi-signature for high-value operations
+
+### Performance Optimization
+
+1. **Batch Everything**
+   - Combine multiple transfers into single transactions
+   - Batch minting for initial distributions
+
+2. **Cache Aggressively**
+   - Cache token metadata (it rarely changes)
+   - Cache user balances with short TTL
+
+3. **Use KDA Fee Pool**
+   - Let users pay fees in your token
+   - Automatically converted to KLV behind the scenes
+   - Eliminates need for users to hold KLV
+
+4. **Optimize Metadata Size**
+   - Keep on-chain attributes minimal
+   - Store large data off-chain with hash verification
+
+---
+
+## Implementation Checklist
+
+### Before You Build
+
+- [ ] Define token IDs and their supply (fungible quantities)
+- [ ] Design metadata schema for each token type
+- [ ] Determine which attributes need on-chain storage
+- [ ] Plan royalty structure (0-100%, Klever enforces at protocol level)
+- [ ] Consider KDA Fee Pool for better UX (users pay in your token)
+
+### Technical Decisions
+
+- [ ] Native KDA vs. Smart Contract implementation
+- [ ] Batch operations needed? (transfers, minting)
+- [ ] Time-locks or vesting schedules required?
+- [ ] Integration with external systems (oracles, APIs)?
+- [ ] Indexing strategy for complex queries?
+
+### Legal Considerations
+
+- [ ] Does your token constitute a security? (Consult legal counsel)
+- [ ] What jurisdiction governs your terms of service?
+- [ ] How do you handle dispute resolution?
+- [ ] Privacy compliance (GDPR, CCPA)?
+
+### Launch Strategy
+
+- [ ] Testnet deployment and testing
+- [ ] Security audit (if smart contract involved)
+- [ ] Community documentation and tutorials
+- [ ] Support channels established
+- [ ] Monitoring and alerting configured
+
+---
+
+## Example Architectures
+
+### Gaming Economy
+
+```
+User Action: "Buy sword from marketplace"
+
+1. Frontend checks user balance (cached)
+2. User signs transaction (Klever Wallet)
+3. Atomic swap: Gold tokens → Seller, Sword → Buyer
+4. Royalty auto-distributed to creator
+5. Backend updates leaderboards/stats
+6. Frontend refreshes inventory
+```
+
+### Event Ticketing
+
+```
+Ticket Lifecycle:
+
+1. CREATE: Mint 5,000 GA tickets (same nonce, fungible with each other)
+2. SELL: Users purchase via ITO or marketplace
+3. TRADE: Tickets tradeable on secondary market (royalties enforced)
+4. REDEEM: Scanner app updates metadata to "redeemed: true"
+5. COLLECT: Applications interpret redeemed tickets as collectibles
+```
+
+### Loyalty Program
+
+```
+Point Flow:
+
+1. User makes purchase → Backend mints reward points
+2. User accumulates points across tiers
+3. User redeems points → Burn points, grant benefit
+4. Cross-brand: Exchange points with partner programs
+5. Expiration: Time-lock or decay mechanics
+```
+
+---
+
+## Related Resources
+
+- [Semi-Fungible Tokens Overview](/semi-fungible-tokens)
+- [Use Cases](/semi-fungible-tokens/use-cases)
+- [Klever SDK](/introduction-to-kleverchain-sdk) - SDK documentation
+- [Contract Details](/contract-details) - Transaction details
+- [API & SDK](/api-and-sdk) - API reference
+- [Contracts](/contracts) - All blockchain contracts
+- [Royalties](/royalties) - Royalty system details

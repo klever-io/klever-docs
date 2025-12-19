@@ -140,6 +140,15 @@ export const navigation: Array<NavGroup> = [
       { title: 'Account Permissions', href: '/account-permissions' },
       { title: 'Multisignature', href: '/multisignature' },
       { title: 'Royalties', href: '/royalties' },
+      {
+        title: 'Semi-Fungible Tokens (SFT)',
+        href: '/semi-fungible-tokens',
+        children: [
+          { title: 'Token Comparison', href: '/token-comparison' },
+          { title: 'Use Cases', href: '/use-cases' },
+          { title: 'Application Guide', href: '/application-guide' },
+        ],
+      },
       { title: 'Testnet', href: '/testnet' },
       { title: 'Contracts', href: '/contracts' },
       { title: 'Exchange Integration', href: '/exchange-integration' },
@@ -151,6 +160,9 @@ export const navigation: Array<NavGroup> = [
           {
             title: 'Relayers',
             href: '/relayers',
+            children: [
+              { title: 'Running a Relayer', href: '/running-a-relayer' },
+            ],
           },
           {
             title: 'Tokens',

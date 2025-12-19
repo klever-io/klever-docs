@@ -1,0 +1,320 @@
+export const metadata = {
+  title: 'SFT Use Cases',
+  description: 'Practical applications and use cases for Semi-Fungible Tokens on Klever Blockchain - gaming, ticketing, DeFi, and more',
+}
+
+# SFT Use Cases
+
+Explore practical applications where Semi-Fungible Tokens provide unique advantages over traditional token types. Each use case includes implementation guidance specific to Klever Blockchain.
+
+---
+
+## Gaming & Virtual Worlds
+
+### Game Items & In-Game Economies
+
+**What It Solves**: Traditional gaming stores items in centralized databases—players don't truly own their assets. Deploying separate contracts for currencies (FT) and unique items (NFT) is expensive and complex.
+
+**How SFTs Work Here**: Create multiple token IDs under one contract:
+- **ID 1**: Gold coins (supply: unlimited, fungible)
+- **ID 2**: Health potions (supply: 100,000, fungible within type)
+- **ID 3**: Epic Sword v1 (supply: 500, all identical stats)
+- **ID 4**: Epic Sword v2 (supply: 100, upgraded stats)
+- **ID 5**: Legendary Dragon Blade (supply: 1, unique)
+
+Each player's inventory becomes a single wallet holding multiple token IDs, enabling atomic trades ("3,000 gold + Epic Sword for your Legendary item").
+
+**Klever Tips**:
+- Use the `attributes` field in KDA to store stats on-chain
+- Set royalties (e.g., 5%) to earn from secondary market trades
+- Consider a KDA Fee Pool so players pay fees in your game token, not KLV
+
+### Collectible Card Games / Digital Trading Cards
+
+**What It Solves**: Physical card games struggle with authentication, scarcity enforcement, and secondary market tracking.
+
+**How SFTs Work Here**: Each card edition becomes a token ID:
+- **ID 100**: "Fire Dragon – Common" (supply: 10,000)
+- **ID 101**: "Fire Dragon – Rare Holographic" (supply: 500)
+- **ID 102**: "Fire Dragon – Artist Signed Edition" (supply: 50)
+
+**Business Model**:
+- **Pack Sales**: Sell sealed packs as fungible SFTs; opening burns the pack and mints revealed cards
+- **Guaranteed Rarity**: Smart contracts ensure pack contents match published odds
+- **Creator Royalties**: Earn 5-10% on every secondary sale automatically
+
+### Metaverse / Virtual World Assets
+
+**How SFTs Work Here**:
+- **ID 1**: "Blue Hoodie v1" (supply: 10,000, common wearable)
+- **ID 2**: "Blue Hoodie v1 – Gold Trim" (supply: 500, rare variant)
+- **ID 3**: "Land Parcel – Zone A" (supply: 100, standard plots)
+
+**Interoperability Vision**: The same wearable SFT could theoretically render across multiple compatible metaverse platforms—you own the asset, not a license.
+
+---
+
+## Events & Access
+
+### Event Tickets & Access Passes
+
+**What It Solves**: Traditional tickets suffer from scalping, counterfeiting, and loss of value post-event.
+
+**How SFTs Work Here**: Each ticket category becomes a token ID:
+- **ID 1**: "General Admission Day 1" (supply: 5,000)
+- **ID 2**: "VIP Day 1" (supply: 500)
+- **ID 3**: "Backstage Pass Day 1" (supply: 50)
+
+**The SFT Lifecycle**:
+1. **Pre-event**: All GA Day 1 tickets (same nonce) are fungible—swap yours for any other
+2. **Check-in**: Scanning updates the token's metadata to "redeemed: true"
+3. **Post-event**: Applications interpret redeemed tickets as collectibles (token type unchanged, metadata changed)
+
+**Advanced Features**:
+- **Anti-Scalping**: Set maximum resale price as percentage of original
+- **Revenue Sharing**: Automatically split resale profits with venue/artist
+- **Bundled Experiences**: Attach additional SFTs (meet-and-greet, merchandise credits)
+
+**Klever Tips**: Use 4-second block finality for real-time gate scanning.
+
+### Whitelists & Allowlist Tickets
+
+**How SFTs Work Here**:
+- **ID 1**: "Mint Pass – Phase 1" (supply: 500, max 3 NFTs each)
+- **ID 2**: "Mint Pass – Phase 2" (supply: 2,000, max 2 NFTs each)
+- **ID 3**: "Beta Tester Invitation" (supply: 100)
+
+**Mechanics**:
+- Holding the token grants the right
+- Burning/redeeming exercises the right
+- Unused passes can be traded on secondary markets
+
+---
+
+## Loyalty & Rewards
+
+### Loyalty Points & Tiered Rewards
+
+**What It Solves**: Traditional loyalty programs are siloed (can't transfer airline miles to hotel points), non-transparent, and easily manipulated.
+
+**How SFTs Work Here**: Each program/tier becomes a token ID:
+- **ID 1**: "Brand X – Standard Points" (fungible within tier)
+- **ID 2**: "Brand X – Gold Member Points" (2x value)
+- **ID 3**: "Brand X – Platinum Points" (5x value)
+
+**Innovative Possibilities**:
+- **Cross-Brand Exchanges**: Partner with other brands for point swaps
+- **Expiration Transparency**: Encode expiry dates; users can sell before losing value
+- **Gamified Tiers**: Automatic tier upgrades based on token holdings
+
+### Multi-Class Reward & Incentive Systems
+
+**How SFTs Work Here**: Unified contract with multiple point types:
+- **ID 1**: "Referral Points" (earned by bringing new users)
+- **ID 2**: "Quest Points" (earned by completing tasks)
+- **ID 3**: "Governance Points" (earned by DAO participation)
+- **ID 4**: "Purchase Points" (earned from transactions)
+
+**Advanced Mechanics**:
+- **Cross-Type Exchanges**: 100 Quest Points = 50 Purchase Points
+- **Multiplier Stacking**: Hold Gold Badge? 2x all point earnings
+- **Leaderboards**: Query top holders across categories
+
+### Achievements, Badges & Reputation
+
+**How SFTs Work Here**: Each achievement is a token ID:
+- **ID 100**: "Completed Python Fundamentals" (educational)
+- **ID 101**: "100 Day Streak" (engagement)
+- **ID 102**: "Community Helper – Gold" (reputation)
+- **ID 103**: "Bug Hunter – Critical" (contribution)
+
+Everyone who earns the same achievement receives the same token ID—creating a cohort that can be queried, rewarded, or targeted.
+
+**Soulbound Considerations**: Many achievements should be non-transferable. Klever's permission system can enforce `canTransfer: false`.
+
+---
+
+## Commerce & Coupons
+
+### Coupons, Vouchers & Gift Cards
+
+**What It Solves**: Paper coupons are easily counterfeited; digital codes can be shared infinitely.
+
+**How SFTs Work Here**: Each promotion becomes a token ID:
+- **ID 1**: "10% OFF – Spring 2026 Campaign" (supply: 50,000)
+- **ID 2**: "$25 Gift Card – Holiday Edition" (supply: 10,000)
+- **ID 3**: "Free Item – New Customer Welcome" (supply: 5,000)
+
+**Post-Redemption Value**: Once redeemed, the coupon's metadata is updated (e.g., "redeemed: true") and serves as proof-of-purchase—valuable for warranty claims or brand engagement history. The token remains an SFT; applications interpret it differently based on its state.
+
+**Klever Tips**: Mark tokens as "redeemed" via attribute update (not burn) to preserve history.
+
+### Subscriptions & Time-Bound Passes
+
+**How SFTs Work Here**:
+- **ID 1**: "1-Month Basic Pass" (fungible, consumable)
+- **ID 2**: "1-Month Premium Pass" (fungible, more features)
+- **ID 3**: "Annual Basic Pass" (fungible, discounted rate)
+- **ID 4**: "Lifetime Founder Pass" (limited supply, non-expiring)
+
+**Innovative Models**:
+- **Transferable Subscriptions**: Sell your remaining 6 months to another user
+- **Rental Markets**: "Rent" a premium pass for 1 week at lower cost
+- **Fractional Access**: Share a family plan via tokenized seats
+
+### Phygital Goods & Product Authentication
+
+**What It Solves**: Counterfeiting costs luxury brands billions annually. Physical certificates are easily forged.
+
+**How SFTs Work Here**: Each product line becomes a token ID:
+- **ID 1**: "Designer Handbag – Model X, Black" (supply: 5,000)
+- **ID 2**: "Designer Handbag – Model X, Limited Gold" (supply: 50)
+
+The physical item contains an NFC chip or QR code linked to the specific token. Scanning verifies authenticity and displays ownership history.
+
+**Applications Beyond Luxury**:
+- **Warranties**: Token proves warranty validity, transfers with resale
+- **Wine & Spirits**: Provenance tracking from vineyard to glass
+- **Sneakers**: Authentication for resale market
+
+---
+
+## Finance & Ownership
+
+### Limited-Edition Digital Collectibles
+
+**What It Solves**: Creating 100 individual NFTs for an art edition is expensive. Editions should be fungible within the run but distinct from other editions.
+
+**How SFTs Work Here**:
+- **ID 1**: "Artwork Alpha – Edition of 100" (supply: 100, all identical)
+- **ID 2**: "Artwork Alpha – Artist Proof" (supply: 10)
+- **ID 3**: "Artwork Alpha – 1/1 Original" (supply: 1)
+
+All 100 copies of Edition 1 are interchangeable—collectors don't care which specific copy they own, only that they own *one* from the edition.
+
+**Klever Tips**: Use royalties aggressively (10-15%) since collectors expect creator compensation.
+
+### Real-World Asset Units (Fractional Ownership)
+
+**What It Solves**: High-value assets (real estate, art, commodities) are inaccessible to small investors.
+
+**How SFTs Work Here**: Each asset becomes a token ID with supply representing ownership units:
+- **ID 1**: "123 Main St – Residential Property" (supply: 1,000 shares)
+- **ID 2**: "Gold Bar #GLD-2025-001" (supply: 100 grams)
+- **ID 3**: "Picasso Print – 'Le Rêve'" (supply: 100 shares)
+
+All shares of ID 1 are fungible—you can swap your 5% for anyone else's 5%. But ID 1 is non-fungible against ID 2.
+
+**Legal Considerations**: Tokens typically represent ownership in a legal entity (LLC/SPV), not direct property title. Requires securities compliance.
+
+### Tiered Crowdfunding / Fundraising Perks
+
+**How SFTs Work Here**:
+- **ID 1**: "Bronze Backer" (supply: 1,000, basic rewards)
+- **ID 2**: "Silver Backer" (supply: 500, enhanced rewards)
+- **ID 3**: "Gold Backer" (supply: 100, premium rewards)
+- **ID 4**: "Founding Patron" (supply: 10, exclusive access)
+
+**Beyond Initial Funding**:
+- **Ongoing Perks**: Gold Backers get perpetual discounts
+- **Governance Rights**: Higher tiers have more DAO votes
+- **Upgrade Paths**: Trade 3 Bronze for 1 Silver
+
+### Intellectual Property & Royalty Rights
+
+**How SFTs Work Here**: Fractional royalty ownership:
+- **ID 1**: "Song X – Master Recording Rights" (supply: 1,000 shares)
+- **ID 2**: "Song X – Publishing Rights" (supply: 1,000 shares)
+
+Holding 10 shares of ID 1 entitles you to 1% of master recording royalties.
+
+### DAO Governance & Voting Rights
+
+**How SFTs Work Here**: Multiple governance token classes:
+- **ID 1**: "Standard Voting Token" (1 token = 1 vote)
+- **ID 2**: "Council Seat" (supply: 7, enhanced voting power)
+- **ID 3**: "Proposal Creation Right" (supply: 100)
+- **ID 4**: "Veto Power Token" (supply: 3, emergency use only)
+
+**Advanced Governance**:
+- **Time-Weighted Voting**: Longer holders get multiplied votes
+- **Delegation**: Transfer voting power without transferring tokens
+- **Quadratic Voting**: Implemented via smart contract logic
+
+### Insurance & Risk Tokenization
+
+**How SFTs Work Here**:
+- **ID 1**: "Flight Delay Insurance – Route NYC-LAX" (parametric)
+- **ID 2**: "Crop Insurance – Corn, Iowa 2025" (agricultural)
+- **ID 3**: "DeFi Protocol Coverage – Lending Pool X" (crypto-native)
+
+**Parametric Model**:
+1. User purchases insurance SFT (pays premium)
+2. Oracle monitors trigger conditions
+3. If triggered, smart contract automatically pays out
+4. No claims process, no human approval needed
+
+---
+
+## Supply Chain & Enterprise
+
+### Batch-Based Supply Chain Tokens
+
+**What It Solves**: Supply chain tracking relies on paper certificates and centralized databases—easily falsified, impossible to verify independently.
+
+**How SFTs Work Here**: Each production batch becomes a token ID:
+- **ID 2025-A-001**: "Coffee Beans – Batch A, January 2025" (supply: 10,000 kg)
+- **ID 2025-A-002**: "Coffee Beans – Batch B, January 2025" (supply: 8,500 kg)
+
+All units within Batch A are fungible (any 1kg is equivalent), but Batch A is distinct from Batch B (different harvest dates, quality scores).
+
+**Applications**:
+- **Food & Beverage**: Wine vintages, olive oil harvests, specialty coffee
+- **Pharmaceuticals**: Drug batches with expiration and recall capability
+- **Luxury Goods**: Leather lots, gemstone parcels
+- **Agriculture**: Grain lots, livestock cohorts
+
+### Healthcare Records & Credentials
+
+**How SFTs Work Here**:
+- **ID 1**: "COVID-19 Vaccination Record" (patient-specific)
+- **ID 2**: "Board Certification – Cardiology" (physician credential)
+- **ID 3**: "Medical License – State of California" (provider credential)
+
+**Privacy Considerations**:
+- Store hashes, not raw personal data
+- Use zero-knowledge proofs for verification
+- Patient controls access via token permissions
+
+### Carbon Credits & Environmental Assets
+
+**What It Solves**: Carbon credit markets are opaque, prone to double-counting, and inaccessible to small participants.
+
+**How SFTs Work Here**: Each verified carbon project becomes a token ID:
+- **ID 1**: "Amazon Reforestation Project 2025" (supply: 100,000 tonnes)
+- **ID 2**: "Solar Farm Kenya – Credits 2025" (supply: 50,000 tonnes)
+
+All credits from the same project are fungible, but different projects are non-fungible (different verification standards, locations).
+
+**Market Mechanics**:
+- **Retirement**: Burning a credit permanently removes it from circulation
+- **Fractional**: Own 0.5 tonnes for personal offsetting
+
+---
+
+## Summary
+
+SFTs shine when you need:
+
+- **Multiple asset types in one collection** - Gaming, loyalty, governance
+- **Edition-based scarcity** - Collectibles, tickets, credentials
+- **Metadata-driven state changes** - Pre-event to post-event, unused to redeemed
+- **Batch efficiency** - Supply chain, bulk distributions
+- **Fractional ownership** - Real estate, IP rights, carbon credits
+- **Both "which type" and "how many"** - Track nonce + balance together
+
+## Related Resources
+
+- [Semi-Fungible Tokens Overview](/semi-fungible-tokens)
+- [Token Comparison](/semi-fungible-tokens/token-comparison)
+- [Application Guide](/semi-fungible-tokens/application-guide) - Build your own SFT application
