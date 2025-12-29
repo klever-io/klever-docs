@@ -1345,7 +1345,7 @@ The `--perm` flag accepts a JSON object with the following parameters:
   - Bit 23: Deposit
   - Bit 24: ITOTrigger
 
-  **Example:** `0x01AF` = binary `0000 0001 1010 1111` enables Transfer, CreateAsset, CreateValidator, ValidatorConfig, Unfreeze, Undelegate, Withdraw
+  **Example:** `0x01AF` = binary `0000 0001 1010 1111` enables Transfer, CreateAsset, CreateValidator, ValidatorConfig, Unfreeze, Undelegate, Withdraw, Claim
 
 #### signers
 - **Type:** `array of objects`
@@ -1438,14 +1438,14 @@ operator account permission \
     "type": 1,
     "permissionName": "Validator Operator",
     "threshold": 1,
-    "operations": "04cc",
+    "operations": "04c4",
     "signers": [
       {"address": "{ADDRESS HERE}", "weight": 1}
     ]
   }'
 ```
 
-**Operations breakdown:** `0x04CC` = binary `0000 0100 1100 1100`
+**Operations breakdown:** `0x04C4` = binary `0000 0100 1100 0100`
 - Bit 2: CreateValidator
 - Bit 3: ValidatorConfig
 - Bit 6: Delegate
