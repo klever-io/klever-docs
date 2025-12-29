@@ -1478,7 +1478,7 @@ operator account permission \
 ### Important Notes
 
 <Note color="yellow">
-**Permission ID (PermID)**: After setting account permissions, transactions must specify the correct PermID. The first permission gets PermID=0, second gets PermID=1, etc. Owner permissions with PermID=0 don't need to be explicitly specified in transactions.
+**Permission ID (PermID)**: After setting account permissions, transactions must specify the correct PermID. The first permission gets PermID=0, second gets PermID=1, etc. The default Owner permission at index 0 (PermID=0) is used when no PermID is specified in a transaction; all other permissions must be explicitly referenced with their PermID.
 </Note>
 
 <Note color="yellow">
