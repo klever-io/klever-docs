@@ -61,7 +61,7 @@ TRACE[...] error=could not create wasmer instance: The target x86_64 without AVX
 
 ```bash
 # Step 1: Check architecture first
-uname -m  # Returns: x86_64 (Intel/AMD) or arm64 (Apple Silicon)
+uname -m  # Returns: x86_64 (Intel/AMD) or arm64 (Apple Silicon or other ARM64 systems)
 ```
 
 **For x86_64 systems only:**
@@ -75,15 +75,15 @@ sysctl hw.optional.sse4_2 hw.optional.avx1_0
 ```
 
 **For ARM systems (Apple Silicon M1/M2/M3/M4):**
-- These CPU feature checks don't apply to ARM
-- Ensure you're using native ARM64 builds of Klever node
-- No additional verification needed beyond confirming ARM architecture
+- These CPU feature checks are not applicable to ARM.
+- You must use native ARM64 builds of Klever node.
+- No additional verification is required beyond confirming ARM architecture.
 
 **Common issues:**
 
 - **VMs (KVM/VMware/VirtualBox):** Enable CPU pass-through in hypervisor settings (host-passthrough for KVM, enable VT-x/AMD-V for VMware/VirtualBox)
 - **Cloud instances:** Use instance types with full CPU support (AWS: T3+, GCP: N2/N2D, Azure: Dv4/Ev4+)
-- **Docker containers:** Inherits host CPU features - verify host system first
+- **Docker containers:** Use host CPU features — verify the host system meets AVX/SSE 4.2 requirements
 - **Apple Silicon (M1/M2/M3/M4):** Use native ARM64 builds, not x86_64 emulation
 - **Older hardware:** Requires Intel Sandy Bridge (2011+) or AMD Bulldozer (2011+)
 
