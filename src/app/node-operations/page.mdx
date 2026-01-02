@@ -1321,7 +1321,7 @@ operator account info <address> [flags]
 
 ## Operator Account Permission
 
-set wallet permission
+Set wallet permission to configure multi-signature accounts and delegate transaction authority.
 
 ```
 operator account permission [flags]
@@ -1333,6 +1333,205 @@ operator account permission [flags]
   -h, --help               help for permission
       --perm stringArray   --perm='{"type":1, "threshold": 2, "operations":"0fff", "signers": [{"address":"klv1fpwjz234gy8aaae3gx0e8q9f52vymzzn3z5q0s5h60pvktzx0n0qwvtux5", "weight": 1},{"address":"klv18cgjm6mfahuvnl3vj8kx3fph8qvth048we0486cd8xp9nenm4saqg0h9jl", "weight": 1}]}'
 ```
+
+### Permission Parameters
+
+The `--perm` flag accepts a JSON object with the following parameters:
+
+#### type
+- **Type:** `integer`
+- **Required:** Yes
+- **Valid Values:**
+  - `0` - Owner: Grants full access to all transaction types (operations field not required)
+  - `1` - User: Grants limited access only to operations specified in the operations field
+- **Description:** Permission level type
+
+#### permissionName
+- **Type:** `string`
+- **Required:** No
+- **Constraints:** Maximum 100 characters, must be valid UTF-8
+- **Description:** Human-readable name to identify this permission (helpful for organization)
+
+#### threshold
+- **Type:** `integer`
+- **Required:** Yes
+- **Constraints:** Must be positive, cannot exceed total weight of all signers
+- **Description:** Minimum combined weight of signatures required to execute a transaction
+
+#### operations
+- **Type:** `string` (hexadecimal)
+- **Required:** Only when type=1 (User permission)
+- **Constraints:** Maximum 8 bytes (16 hex characters)
+- **Description:** Hexadecimal bitmap of allowed contract types. Each bit represents a specific transaction type (LSB is rightmost):
+  - Bit 0: Transfer
+  - Bit 1: CreateAsset
+  - Bit 2: CreateValidator
+  - Bit 3: ValidatorConfig
+  - Bit 4: Freeze
+  - Bit 5: Unfreeze
+  - Bit 6: Delegate
+  - Bit 7: Undelegate
+  - Bit 8: Withdraw
+  - Bit 9: Claim
+  - Bit 10: Unjail
+  - Bit 11: AssetTrigger
+  - Bit 12: SetAccountName
+  - Bit 13: Proposal
+  - Bit 14: Vote
+  - Bit 15: ConfigITO
+  - Bit 16: SetITOPrices
+  - Bit 17: Buy
+  - Bit 18: Sell
+  - Bit 19: CancelMarketOrder
+  - Bit 20: CreateMarketplace
+  - Bit 21: ConfigMarketplace
+  - Bit 22: UpdateAccountPermission
+  - Bit 23: Deposit
+  - Bit 24: ITOTrigger
+
+  **Example:** `0x01AF` = binary `0000 0001 1010 1111` enables Transfer, CreateAsset, CreateValidator, ValidatorConfig, Unfreeze, Undelegate, Withdraw, Claim
+
+#### signers
+- **Type:** `array of objects`
+- **Required:** Yes
+- **Constraints:** Maximum 10 signers per permission
+- **Description:** List of addresses authorized to sign with their respective weights
+
+  **Signer Object:**
+  - `address` (string, required): Valid Klever address (klv1...)
+  - `weight` (integer, required): Signature weight, must be positive
+
+### System Constraints
+
+- **Maximum permissions per account:** 20
+- **Maximum signers per permission:** 10
+- **Maximum permission name length:** 100 characters
+- **Maximum operations size:** 8 bytes (16 hex characters)
+
+### Practical Examples
+
+#### Example 1: Basic Multi-Signature Setup (2-of-3)
+
+Create a permission requiring any 2 signatures from 3 authorized addresses for transfers:
+
+```bash
+operator account permission \
+  --key-file=./walletKey.pem \
+  --node=https://node.testnet.klever.org \
+  --perm='{
+    "type": 1,
+    "permissionName": "Multi-sig Transfers",
+    "threshold": 2,
+    "operations": "01",
+    "signers": [
+      {"address": "{ADDRESS HERE}", "weight": 1},
+      {"address": "{ADDRESS HERE}", "weight": 1},
+      {"address": "{ADDRESS HERE}", "weight": 1}
+    ]
+  }'
+```
+
+#### Example 2: Weighted Multi-Signature with CEO Override
+
+Configure permissions where CEO can approve alone (weight 3) or any two managers together (weights 2+2):
+
+```bash
+operator account permission \
+  --key-file=./walletKey.pem \
+  --node=https://node.testnet.klever.org \
+  --perm='{
+    "type": 1,
+    "permissionName": "Treasury Operations",
+    "threshold": 3,
+    "operations": "0fff",
+    "signers": [
+      {"address": "{ADDRESS HERE}", "weight": 3},
+      {"address": "{ADDRESS HERE}", "weight": 2},
+      {"address": "{ADDRESS HERE}", "weight": 2}
+    ]
+  }'
+```
+
+#### Example 3: Owner Permission Transfer
+
+Transfer full ownership to a new address (CAUTION: You lose control unless you include your address):
+
+```bash
+operator account permission \
+  --key-file=./walletKey.pem \
+  --node=https://node.testnet.klever.org \
+  --perm='{
+    "type": 0,
+    "permissionName": "New Owner",
+    "threshold": 1,
+    "signers": [
+      {"address": "{ADDRESS HERE}", "weight": 1}
+    ]
+  }'
+```
+
+#### Example 4: Delegated Validator Management
+
+Grant validator management permissions (Create/Config Validator, Delegate, Undelegate, Unjail) to an operator:
+
+```bash
+operator account permission \
+  --key-file=./walletKey.pem \
+  --node=https://node.testnet.klever.org \
+  --perm='{
+    "type": 1,
+    "permissionName": "Validator Operator",
+    "threshold": 1,
+    "operations": "04cc",
+    "signers": [
+      {"address": "{ADDRESS HERE}", "weight": 1}
+    ]
+  }'
+```
+
+**Operations breakdown:** `0x04CC` = binary `0000 0100 1100 1100`
+- Bit 2: CreateValidator
+- Bit 3: ValidatorConfig
+- Bit 6: Delegate
+- Bit 7: Undelegate
+- Bit 10: Unjail
+
+#### Example 5: Asset Management Permission
+
+Grant permission to manage assets (CreateAsset, AssetTrigger operations):
+
+```bash
+operator account permission \
+  --key-file=./walletKey.pem \
+  --node=https://node.testnet.klever.org \
+  --perm='{
+    "type": 1,
+    "permissionName": "Asset Manager",
+    "threshold": 1,
+    "operations": "0802",
+    "signers": [
+      {"address": "{ADDRESS HERE}", "weight": 1}
+    ]
+  }'
+```
+
+**Operations breakdown:** `0x0802` = binary `0000 1000 0000 0010`
+- Bit 1: CreateAsset
+- Bit 11: AssetTrigger
+
+### Important Notes
+
+<Note color="yellow">
+**Permission ID (PermID)**: After setting account permissions, transactions must specify the correct PermID. The first permission gets PermID=0, second gets PermID=1, etc. The default Owner permission at index 0 (PermID=0) is used when no PermID is specified in a transaction; all other permissions must be explicitly referenced with their PermID.
+</Note>
+
+<Note color="yellow">
+**Ownership Warning**: When setting Owner type permissions (type=0), be extremely careful. If you don't include your own address in the signers, you will permanently lose control of the account.
+</Note>
+
+<Note color="fuchsia">
+**Multi-Signature Transactions**: When using multi-signature permissions, the transaction initiator specifies the PermID during transaction creation. All required signers then provide their signatures using the `-m` (multi-files) flag.
+</Note>
 
 ### Options inherited from parent commands
 
