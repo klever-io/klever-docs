@@ -62,14 +62,14 @@ payments.iter().for_each(|payment| {
 });
 ```
 
-Payment objects (KdaTokenPayment) store three variables that you can use to assert the token and also gather the amount 
+Payment objects (KdaTokenPayment) store three variables that you can use to assert the token and also gather the amount:
 ```rust
 let amount = payment.amount;
 let token = payment.token_identifier;
 let token_nonce = payment.token_nonce;
 ```
 
-If your endpoint only receives KLV, we provide a shortcut to access the transfer amount directly
+If your endpoint only receives KLV, we provide a shortcut to access the transfer amount directly:
 ```rust
 let amount = self.call_value().klv_value();
 ```
