@@ -4,8 +4,6 @@
 
 This section aims to provide a comprehensive guide on how smart contracts handle payments, focusing on both receiving and sending tokens.
 
-> Note: On the Klever network, it is not possible to simultaneously send KLV and any KDA token. Consequently, you will not find any syntax supporting the transfer of both in either receiving or sending scenarios.
-
 ---
 
 ## Methods of Receiving Payments
@@ -50,6 +48,31 @@ fn accept_any_payment(&self) {
 ```
 
 > Note: It's possible to hard-code a specific token identifier in the `payable` attribute, like `#[payable("MYTOKEN-123456")]`. This is a less common practice, as tokens are typically configured in storage or at runtime.
+
+To read the payment details on single-token transfers, you can use:
+```rust
+let payment = self.call_value().single_kda();
+```
+
+To read the payment details on multi-token transfers, you can use:
+```rust
+let payments = self.call_value().all_kda_transfers();
+payments.iter().for_each(|payment| {
+	// payment handling...
+});
+```
+
+Payment objects (KdaTokenPayment) store three variables that you can use to assert the token and also gather the amount:
+```rust
+let amount = payment.amount;
+let token = payment.token_identifier;
+let token_nonce = payment.token_nonce;
+```
+
+If your endpoint only receives KLV, we provide a shortcut to access the transfer amount directly:
+```rust
+let amount = self.call_value().klv_value();
+```
 
 You can impose additional restrictions on incoming tokens within the endpoint's body by utilizing the call value API, which provides various functions for managing expected payments.
 
