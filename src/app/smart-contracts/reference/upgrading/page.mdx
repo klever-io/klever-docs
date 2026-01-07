@@ -2,16 +2,19 @@
 
 Upgrading a smart contract is quite simple, although the effects might not be very clear. Just run this command to upgrade it:
 
+<Note color="yellow">
+    **Warning:** Before running the following Docker commands, you'll need to change the ownership of your local files to user ID 999: `chown -R 999 .`
+</Note>
 ```
-docker run -it --rm --user "$(id -u):$(id -g)" \
+docker run -it --rm \
     -v $(pwd):/opt/klever-blockchain \
     --network=host \
     --entrypoint=/usr/local/bin/operator \
     kleverapp/klever-go:latest  --key-file=KEY_FILE \
-    cc upgrade SC_ADDRESS --wasm=WASM_PATH \
-    --vmType=0500 --arguments example --payable --payableBySC --readable --upgradeable
+    sc upgrade SC_ADDRESS --wasm=WASM_PATH \
+     --args example --payable --payableBySC --readable --upgradeable
 ```
 
-Replace SC_ADDRESS, KEY_FILE and WASM_PATH accordingly. If needs arguments, add --arguments VALUE.
+Replace SC_ADDRESS, KEY_FILE and WASM_PATH accordingly. If needs arguments, add --args VALUE.
 
 Check your flags --payable --payableBySC --readable --upgradeable to make sure they are correct.

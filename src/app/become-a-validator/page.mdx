@@ -8,8 +8,11 @@ To become a Klever Validator Node you will need 10M KLV staked, from that, at le
 
 Registering a validator is done in this way:
 
+<Note color="yellow">
+    **Warning:** Before running the following Docker commands, you'll need to change the ownership of your local files to user ID 999: `chown -R 999 .`
+</Note>
 ```bash
-docker run -it --rm --user "$(id -u):$(id -g)" \
+docker run -it --rm \
     -v $(pwd)/wallet:/opt/klever-blockchain \
     --network=host \
     --entrypoint=/usr/local/bin/operator \
@@ -51,7 +54,7 @@ where:
 In order to freeze KLV, you should type the following code:
 
 ```bash
-docker run -it --rm --user "$(id -u):$(id -g)" \
+docker run -it --rm \
     -v $(pwd)/wallet:/opt/klever-blockchain \
     --network=host \
     --entrypoint=/usr/local/bin/operator \
@@ -74,7 +77,7 @@ The minimum amount allowed to stake KLV is 1000 KLV.
 Delegate to an address [TO], pointing to the bucket [BUCKET_ID] where the frozen KLV is located.
 
 ```bash
-docker run -it --rm --user "$(id -u):$(id -g)" \
+docker run -it --rm \
     -v $(pwd)/wallet:/opt/klever-blockchain \
     --network=host \
     --entrypoint=/usr/local/bin/operator \
@@ -99,7 +102,7 @@ It's important to know that there's a minimum self-staking amount for the valida
 WIth the operator CLI, you can check the bucket ID with the command `tx-by-id` followed by the hash of the freeze transaction:
 
 ```bash
-docker run -it --rm --user "$(id -u):$(id -g)" \
+docker run -it --rm \
     -v $(pwd)/wallet:/opt/klever-blockchain \
     --network=host \
     --entrypoint=/usr/local/bin/operator \
@@ -119,7 +122,7 @@ docker run -it --rm --user "$(id -u):$(id -g)" \
 You can change the validator configuration using this command:
 
 ```bash
-docker run -it --rm --user "$(id -u):$(id -g)" \
+docker run -it --rm \
     -v $(pwd)/wallet:/opt/klever-blockchain \
     --network=host \
     --entrypoint=/usr/local/bin/operator \
