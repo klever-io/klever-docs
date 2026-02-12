@@ -129,8 +129,23 @@ export const navigation: Array<NavGroup> = [
         title: 'Using AI on KVM',
         href: '/using-ai-on-kvm',
         children: [
-              { title: 'Installation Guide', href: '/ai-environment-setup' },
-              { title: 'Reference', href: '/mcp-reference' },
+              {
+                title: 'Installation Guide',
+                href: '/ai-environment-setup',
+                children: [
+                  { title: 'Quick Setup', href: '/quick-setup' },
+                  { title: 'Run Locally', href: '/run-locally' },
+                ],
+              },
+              {
+                title: 'Reference',
+                href: '/mcp-reference',
+                children: [
+                  { title: 'Functions', href: '/functions' },
+                  { title: 'MCP Prompts', href: '/mcp-prompts' },
+                  { title: 'Knowledge Base', href: '/knowledge-base' },
+                ],
+              },
               { title: 'Workflow Example', href: '/mcp-workflow' },
               { title: 'Project structure for I.A coding', href: '/project-structure-for-ai-coding' },
             ],
