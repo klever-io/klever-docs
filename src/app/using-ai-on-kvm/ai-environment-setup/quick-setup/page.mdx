@@ -1,0 +1,120 @@
+# Quick Setup
+
+Get started with AI-assisted Klever development in minutes.
+
+## Claude Code
+
+### Installation (Recommended)
+
+Add the Klever VM MCP server via npx:
+
+```bash
+claude mcp add klever-vm -- npx -y @klever/mcp-server
+```
+
+Alternatively, connect to the public hosted server:
+
+```bash
+claude mcp add -t http klever-vm https://mcp.klever.org/mcp
+```
+
+### Verify Installation
+
+1. Open Claude Code in your terminal:
+```bash
+claude
+```
+
+2. Test your setup by typing:
+```
+/mcp
+```
+
+3. Then ask: "Do you have access to Klever knowledge base?"
+
+## Visual Studio Code
+
+For developers who prefer VS Code, you can use the built-in MCP support with GitHub Copilot Chat for AI assistance.
+
+### Prerequisites
+
+- **Visual Studio Code 1.102 or newer** with built-in MCP support ([VS Code MCP Docs](https://code.visualstudio.com/docs/copilot/chat/mcp-servers))
+- **GitHub Copilot Chat** extension installed and enabled
+
+### Configuration
+
+Create a `.vscode/mcp.json` file at the root of your project:
+
+```json
+{
+  "servers": {
+    "klever-vm": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@klever/mcp-server"]
+    }
+  }
+}
+```
+
+### Using with Copilot Chat
+
+1. Restart VS Code to auto-discover and start your MCP server
+2. Open the **GitHub Copilot Chat** pane
+3. Test the connection: "Do you have Klever Blockchain knowledge?"
+4. Start using Klever-specific AI assistance for development
+
+## Claude Desktop
+
+### Configuration
+
+Edit your Claude Desktop config file:
+
+**macOS**: `~/Library/Application Support/Claude/claude_desktop_config.json`
+
+**Windows**: `%APPDATA%\Claude\claude_desktop_config.json`
+
+```json
+{
+  "mcpServers": {
+    "klever-vm": {
+      "command": "npx",
+      "args": ["-y", "@klever/mcp-server"]
+    }
+  }
+}
+```
+
+Restart Claude Desktop after saving the configuration.
+
+## Cursor
+
+### Configuration
+
+Create a `.cursor/mcp.json` file at the root of your project:
+
+```json
+{
+  "mcpServers": {
+    "klever-vm": {
+      "command": "npx",
+      "args": ["-y", "@klever/mcp-server"]
+    }
+  }
+}
+```
+
+Restart Cursor after creating the configuration file.
+
+---
+
+## Next Steps
+- **Learn about MCP Functions**: [View available tools and capabilities](/using-ai-on-kvm/mcp-reference/functions)
+- **Try MCP Prompts**: [Use guided workflows](/using-ai-on-kvm/mcp-reference/mcp-prompts)
+- **Explore Knowledge Base**: [Browse 88+ curated entries](/using-ai-on-kvm/mcp-reference/knowledge-base)
+- **See Workflow Example**: [Complete development workflow](/using-ai-on-kvm/mcp-workflow)
+
+
+**Need local development?** For debugging, custom modifications, or offline work, see [Run Locally](/using-ai-on-kvm/ai-environment-setup/run-locally).
+
+**Important Security Note**: Always review MCP server configuration before running - MCP servers can execute code on your machine.
