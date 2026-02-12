@@ -10,7 +10,7 @@ Consider running locally if you need:
 - **Testing unreleased features** or custom modifications
 - **Offline work** in restricted network environments
 - **Contributing** to the mcp-klever-vm repository
-- **Custom knowledge entries** in local storage
+- **Custom knowledge entries** with Redis persistent storage
 
 ## Claude Code
 
@@ -49,6 +49,8 @@ Create or edit your `mcp.json` file:
   }
 }
 ```
+
+**Note**: This uses in-memory storage (knowledge resets on restart). For persistent custom knowledge entries, see [Storage Options](#storage-options) below to configure Redis.
 
 ### 4. Start Claude Code with MCP
 
@@ -172,6 +174,59 @@ Create a `.cursor/mcp.json` file at the root of your project:
 }
 ```
 
+Restart Cursor after creating the configuration file.
+
+## Storage Options
+
+### Memory Storage (Default)
+
+The default configuration uses in-memory storage, which is fast but doesn't persist across restarts.
+
+**Configuration**:
+```json
+{
+  "env": {
+    "MODE": "mcp",
+    "STORAGE_TYPE": "memory",
+    "MEMORY_MAX_SIZE": "10000"
+  }
+}
+```
+
+### Redis Storage
+
+For persistent storage and custom knowledge entries, use Redis.
+
+**Configuration**:
+```json
+{
+  "env": {
+    "MODE": "mcp",
+    "STORAGE_TYPE": "redis",
+    "REDIS_URL": "redis://localhost:6379"
+  }
+}
+```
+
+**Setup Steps**:
+
+1. **Install Redis**: Follow the [official Redis installation guide](https://redis.io/docs/latest/operate/oss_and_stack/install/install-redis/)
+
+2. **Verify Redis is running**:
+```bash
+redis-cli ping
+# Should return: PONG
+```
+
+3. **Ingest knowledge base**:
+```bash
+cd mcp-klever-vm
+npm run ingest
+```
+
+4. **Update your MCP configuration** with Redis settings (as shown above)
+
+5. **Restart your IDE/Claude Code**
 
 ## Development Commands
 
