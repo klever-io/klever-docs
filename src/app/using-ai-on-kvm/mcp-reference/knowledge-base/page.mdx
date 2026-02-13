@@ -2,17 +2,17 @@
 
 ## Overview
 
-The Klever MCP Server includes a curated knowledge base with 88+ entries covering all aspects of Klever smart contract development.
+The Klever MCP Server includes a curated knowledge base covering all aspects of Klever smart contract development.
 
 ### Statistics
-- **Total Contexts**: 88+ entries
+- **Total Contexts**: Use `get_knowledge_stats` tool to see current totals
 - **Coverage**: 11 categories across all aspects of Klever development
 - **Languages**: Primarily Rust with bash scripts
 - **Contract Types**: Gaming, DeFi, NFT, Token, Governance
 
 ### Context Types
 
-The knowledge base uses 8 context types to organize information:
+The knowledge base uses 7 context types to organize information:
 
 - **`code_example`**: Complete contract implementations and code snippets
 - **`best_practice`**: Development guidelines and recommended patterns
@@ -21,7 +21,6 @@ The knowledge base uses 8 context types to organize information:
 - **`documentation`**: API and framework references
 - **`error_pattern`**: Common errors and solutions
 - **`deployment_tool`**: Deployment and tooling guides
-- **`runtime_behavior`**: VM runtime behavior explanations
 
 ## Knowledge Categories
 
@@ -92,11 +91,11 @@ The knowledge base uses 8 context types to organize information:
 - Token issuance with `issue_and_set_all_roles`
 - Mint, burn, and transfer operations
 - KLV vs KDA differences
-- Precision handling (8 decimals for KLV)
+- Precision handling (6 decimals for KLV/KFI)
 
 **Critical notes**:
 - Use `--values` NOT `--value` for payments in koperator
-- KLV has 8 decimal places
+- KLV has 6 decimal places (1 KLV = 1,000,000 units)
 - Always validate payment amounts
 
 

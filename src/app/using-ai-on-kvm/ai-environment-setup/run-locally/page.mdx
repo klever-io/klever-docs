@@ -12,23 +12,33 @@ Consider running locally if you need:
 - **Contributing** to the mcp-klever-vm repository
 - **Custom knowledge entries** with Redis persistent storage
 
-## Claude Code
+---
 
-### 1. Clone the Klever MCP Server
+## Prerequisites
+
+Before configuring your IDE, clone and build the MCP server:
+
+### 1. Clone the Repository
 
 ```bash
 git clone https://github.com/klever-io/mcp-klever-vm.git
 cd mcp-klever-vm
 ```
 
-### 2. Install Dependencies
+### 2. Install Dependencies and Build
 
 ```bash
 npm install
 npm run build
 ```
 
-### 3. Configure MCP Server
+This creates the `dist/index.js` file that you'll reference in your IDE configuration.
+
+## IDE Configuration
+
+### Claude Code
+
+#### Configure MCP Server
 
 Create or edit your `mcp.json` file:
 
@@ -52,24 +62,15 @@ Create or edit your `mcp.json` file:
 
 **Note**: This uses in-memory storage (knowledge resets on restart). For persistent custom knowledge entries, see [Storage Options](#storage-options) below to configure Redis.
 
-### 4. Start Claude Code with MCP
+#### Start Claude Code
 
 ```bash
 claude --mcp-config ./mcp.json
 ```
 
-## Visual Studio Code
+### Visual Studio Code
 
-### 1. Clone and Build MCP Server
-
-```bash
-git clone https://github.com/klever-io/mcp-klever-vm.git
-cd mcp-klever-vm
-npm install
-npm run build
-```
-
-### 2. Configure MCP Server
+#### Configure MCP Server
 
 Create a `.vscode/mcp.json` file at the root of your project:
 
@@ -95,25 +96,16 @@ Create a `.vscode/mcp.json` file at the root of your project:
 
 **Important**: Update the path in `args` to point to your absolute path to `mcp-klever-vm/dist/index.js`.
 
-### 3. Start MCP Server in VS Code
+#### Start MCP Server
 
 After configuring `mcp.json`, VS Code will show an option to **run the MCP server** directly. You can:
 
 - Click to start the server and view output within VS Code
 - Or restart VS Code to auto-discover and start your MCP server
 
-## Claude Desktop
+### Claude Desktop
 
-### 1. Clone and Build
-
-```bash
-git clone https://github.com/klever-io/mcp-klever-vm.git
-cd mcp-klever-vm
-npm install
-npm run build
-```
-
-### 2. Configure
+#### Configure
 
 Edit your Claude Desktop config file:
 
@@ -141,18 +133,9 @@ Edit your Claude Desktop config file:
 
 Restart Claude Desktop after saving the configuration.
 
-## Cursor
+### Cursor
 
-### 1. Clone and Build
-
-```bash
-git clone https://github.com/klever-io/mcp-klever-vm.git
-cd mcp-klever-vm
-npm install
-npm run build
-```
-
-### 2. Configure
+#### Configure
 
 Create a `.cursor/mcp.json` file at the root of your project:
 
@@ -254,7 +237,7 @@ npm run ingest
 ## Next Steps
 - **Learn about MCP Functions**: [View available tools and capabilities](/using-ai-on-kvm/mcp-reference/functions)
 - **Try MCP Prompts**: [Use guided workflows](/using-ai-on-kvm/mcp-reference/mcp-prompts)
-- **Explore Knowledge Base**: [Browse 88+ curated entries](/using-ai-on-kvm/mcp-reference/knowledge-base)
+- **Explore Knowledge Base**: [Browse curated entries](/using-ai-on-kvm/mcp-reference/knowledge-base)
 - **See Workflow Example**: [Complete development workflow](/using-ai-on-kvm/mcp-workflow)
 
 **Important Security Note**: Always review MCP server configuration before running - MCP servers can execute code on your machine.
