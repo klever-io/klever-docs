@@ -147,7 +147,7 @@ export const navigation: Array<NavGroup> = [
             ],
           },
           { title: 'Workflow Example', href: '/mcp-workflow' },
-          { title: 'Project structure for I.A coding', href: '/project-structure-for-ai-coding' },
+          { title: 'Project structure for AI coding', href: '/project-structure-for-ai-coding' },
         ],
       },
       { title: 'Staking', href: '/staking' },
