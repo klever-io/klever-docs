@@ -1,0 +1,102 @@
+# AI Development on Klever
+
+Build smarter on Klever with AI-assisted development. Use Claude, Cursor, or any MCP-compatible AI to write, deploy, and debug smart contracts — with full awareness of Klever-specific patterns and APIs.
+
+<svg viewBox="0 0 580 358" xmlns="http://www.w3.org/2000/svg" fontFamily="system-ui,-apple-system,sans-serif" style={{width:'100%',display:'block',marginTop:'2rem',marginBottom:'2rem'}}>
+  {/* Top box: x=0 width=580 center=290 */}
+  <rect x="0" y="0" width="580" height="60" rx="8" fill="#27272a" stroke="#52525b" strokeWidth="1"/>
+  <text x="290" y="24" textAnchor="middle" fontSize="15" fontWeight="600" fill="#ffffff">Your AI Editor</text>
+  <text x="290" y="44" textAnchor="middle" fontSize="12" fill="#a1a1aa">Claude Code · Cursor · VS Code · Claude Desktop</text>
+
+  {/* Fork: center (290) → split to left (135) and right (445) */}
+  <line x1="290" y1="60" x2="290" y2="86" stroke="#52525b" strokeWidth="1"/>
+  <line x1="135" y1="86" x2="445" y2="86" stroke="#52525b" strokeWidth="1"/>
+  <line x1="135" y1="86" x2="135" y2="107" stroke="#52525b" strokeWidth="1"/>
+  <polygon points="135,111 131,103 139,103" fill="#52525b"/>
+  <line x1="445" y1="86" x2="445" y2="107" stroke="#52525b" strokeWidth="1"/>
+  <polygon points="445,111 441,103 449,103" fill="#52525b"/>
+
+  {/* MCP Server: x=0 width=270 → center=135, bottom=243 */}
+  <rect x="0" y="111" width="270" height="132" rx="8" fill="#18181b" stroke="#52525b" strokeWidth="1"/>
+  <text x="135" y="136" textAnchor="middle" fontSize="14" fontWeight="600" fill="#ffffff">MCP Server</text>
+  <text x="135" y="153" textAnchor="middle" fontSize="11" fill="#71717a">mcp.klever.org</text>
+  <text x="16" y="177" fontSize="11" fontWeight="500" fill="#d4d4d8">Live queries:</text>
+  <text x="16" y="195" fontSize="11" fill="#a1a1aa">· Blockchain data</text>
+  <text x="16" y="212" fontSize="11" fill="#a1a1aa">· Smart contracts</text>
+  <text x="16" y="229" fontSize="11" fill="#a1a1aa">· Knowledge base search</text>
+
+  {/* SKILL.md: x=310 width=270 → center=445, bottom=243 */}
+  <rect x="310" y="111" width="270" height="132" rx="8" fill="#18181b" stroke="#52525b" strokeWidth="1"/>
+  <text x="445" y="136" textAnchor="middle" fontSize="14" fontWeight="600" fill="#ffffff">SKILL.md</text>
+  <text x="445" y="153" textAnchor="middle" fontSize="11" fill="#71717a">github.com/klever-io/skills</text>
+  <text x="326" y="177" fontSize="11" fontWeight="500" fill="#d4d4d8">Static context:</text>
+  <text x="326" y="195" fontSize="11" fill="#a1a1aa">· Decimals rules</text>
+  <text x="326" y="212" fontSize="11" fill="#a1a1aa">· Common errors</text>
+  <text x="326" y="229" fontSize="11" fill="#a1a1aa">· Code patterns · Deploy flags</text>
+
+  {/* Merge: from box centers (135, 445) join at 268, center down to 293 */}
+  <line x1="135" y1="243" x2="135" y2="268" stroke="#52525b" strokeWidth="1"/>
+  <line x1="445" y1="243" x2="445" y2="268" stroke="#52525b" strokeWidth="1"/>
+  <line x1="135" y1="268" x2="445" y2="268" stroke="#52525b" strokeWidth="1"/>
+  <line x1="290" y1="268" x2="290" y2="289" stroke="#52525b" strokeWidth="1"/>
+  <polygon points="290,293 286,285 294,285" fill="#52525b"/>
+
+  {/* Bottom box: x=0 width=580 center=290 */}
+  <rect x="0" y="293" width="580" height="56" rx="8" fill="#27272a" stroke="#52525b" strokeWidth="1"/>
+  <text x="290" y="318" textAnchor="middle" fontSize="15" fontWeight="600" fill="#ffffff">Klever Blockchain</text>
+  <text x="290" y="337" textAnchor="middle" fontSize="12" fill="#a1a1aa">KVM · KLV · KDA · Smart Contracts · APIs</text>
+</svg>
+
+**MCP Server** — Connects your AI editor to the Klever knowledge base and live blockchain data. Enables contract analysis, project scaffolding, and real-time queries.
+
+**SKILL.md** — A structured knowledge package with Klever-specific rules: 6 decimals for KLV, correct CLI flags, common pitfalls, event constraints, and more. Install via the [Klever skills repo](https://github.com/klever-io/skills).
+
+---
+
+# AI-Assisted Development
+
+Use your preferred AI editor with the Klever MCP server for smart contract development.
+
+### What you can do
+
+- Write Rust/WASM smart contracts with Klever-aware code generation
+- Deploy with generated `koperator` scripts
+- Query live blockchain data directly from your editor
+- Catch common mistakes before they reach the compiler
+
+### Setup (5 minutes)
+
+Choose your editor:
+
+| Editor | Setup |
+|---|---|
+| Claude Code | [Quick Setup →](/using-ai-on-kvm/ai-environment-setup/quick-setup#claude-code) |
+| Cursor | [Quick Setup →](/using-ai-on-kvm/ai-environment-setup/quick-setup#cursor) |
+| VS Code | [Quick Setup →](/using-ai-on-kvm/ai-environment-setup/quick-setup#visual-studio-code) |
+| Claude Desktop | [Quick Setup →](/using-ai-on-kvm/ai-environment-setup/quick-setup#claude-desktop) |
+
+[View full installation guide →](/using-ai-on-kvm/ai-environment-setup)
+
+---
+
+# SKILL.md — AI Knowledge Package
+
+A skill is a structured knowledge package that teaches your AI editor the rules and patterns for a specific domain. The `klever-sc` skill covers everything needed to write, deploy, and debug Klever smart contracts correctly.
+
+Each skill has a `SKILL.md` entry point and supporting files (`api.md`, `deployment.md`, `events.md`, etc.) that the agent loads progressively as needed.
+
+**Install the Klever skill:**
+
+```bash
+npx skills add https://github.com/klever-io/skills
+```
+
+**What it covers:**
+
+- KLV decimals: 6 (not 18 like EVM)
+- The `--values` flag (not `--value`) in koperator
+- Event ONE-DATA rule (max 1 non-indexed parameter)
+- BigUint subtraction guard patterns
+- Required `#[upgrade]` endpoint for redeployable contracts
+
+---
