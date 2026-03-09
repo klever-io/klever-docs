@@ -1,0 +1,47 @@
+# Skills
+
+A collection of skills for specialized development workflows in Klever Blockchain.
+
+## What are Skills?
+
+Skills are structured knowledge packages that enhance AI-assisted development. Each skill consists of a `SKILL.md` entry point and supporting markdown files that the agent loads progressively as needed. They encode best practices, common patterns, and domain-specific rules so the agent can assist more accurately on specialized tasks.
+
+When you install a skill, your AI editor gains deep, curated knowledge about a specific domain — such as Klever smart contract development, deployment workflows, or testing patterns — without requiring you to provide that context manually in every session.
+
+## Installation
+
+### Quick Install
+
+```bash
+npx skills add https://github.com/klever-io/skills
+```
+
+This command fetches the skill collection and registers it with your AI editor's skill loader. After installation, the skills are available automatically in supported editors (Claude Code, VS Code with MCP, Cursor).
+
+## Available Skills
+
+| Skill | Description |
+|-------|-------------|
+| `klever-contract` | Smart contract development with `klever_sc` framework |
+
+## How Skills Work
+
+```
+Your Editor
+    └── Skill Loader
+            └── SKILL.md          ← entry point, always loaded
+                    ├── patterns.md       ← loaded on demand
+                    ├── best-practices.md ← loaded on demand
+                    └── reference.md      ← loaded on demand
+```
+
+The agent reads the `SKILL.md` entry point at the start of a task. As the task progresses, it loads supporting files only when relevant — keeping context usage efficient while ensuring nothing important is missed.
+
+## Contributing
+
+Contributions are welcome. Each skill lives in its own directory with a `SKILL.md` and supporting files. See any existing skill for the expected structure.
+
+1. Fork the [klever-io/skills](https://github.com/klever-io/skills) repository
+2. Create a directory for your skill
+3. Add a `SKILL.md` and supporting markdown files
+4. Submit a pull request

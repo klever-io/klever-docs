@@ -8,13 +8,13 @@ export const navigation: Array<NavGroup> = [
   {
     title: 'AI-Assisted Development',
     links: [
-      { title: 'AI on Klever', href: '/ai' },
+      { title: 'Overview', href: '/ai' },
       {
-        title: 'Using AI on KVM',
+        title: 'Klever MCP Server',
         href: '/using-ai-on-kvm',
         children: [
           {
-            title: 'Installation Guide',
+            title: 'Setup',
             href: '/ai-environment-setup',
             children: [
               { title: 'Quick Setup', href: '/quick-setup' },
@@ -31,9 +31,10 @@ export const navigation: Array<NavGroup> = [
             ],
           },
           { title: 'Workflow Example', href: '/mcp-workflow' },
-          { title: 'Project structure for AI coding', href: '/project-structure-for-ai-coding' },
+          { title: 'Project Structure', href: '/project-structure-for-ai-coding' },
         ],
       },
+      { title: 'Skills', href: '/skills' },
     ],
   },
   {

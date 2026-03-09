@@ -76,27 +76,3 @@ Choose your editor:
 | Claude Desktop | [Quick Setup →](/using-ai-on-kvm/ai-environment-setup/quick-setup#claude-desktop) |
 
 [View full installation guide →](/using-ai-on-kvm/ai-environment-setup)
-
----
-
-# SKILL.md — AI Knowledge Package
-
-A skill is a structured knowledge package that teaches your AI editor the rules and patterns for a specific domain. The `klever-sc` skill covers everything needed to write, deploy, and debug Klever smart contracts correctly.
-
-Each skill has a `SKILL.md` entry point and supporting files (`api.md`, `deployment.md`, `events.md`, etc.) that the agent loads progressively as needed.
-
-**Install the Klever skill:**
-
-```bash
-npx skills add https://github.com/klever-io/skills
-```
-
-**What it covers:**
-
-- KLV decimals: 6 (not 18 like EVM)
-- The `--values` flag (not `--value`) in koperator
-- Event ONE-DATA rule (max 1 non-indexed parameter)
-- BigUint subtraction guard patterns
-- Required `#[upgrade]` endpoint for redeployable contracts
-
----
