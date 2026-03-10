@@ -6,6 +6,38 @@ export const navigation: Array<NavGroup> = [
     links: [{ title: 'Introduction', href: '/' }],
   },
   {
+    title: 'AI-Assisted Development',
+    links: [
+      { title: 'Overview', href: '/ai' },
+      {
+        title: 'Klever MCP Server',
+        href: '/ai-for-kvm',
+        children: [
+          {
+            title: 'Setup',
+            href: '/ai-environment-setup',
+            children: [
+              { title: 'Quick Setup', href: '/quick-setup' },
+              { title: 'Run Locally', href: '/run-locally' },
+            ],
+          },
+          {
+            title: 'Reference',
+            href: '/mcp-reference',
+            children: [
+              { title: 'Functions', href: '/functions' },
+              { title: 'MCP Prompts', href: '/mcp-prompts' },
+              { title: 'Knowledge Base', href: '/knowledge-base' },
+            ],
+          },
+          { title: 'Workflow Example', href: '/mcp-workflow' },
+          { title: 'Project Structure', href: '/project-structure-for-ai-coding' },
+        ],
+      },
+      { title: 'Skills', href: '/skills' },
+    ],
+  },
+  {
     title: 'Klever Wallet',
     links: [{ title: 'Quickstart', href: '/quickstart' }],
   },
@@ -123,31 +155,6 @@ export const navigation: Array<NavGroup> = [
               },
             ],
           },
-        ],
-      },
-      {
-        title: 'Using AI on KVM',
-        href: '/using-ai-on-kvm',
-        children: [
-          {
-            title: 'Installation Guide',
-            href: '/ai-environment-setup',
-            children: [
-              { title: 'Quick Setup', href: '/quick-setup' },
-              { title: 'Run Locally', href: '/run-locally' },
-            ],
-          },
-          {
-            title: 'Reference',
-            href: '/mcp-reference',
-            children: [
-              { title: 'Functions', href: '/functions' },
-              { title: 'MCP Prompts', href: '/mcp-prompts' },
-              { title: 'Knowledge Base', href: '/knowledge-base' },
-            ],
-          },
-          { title: 'Workflow Example', href: '/mcp-workflow' },
-          { title: 'Project structure for AI coding', href: '/project-structure-for-ai-coding' },
         ],
       },
       { title: 'Staking', href: '/staking' },
