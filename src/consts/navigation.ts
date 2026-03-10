@@ -11,7 +11,7 @@ export const navigation: Array<NavGroup> = [
       { title: 'Overview', href: '/ai' },
       {
         title: 'Klever MCP Server',
-        href: '/using-ai-on-kvm',
+        href: '/ai-for-kvm',
         children: [
           {
             title: 'Setup',
