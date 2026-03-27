@@ -247,6 +247,7 @@ export const navigation: Array<NavGroup> = [
     {
     title: 'Side Pill',
     links: [
+      { title: 'Benchmark Tool', href: '/benchmark-tool' },
       { title: 'Converting Contract from ETH to Klever', href: '/converting-contract-from-eth-to-klever' }
     ],
 
