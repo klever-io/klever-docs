@@ -57,6 +57,15 @@ This will automatically:
 
 ## Step 3 — Start the Localnet
 
+<Note color="yellow">
+  **Linux users:** Before starting, grant permissions to the generated directories so Docker containers can access them:
+
+  ```bash
+  sudo chown -R 999 .
+  ```
+</Note>
+
+
 ```bash
 # Linux/macOS
 python3 setup.py start
@@ -65,13 +74,6 @@ python3 setup.py start
 python setup.py start
 ```
 
-<Note color="yellow">
-  **Linux users:** You may need to grant permissions to the generated directories before starting:
-
-  ```bash
-  chmod -R 777 dbs/* keys/* logs/*
-  ```
-</Note>
 
 Your local Klever testnet is now running.
 
@@ -147,6 +149,14 @@ python3 setup.py clean
 # Remove everything (keys, dbs, logs, configs)
 python3 setup.py clean-all
 ```
+
+<Note color="yellow">
+  **Troubleshooting:** If `clean-all` fails with a permission error, run it with `sudo`:
+
+  ```bash
+  sudo python3 setup.py clean-all
+  ```
+</Note>
 
 ---
 
