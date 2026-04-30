@@ -38,8 +38,8 @@ const result = await wallet.transfer({
 console.log('Transaction hash:', result.hash)
 
 // Wait for confirmation
-const receipt = await result.wait()
-console.log('Confirmed in block:', receipt.blockNumber)
+const confirmed = await provider.waitForTransaction(result.hash)
+console.log('Confirmed in block:', confirmed?.blockNum)
 ```
 
 ## Changing Network
@@ -126,11 +126,12 @@ const hash = await wallet.broadcastTransaction(signedTx)
 ```typescript
 import { NodeWallet } from '@klever/connect-wallet'
 import { KleverProvider } from '@klever/connect-provider'
-import { loadPrivateKeyFromPemFile } from '@klever/connect-crypto'
+import { cryptoProvider } from '@klever/connect-crypto'
 
 const provider   = new KleverProvider('mainnet')
-const privateKey = loadPrivateKeyFromPemFile('./wallet.pem')           // unencrypted
-const encrypted  = loadPrivateKeyFromPemFile('./wallet.pem', 'password') // encrypted
+const privateKey = await cryptoProvider.importPrivateKeyFromPemFile('./wallet.pem')
+// Encrypted PEM:
+// const privateKey = await cryptoProvider.importPrivateKeyFromPemFile('./wallet.pem', { password: 'yourpassword' })
 
 const wallet = new NodeWallet(provider, privateKey.toHex())
 await wallet.connect()

@@ -47,36 +47,46 @@ const keyPair2 = generateKeyPairSync()
 ### Sign a Message
 
 ```typescript
-import { signMessage, generateKeyPair } from '@klever/connect-crypto'
+import { crypto, generateKeyPair } from '@klever/connect-crypto'
 
 const keyPair = await generateKeyPair()
 const message = new TextEncoder().encode('Hello Klever!')
 
-const signature = await signMessage(message, keyPair.privateKey)
+const signature = await crypto.signMessage(message, keyPair.privateKey)
 console.log('Signature:', signature.toHex())
 ```
 
 ### Verify a Signature
 
 ```typescript
-import { verifySignature } from '@klever/connect-crypto'
+import { crypto } from '@klever/connect-crypto'
 
-const isValid = await verifySignature(message, signature, keyPair.publicKey)
+const isValid = await crypto.verifySignature(
+  message,
+  signature,
+  keyPair.publicKey,
+)
 console.log('Valid:', isValid) // true
 ```
 
 ### Load Key from PEM File
 
+Both functions are async and return `{ privateKey: Uint8Array, address: string }`. Use `crypto` when you need a `PrivateKeyImpl` with `.toHex()`:
+
 ```typescript
-import { loadPrivateKeyFromPem, loadPrivateKeyFromPemFile } from '@klever/connect-crypto'
+import { crypto } from '@klever/connect-crypto'
 
-// From PEM string
-const privateKey = loadPrivateKeyFromPem(pemContent)
-const privateKey2 = loadPrivateKeyFromPem(encryptedPemContent, 'password123')
+// From file path (Node.js only) — returns PrivateKeyImpl
+const privateKey = await crypto.importPrivateKeyFromPemFile('./wallet.pem')
+const privateKey2 = await crypto.importPrivateKeyFromPemFile(
+  './encrypted.pem',
+  { password: 'mypassword' },
+)
 
-// From file path (Node.js only)
-const privateKey3 = loadPrivateKeyFromPemFile('./wallet.pem')
-const privateKey4 = loadPrivateKeyFromPemFile('./encrypted.pem', 'mypassword')
+console.log(privateKey.toHex()) // 64-char hex string
+
+// From PEM string — returns PrivateKeyImpl
+const privateKey3 = await crypto.importPrivateKeyFromPem(pemContent)
 ```
 
 ## API Reference
@@ -106,7 +116,7 @@ import { PrivateKeyImpl } from '@klever/connect-crypto'
 
 const privateKey = PrivateKeyImpl.fromHex('abc123...')
 console.log(privateKey.bytes.length) // 32
-console.log(privateKey.hex)           // 'abc123...'
+console.log(privateKey.hex) // 'abc123...'
 ```
 
 **Methods:** `toHex()`, `static fromHex(hex)`, `static fromBytes(bytes)`
@@ -162,9 +172,9 @@ console.log(signature.toBase64())
 ### Crypto Provider
 
 ```typescript
-import { cryptoProvider, crypto } from '@klever/connect-crypto'
+import { crypto } from '@klever/connect-crypto'
 
-const keyPair  = await crypto.generateKeyPair()
+const keyPair = await crypto.generateKeyPair()
 const signature = await crypto.signMessage(message, privateKey)
 ```
 
@@ -187,8 +197,8 @@ async function createWallet() {
   const keyPair = await generateKeyPair()
 
   return {
-    address:    keyPair.publicKey.toAddress(),
-    publicKey:  keyPair.publicKey.toHex(),
+    address: keyPair.publicKey.toAddress(),
+    publicKey: keyPair.publicKey.toHex(),
     privateKey: keyPair.privateKey.toHex(), // Store securely!
   }
 }
@@ -197,41 +207,43 @@ async function createWallet() {
 ### Sign Transaction Data
 
 ```typescript
-import { signMessage } from '@klever/connect-crypto'
+import { crypto } from '@klever/connect-crypto'
 import { hashBlake2b } from '@klever/connect-encoding'
 
 async function signTransaction(txBytes: Uint8Array, privateKey: PrivateKey) {
   const txHash = hashBlake2b(txBytes)
-  return signMessage(txHash, privateKey)
+  return crypto.signMessage(txHash, privateKey)
 }
 ```
 
 ### Verify Message Signature
 
 ```typescript
+import { crypto, SignatureImpl, PublicKeyImpl } from '@klever/connect-crypto'
+
 async function verifyMessageSignature(
   message: string,
   signatureHex: string,
   publicKeyHex: string,
 ): Promise<boolean> {
   const messageBytes = new TextEncoder().encode(message)
-  const signature    = SignatureImpl.fromHex(signatureHex)
-  const publicKey    = PublicKeyImpl.fromHex(publicKeyHex)
+  const signature = SignatureImpl.fromHex(signatureHex)
+  const publicKey = PublicKeyImpl.fromHex(publicKeyHex)
 
-  return verifySignature(messageBytes, signature, publicKey)
+  return crypto.verifySignature(messageBytes, signature, publicKey)
 }
 ```
 
 ### Load Wallet from PEM
 
 ```typescript
-import { loadPrivateKeyFromPem, getPublicKeyFromPrivate } from '@klever/connect-crypto'
-import { readFileSync } from 'fs'
+import { crypto } from '@klever/connect-crypto'
 
-function loadWalletFromPem(pemPath: string, password?: string) {
-  const pemContent = readFileSync(pemPath, 'utf8')
-  const privateKey = loadPrivateKeyFromPem(pemContent, password)
-  const publicKey  = getPublicKeyFromPrivate(privateKey)
+async function loadWalletFromPem(pemPath: string, password?: string) {
+  const privateKey = await crypto.importPrivateKeyFromPemFile(pemPath, {
+    password,
+  })
+  const publicKey = await crypto.getPublicKey(privateKey)
 
   return {
     privateKey,
@@ -244,11 +256,13 @@ function loadWalletFromPem(pemPath: string, password?: string) {
 ## Async vs Sync
 
 **Use async (recommended) when:**
+
 - Web applications (doesn't block UI)
 - Server applications (better concurrency)
 - Performance is not critical
 
 **Use sync when:**
+
 - High-performance scenarios
 - Testing and scripts
 - Immediate results needed
@@ -259,13 +273,14 @@ function loadWalletFromPem(pemPath: string, password?: string) {
 
 ```typescript
 // BAD — don't do this
-const privateKey = PrivateKeyImpl.fromHex('abc123...')  // hardcoded
+const privateKey = PrivateKeyImpl.fromHex('abc123...') // hardcoded
 
 // GOOD — use environment variables
 const privateKey = PrivateKeyImpl.fromHex(process.env.PRIVATE_KEY!)
 ```
 
 **Browser — use extension mode, not raw private keys:**
+
 ```typescript
 // GOOD — extension manages keys
 import { BrowserWallet } from '@klever/connect-wallet'
@@ -273,6 +288,7 @@ const wallet = await BrowserWallet.connect()
 ```
 
 **React Native — use secure storage:**
+
 ```typescript
 import * as SecureStore from 'expo-secure-store'
 
@@ -282,6 +298,7 @@ async function storeKey(privateKey: PrivateKey) {
 ```
 
 **Key security guidelines:**
+
 1. Never expose private keys in client-side code
 2. Use environment variables for server-side keys
 3. Encrypt keys at rest using strong passwords
@@ -300,9 +317,14 @@ async function storeKey(privateKey: PrivateKey) {
 ## TypeScript Support
 
 ```typescript
-import type { KeyPair, PrivateKey, PublicKey, Signature } from '@klever/connect-crypto'
+import type {
+  KeyPair,
+  PrivateKey,
+  PublicKey,
+  Signature,
+} from '@klever/connect-crypto'
 
-const keyPair: KeyPair   = await generateKeyPair()
-const pk: PrivateKey     = keyPair.privateKey
-const pub: PublicKey     = keyPair.publicKey
+const keyPair: KeyPair = await generateKeyPair()
+const pk: PrivateKey = keyPair.privateKey
+const pub: PublicKey = keyPair.publicKey
 ```

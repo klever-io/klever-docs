@@ -24,9 +24,12 @@ const wallet   = new NodeWallet(provider, process.env.PRIVATE_KEY)
 
 await wallet.connect()
 
-const result  = await wallet.transfer({ receiver: 'klv1...', amount: parseKLV('100') })
-const receipt = await result.wait()
-console.log('Confirmed:', receipt.hash)
+const result = await wallet.transfer({ receiver: 'klv1...', amount: parseKLV('100') })
+console.log('Transaction hash:', result.hash)
+
+// Wait for confirmation
+const confirmed = await provider.waitForTransaction(result.hash)
+console.log('Confirmed in block:', confirmed?.blockNum)
 ```
 
 ## Where to go next
