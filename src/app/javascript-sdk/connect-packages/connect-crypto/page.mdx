@@ -1,0 +1,308 @@
+# @klever/connect-crypto
+
+Cryptographic operations for Klever Connect SDK — key generation, signing, and verification.
+
+## Installation
+
+```bash
+npm install @klever/connect-crypto
+```
+
+## Overview
+
+This package provides secure cryptographic primitives for Klever blockchain:
+
+- **Ed25519 Key Generation** — Secure keypair creation
+- **Message Signing** — Sign messages and transactions with Ed25519
+- **Signature Verification** — Verify Ed25519 signatures
+- **PEM File Support** — Import/export keys in PEM format (encrypted and unencrypted)
+- **Address Derivation** — Convert public keys to Klever addresses
+- **Async and Sync APIs** — Both async and sync operations for flexibility
+
+## Security
+
+Uses audited cryptographic libraries:
+
+- **[@noble/ed25519](https://github.com/paulmillr/noble-ed25519)** — Audited Ed25519 implementation
+- **[@noble/hashes](https://github.com/paulmillr/noble-hashes)** — Audited hash functions (SHA-512)
+- **[@scure/bip39](https://github.com/paulmillr/scure-bip39)** — Audited BIP39 mnemonic implementation
+
+## Quick Start
+
+### Generate a New Keypair
+
+```typescript
+import { generateKeyPair } from '@klever/connect-crypto'
+
+// Async (recommended)
+const keyPair = await generateKeyPair()
+console.log('Address:', keyPair.publicKey.toAddress())
+console.log('Public Key:', keyPair.publicKey.toHex())
+
+// Sync
+import { generateKeyPairSync } from '@klever/connect-crypto'
+const keyPair2 = generateKeyPairSync()
+```
+
+### Sign a Message
+
+```typescript
+import { signMessage, generateKeyPair } from '@klever/connect-crypto'
+
+const keyPair = await generateKeyPair()
+const message = new TextEncoder().encode('Hello Klever!')
+
+const signature = await signMessage(message, keyPair.privateKey)
+console.log('Signature:', signature.toHex())
+```
+
+### Verify a Signature
+
+```typescript
+import { verifySignature } from '@klever/connect-crypto'
+
+const isValid = await verifySignature(message, signature, keyPair.publicKey)
+console.log('Valid:', isValid) // true
+```
+
+### Load Key from PEM File
+
+```typescript
+import { loadPrivateKeyFromPem, loadPrivateKeyFromPemFile } from '@klever/connect-crypto'
+
+// From PEM string
+const privateKey = loadPrivateKeyFromPem(pemContent)
+const privateKey2 = loadPrivateKeyFromPem(encryptedPemContent, 'password123')
+
+// From file path (Node.js only)
+const privateKey3 = loadPrivateKeyFromPemFile('./wallet.pem')
+const privateKey4 = loadPrivateKeyFromPemFile('./encrypted.pem', 'mypassword')
+```
+
+## API Reference
+
+### Key Generation
+
+#### `generateKeyPair(): Promise<KeyPair>`
+
+Generate a new Ed25519 keypair asynchronously (recommended).
+
+#### `generateKeyPairSync(): KeyPair`
+
+Generate a new Ed25519 keypair synchronously.
+
+#### `getPublicKeyFromPrivate(privateKey: PrivateKey): PublicKey`
+
+Derive public key from private key.
+
+### Key Classes
+
+#### `PrivateKeyImpl`
+
+Represents an Ed25519 private key (32 bytes).
+
+```typescript
+import { PrivateKeyImpl } from '@klever/connect-crypto'
+
+const privateKey = PrivateKeyImpl.fromHex('abc123...')
+console.log(privateKey.bytes.length) // 32
+console.log(privateKey.hex)           // 'abc123...'
+```
+
+**Methods:** `toHex()`, `static fromHex(hex)`, `static fromBytes(bytes)`
+
+#### `PublicKeyImpl`
+
+Represents an Ed25519 public key (32 bytes).
+
+```typescript
+import { PublicKeyImpl } from '@klever/connect-crypto'
+
+const publicKey = PublicKeyImpl.fromHex('def456...')
+console.log(publicKey.toAddress()) // 'klv1...'
+```
+
+**Methods:** `toHex()`, `toAddress()`, `static fromHex(hex)`, `static fromBytes(bytes)`
+
+### Signing Operations
+
+#### `signMessage(message: Uint8Array, privateKey: PrivateKey): Promise<Signature>`
+
+Sign a message with Ed25519 asynchronously (recommended).
+
+#### `signMessageSync(message: Uint8Array, privateKey: PrivateKey): Signature`
+
+Sign a message with Ed25519 synchronously.
+
+#### `verifySignature(message, signature, publicKey): Promise<boolean>`
+
+Verify an Ed25519 signature asynchronously (recommended).
+
+#### `verifySignatureSync(message, signature, publicKey): boolean`
+
+Verify an Ed25519 signature synchronously.
+
+### Signature Class
+
+#### `SignatureImpl`
+
+Represents an Ed25519 signature (64 bytes).
+
+```typescript
+import { SignatureImpl } from '@klever/connect-crypto'
+
+const signature = SignatureImpl.fromHex('abc123...')
+console.log(signature.toBase64())
+```
+
+**Methods:** `toHex()`, `toBase64()`, `static fromHex(hex)`, `static fromBase64(base64)`, `static fromBytes(bytes)`
+
+**Properties:** `bytes`, `hex`
+
+### Crypto Provider
+
+```typescript
+import { cryptoProvider, crypto } from '@klever/connect-crypto'
+
+const keyPair  = await crypto.generateKeyPair()
+const signature = await crypto.signMessage(message, privateKey)
+```
+
+## PEM Operations
+
+#### `loadPrivateKeyFromPem(pemContent: string, password?: string): PrivateKey`
+
+Load a private key from PEM content string.
+
+#### `loadPrivateKeyFromPemFile(filePath: string, password?: string): PrivateKey`
+
+Load a private key from a PEM file path (Node.js only).
+
+## Common Use Cases
+
+### Create New Wallet
+
+```typescript
+async function createWallet() {
+  const keyPair = await generateKeyPair()
+
+  return {
+    address:    keyPair.publicKey.toAddress(),
+    publicKey:  keyPair.publicKey.toHex(),
+    privateKey: keyPair.privateKey.toHex(), // Store securely!
+  }
+}
+```
+
+### Sign Transaction Data
+
+```typescript
+import { signMessage } from '@klever/connect-crypto'
+import { hashBlake2b } from '@klever/connect-encoding'
+
+async function signTransaction(txBytes: Uint8Array, privateKey: PrivateKey) {
+  const txHash = hashBlake2b(txBytes)
+  return signMessage(txHash, privateKey)
+}
+```
+
+### Verify Message Signature
+
+```typescript
+async function verifyMessageSignature(
+  message: string,
+  signatureHex: string,
+  publicKeyHex: string,
+): Promise<boolean> {
+  const messageBytes = new TextEncoder().encode(message)
+  const signature    = SignatureImpl.fromHex(signatureHex)
+  const publicKey    = PublicKeyImpl.fromHex(publicKeyHex)
+
+  return verifySignature(messageBytes, signature, publicKey)
+}
+```
+
+### Load Wallet from PEM
+
+```typescript
+import { loadPrivateKeyFromPem, getPublicKeyFromPrivate } from '@klever/connect-crypto'
+import { readFileSync } from 'fs'
+
+function loadWalletFromPem(pemPath: string, password?: string) {
+  const pemContent = readFileSync(pemPath, 'utf8')
+  const privateKey = loadPrivateKeyFromPem(pemContent, password)
+  const publicKey  = getPublicKeyFromPrivate(privateKey)
+
+  return {
+    privateKey,
+    publicKey,
+    address: publicKey.toAddress(),
+  }
+}
+```
+
+## Async vs Sync
+
+**Use async (recommended) when:**
+- Web applications (doesn't block UI)
+- Server applications (better concurrency)
+- Performance is not critical
+
+**Use sync when:**
+- High-performance scenarios
+- Testing and scripts
+- Immediate results needed
+
+## Security Best Practices
+
+**Never expose private keys:**
+
+```typescript
+// BAD — don't do this
+const privateKey = PrivateKeyImpl.fromHex('abc123...')  // hardcoded
+
+// GOOD — use environment variables
+const privateKey = PrivateKeyImpl.fromHex(process.env.PRIVATE_KEY!)
+```
+
+**Browser — use extension mode, not raw private keys:**
+```typescript
+// GOOD — extension manages keys
+import { BrowserWallet } from '@klever/connect-wallet'
+const wallet = await BrowserWallet.connect()
+```
+
+**React Native — use secure storage:**
+```typescript
+import * as SecureStore from 'expo-secure-store'
+
+async function storeKey(privateKey: PrivateKey) {
+  await SecureStore.setItemAsync('privateKey', privateKey.toHex())
+}
+```
+
+**Key security guidelines:**
+1. Never expose private keys in client-side code
+2. Use environment variables for server-side keys
+3. Encrypt keys at rest using strong passwords
+4. Use hardware wallets for high-value operations
+5. Clear sensitive data from memory when done
+6. Use PEM encryption when storing keys on disk
+7. Implement key rotation for long-running services
+
+## Performance
+
+- **Key Generation** — ~0.5ms (async) or ~0.3ms (sync)
+- **Signing** — ~0.2ms (async) or ~0.1ms (sync)
+- **Verification** — ~0.5ms (async) or ~0.3ms (sync)
+- **PEM Loading** — ~1-5ms (depending on encryption)
+
+## TypeScript Support
+
+```typescript
+import type { KeyPair, PrivateKey, PublicKey, Signature } from '@klever/connect-crypto'
+
+const keyPair: KeyPair   = await generateKeyPair()
+const pk: PrivateKey     = keyPair.privateKey
+const pub: PublicKey     = keyPair.publicKey
+```

@@ -1,0 +1,289 @@
+# Node.js
+
+Server-side integration with the Klever Blockchain using `@klever/connect`.
+
+## Installation
+
+```bash
+npm install @klever/connect
+```
+
+Or install only the packages you need:
+
+```bash
+npm install @klever/connect-wallet @klever/connect-transactions @klever/connect-provider @klever/connect-core
+```
+
+## Quick Start
+
+Common flow — build, sign, and broadcast a transfer:
+
+```typescript
+import { NodeWallet } from '@klever/connect-wallet'
+import { KleverProvider } from '@klever/connect-provider'
+import { TransactionBuilder } from '@klever/connect-transactions'
+import { TXType, parseKLV } from '@klever/connect-core'
+
+const provider = new KleverProvider('mainnet')
+const wallet   = new NodeWallet(provider, process.env.PRIVATE_KEY)
+
+await wallet.connect()
+
+// One-liner transfer
+const result = await wallet.transfer({
+  receiver: 'klv1fpwjz234gy8aaae3gx0e8q9f52vymzzn3z5q0s5h60pvktzx0n0qwvtux5',
+  amount: parseKLV('100'), // 100 KLV
+})
+
+console.log('Transaction hash:', result.hash)
+
+// Wait for confirmation
+const receipt = await result.wait()
+console.log('Confirmed in block:', receipt.blockNumber)
+```
+
+## Changing Network
+
+```typescript
+import { KleverProvider } from '@klever/connect-provider'
+
+// Named networks
+const mainnet = new KleverProvider('mainnet')
+const testnet = new KleverProvider('testnet')
+const devnet  = new KleverProvider('devnet')
+
+// Custom network
+const custom = new KleverProvider({
+  url:     'https://my-node.example.com',
+  chainId: '109',
+})
+```
+
+## Build / Sign / Broadcast (Manual Flow)
+
+```typescript
+import { NodeWallet } from '@klever/connect-wallet'
+import { KleverProvider } from '@klever/connect-provider'
+import { TransactionBuilder } from '@klever/connect-transactions'
+import { TXType, parseKLV } from '@klever/connect-core'
+
+const provider = new KleverProvider('mainnet')
+const wallet   = new NodeWallet(provider, process.env.PRIVATE_KEY)
+await wallet.connect()
+
+// Build
+const builder = new TransactionBuilder(provider)
+builder
+  .addContract({
+    contractType: TXType.Transfer,
+    receiver: 'klv1fpwjz234gy8aaae3gx0e8q9f52vymzzn3z5q0s5h60pvktzx0n0qwvtux5',
+    amount: String(parseKLV('100')),
+  })
+  .sender(wallet.address)
+
+const unsignedTx = await builder.build()
+
+// Sign
+const signedTx = await wallet.signTransaction(unsignedTx)
+
+// Broadcast
+const hash = await wallet.broadcastTransaction(signedTx)
+console.log('Hash:', hash)
+```
+
+## Offline / Air-Gapped Signing
+
+Use `buildProto()` when you can't reach the network (manual nonce/fee required):
+
+```typescript
+import { TransactionBuilder } from '@klever/connect-transactions'
+import { TXType } from '@klever/connect-core'
+
+const builder = new TransactionBuilder(provider)
+builder
+  .addContract({
+    contractType: TXType.Transfer,
+    receiver: 'klv1receiver...',
+    amount: '1000000',
+  })
+  .sender(senderAddress)
+  .nonce(42)
+  .bandwidthFee(1000000)
+  .kappFee(500000)
+
+// Build without network access
+const tx = builder.buildProto()
+
+// Sign offline
+const signedTx = await wallet.signTransaction(tx)
+
+// Broadcast later (when online)
+const hash = await wallet.broadcastTransaction(signedTx)
+```
+
+## Loading from PEM File
+
+```typescript
+import { NodeWallet } from '@klever/connect-wallet'
+import { KleverProvider } from '@klever/connect-provider'
+import { loadPrivateKeyFromPemFile } from '@klever/connect-crypto'
+
+const provider   = new KleverProvider('mainnet')
+const privateKey = loadPrivateKeyFromPemFile('./wallet.pem')           // unencrypted
+const encrypted  = loadPrivateKeyFromPemFile('./wallet.pem', 'password') // encrypted
+
+const wallet = new NodeWallet(provider, privateKey.toHex())
+await wallet.connect()
+```
+
+## Generating a New Wallet
+
+```typescript
+import { NodeWallet } from '@klever/connect-wallet'
+import { KleverProvider } from '@klever/connect-provider'
+
+const provider = new KleverProvider('testnet')
+const wallet   = await NodeWallet.generate(provider)
+await wallet.connect()
+
+console.log('Address:', wallet.address)
+// IMPORTANT: save the private key securely!
+```
+
+## Account Info
+
+```typescript
+const balance = await wallet.getBalance()
+const nonce   = await wallet.getNonce()
+
+// Or via provider
+const account  = await provider.getAccount(wallet.address)
+console.log('Nonce:', account.nonce)
+console.log('Assets:', account.assets)
+```
+
+## All Transaction Types
+
+```typescript
+import { TransactionBuilder } from '@klever/connect-transactions'
+import { TXType, parseKLV } from '@klever/connect-core'
+
+const builder = new TransactionBuilder(provider)
+
+// Freeze (stake)
+builder.addContract({ contractType: TXType.Freeze, amount: String(parseKLV('1000')), kda: 'KLV' })
+
+// Delegate
+builder.addContract({ contractType: TXType.Delegate, receiver: 'klv1validator...', bucketId: '...' })
+
+// Claim rewards
+builder.addContract({ contractType: TXType.Claim, claimType: 0, id: 'KLV' })
+
+// Asset trigger (mint, burn, etc.)
+builder.addContract({ contractType: TXType.AssetTrigger, triggerType: 0, assetId: 'MY-NFT/1' })
+
+// Smart contract call
+builder.addContract({
+  contractType: TXType.SmartContract,
+  address: 'klv1contract...',
+  callValue: 0n,
+  callData: 'functionName@arg1@arg2',
+})
+```
+
+See [available transactions](/available-transactions) for the full list.
+
+## Multi-operation Transactions
+
+```typescript
+const builder = new TransactionBuilder(provider)
+builder
+  .addContract({ contractType: TXType.Transfer, receiver: 'klv1a...', amount: '1000000' })
+  .addContract({ contractType: TXType.Transfer, receiver: 'klv1b...', amount: '2000000' })
+  .sender(wallet.address)
+
+const tx     = await builder.build()
+const signed = await wallet.signTransaction(tx)
+const hash   = await wallet.broadcastTransaction(signed)
+```
+
+## Signing Messages
+
+```typescript
+const message   = 'authenticate:user123'
+const signature = await wallet.signMessage(message)
+console.log('Signature:', signature.toHex())
+
+// Verify
+const isValid = await wallet.verifyMessage(message, signature)
+console.log('Valid:', isValid) // true
+```
+
+## Transaction Monitoring
+
+```typescript
+import { KleverProvider } from '@klever/connect-provider'
+
+const hash = await wallet.broadcastTransaction(signedTx)
+
+// Simple wait
+const tx = await provider.waitForTransaction(hash)
+console.log('Status:', tx?.status)
+
+// With progress callbacks
+const confirmed = await provider.waitForTransaction(hash, 3, (status, data) => {
+  if (status === 'pending')    console.log(`Pending... attempt ${data.attempts}`)
+  if (status === 'confirming') console.log(`Confirming... ${data.confirmations}/${data.required}`)
+  if (status === 'failed')     console.error('Failed!')
+})
+```
+
+## Security Best Practices
+
+**Use environment variables — never hardcode private keys:**
+
+```bash
+# .env (add to .gitignore!)
+PRIVATE_KEY=your_private_key_here
+```
+
+```typescript
+const wallet = new NodeWallet(provider, process.env.PRIVATE_KEY)
+```
+
+**Production — use a secrets manager:**
+
+```typescript
+import { SecretsManagerClient, GetSecretValueCommand } from '@aws-sdk/client-secrets-manager'
+
+const client   = new SecretsManagerClient({ region: 'us-east-1' })
+const response = await client.send(new GetSecretValueCommand({ SecretId: 'klever/private-key' }))
+const wallet   = new NodeWallet(provider, response.SecretString)
+```
+
+**PEM file permissions:**
+
+```bash
+chmod 600 wallet.pem  # Only owner can read/write
+```
+
+**Disconnect and clear key from memory when done:**
+
+```typescript
+await wallet.disconnect(true) // true = wipe private key from memory
+```
+
+## Utility Methods
+
+| Method | Description |
+| --- | --- |
+| `wallet.getBalance()` | Get KLV balance as bigint |
+| `wallet.getNonce()` | Get current account nonce |
+| `wallet.signMessage(msg)` | Sign a message string or bytes |
+| `wallet.verifyMessage(msg, sig)` | Verify a signature |
+| `wallet.signTransaction(tx)` | Sign a transaction |
+| `wallet.broadcastTransaction(tx)` | Broadcast a signed transaction |
+| `wallet.transfer({ receiver, amount })` | One-liner KLV transfer |
+| `provider.getAccount(address)` | Get full account info |
+| `provider.batch([...fns])` | Parallel batch requests |
+| `provider.clearCache()` | Clear cached data |

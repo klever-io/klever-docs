@@ -1,0 +1,798 @@
+# @klever/connect-react
+
+React hooks and components for Klever Connect SDK.
+
+## Installation
+
+```bash
+npm install @klever/connect-react
+```
+
+## Overview
+
+`@klever/connect-react` provides React hooks for seamless integration with the Klever blockchain. Built with TypeScript for complete type safety and designed following React best practices.
+
+**Available Hooks:**
+
+- **`useKlever()`** — Main context hook for wallet connection and network management
+- **`useTransaction()`** — Generic transaction sending with full lifecycle control
+- **`useTransfer()`** — Convenience hook for KLV/KDA transfers
+- **`useFreeze()`** — Freeze (stake) assets to create buckets
+- **`useUnfreeze()`** — Unfreeze (unstake) assets and start cooldown
+- **`useDelegate()`** — Delegate KLV buckets to validators (via `useStaking`)
+- **`useUndelegate()`** — Undelegate from validators (via `useStaking`)
+- **`useClaim()`** — Claim staking or FPR rewards
+- **`useStaking()`** — Complete staking workflow in one hook
+- **`useBalance()`** — Monitor token balances with auto-polling
+- **`useTransactionMonitor()`** — Real-time transaction status monitoring
+
+**Key Features:**
+
+- Type-safe hooks with full TypeScript support
+- Automatic state management (loading, error, data)
+- Built-in polling and real-time updates
+- Extension wallet integration (Klever Web Extension)
+- Network switching without disconnecting
+- Transaction lifecycle callbacks
+- React 18+ compatible
+
+## Quick Start
+
+### 1. Wrap your app with KleverProvider
+
+```tsx
+import { KleverProvider } from '@klever/connect-react'
+
+function App() {
+  return (
+    <KleverProvider config={{ network: 'testnet' }}>
+      <YourApp />
+    </KleverProvider>
+  )
+}
+```
+
+### 2. Connect wallet and send transactions
+
+```tsx
+import { useKlever, useTransaction } from '@klever/connect-react'
+import { parseKLV } from '@klever/connect-core'
+
+function TransferButton() {
+  const { connect, isConnected, address } = useKlever()
+  const { sendKLV, isLoading } = useTransaction()
+
+  const handleTransfer = async () => {
+    if (!isConnected) {
+      await connect()
+    } else {
+      await sendKLV('klv1receiver...', parseKLV('10'))
+    }
+  }
+
+  return (
+    <button onClick={handleTransfer} disabled={isLoading}>
+      {!isConnected ? 'Connect Wallet' : 'Send 10 KLV'}
+    </button>
+  )
+}
+```
+
+## Hooks
+
+### `useKlever()`
+
+Main context hook for accessing Klever blockchain functionality. Provides wallet connection, network management, and blockchain provider access.
+
+Must be used within a `KleverProvider` component.
+
+```tsx
+import { useKlever } from '@klever/connect-react'
+
+function WalletButton() {
+  const {
+    connect,
+    disconnect,
+    isConnected,
+    isConnecting,
+    address,
+    currentNetwork,
+    switchNetwork,
+    extensionInstalled,
+    error,
+  } = useKlever()
+
+  if (!extensionInstalled) {
+    return (
+      <div>
+        Please install{' '}
+        <a href="https://klever.io/extension" target="_blank">
+          Klever Extension
+        </a>
+      </div>
+    )
+  }
+
+  return (
+    <div>
+      {!isConnected ? (
+        <button onClick={connect} disabled={isConnecting}>
+          {isConnecting ? 'Connecting...' : 'Connect Wallet'}
+        </button>
+      ) : (
+        <div>
+          <p>Connected: {address?.slice(0, 10)}...{address?.slice(-8)}</p>
+          <p>Network: {currentNetwork}</p>
+          <button onClick={() => switchNetwork('mainnet')}>Switch to Mainnet</button>
+          <button onClick={disconnect}>Disconnect</button>
+        </div>
+      )}
+      {error && <p style={{ color: 'red' }}>Error: {error.message}</p>}
+    </div>
+  )
+}
+```
+
+**Return value:**
+
+| Property | Type | Description |
+| --- | --- | --- |
+| `wallet` | `Wallet \| undefined` | Wallet instance (undefined if not connected) |
+| `provider` | `KleverProvider` | Provider for blockchain queries |
+| `address` | `string \| undefined` | Connected wallet address |
+| `isConnected` | `boolean` | Connection status |
+| `isConnecting` | `boolean` | Connection in progress |
+| `error` | `Error \| null` | Error object if any operation failed |
+| `extensionInstalled` | `boolean` | Extension availability |
+| `searchingExtension` | `boolean` | Extension check in progress |
+| `currentNetwork` | `string` | Current network name |
+| `connect()` | `() => Promise<void>` | Initiate wallet connection |
+| `disconnect()` | `() => void` | Disconnect wallet |
+| `switchNetwork(network)` | `(n: string) => Promise<void>` | Switch networks |
+
+### `useTransaction()`
+
+Core hook for sending any type of transaction with full lifecycle control.
+
+> **Important:** `sendKLV` and `sendKDA` expect amounts in **smallest units**. Use `parseKLV()` or `parseUnits()` for human-readable amounts.
+
+```tsx
+import { useTransaction } from '@klever/connect-react'
+import { parseKLV, parseUnits, TXType } from '@klever/connect-core'
+
+function TransactionDemo() {
+  const { sendTransaction, sendKLV, sendKDA, isLoading, error, data, reset } = useTransaction({
+    onSuccess: (receipt) => {
+      console.log('Transaction successful:', receipt.hash)
+    },
+    onError: (err) => {
+      console.error('Transaction failed:', err.message)
+    },
+  })
+
+  // Send KLV
+  const handleSendKLV = async () => {
+    const result = await sendKLV('klv1receiver...', parseKLV('100'))
+    const receipt = await result.wait()
+    console.log('Confirmed in block:', receipt.blockNumber)
+  }
+
+  // Send KDA tokens
+  const handleSendKDA = async () => {
+    await sendKDA('klv1receiver...', parseUnits('50', 6), 'MY-KDA-TOKEN')
+  }
+
+  // Send custom transaction
+  const handleCustomTx = async () => {
+    await sendTransaction({
+      contractType: TXType.Transfer,
+      receiver: 'klv1receiver...',
+      amount: 1000000,
+      kda: 'MY-TOKEN',
+    })
+  }
+
+  return (
+    <div>
+      <button onClick={handleSendKLV} disabled={isLoading}>Send 100 KLV</button>
+      <button onClick={handleSendKDA} disabled={isLoading}>Send 50 KDA</button>
+      <button onClick={handleCustomTx} disabled={isLoading}>Custom Transaction</button>
+      {isLoading && <p>Transaction in progress...</p>}
+      {error && <div><p>{error.message}</p><button onClick={reset}>Try Again</button></div>}
+      {data && <p>Success! Hash: {data.hash}</p>}
+    </div>
+  )
+}
+```
+
+### `useTransfer()`
+
+Convenience hook specifically for KLV/KDA token transfers.
+
+```tsx
+import { useTransfer } from '@klever/connect-react'
+import { parseKLV } from '@klever/connect-core'
+import { useState } from 'react'
+
+function TransferForm() {
+  const [recipient, setRecipient] = useState('')
+  const [amount, setAmount]       = useState('')
+  const { transfer, isLoading, error } = useTransfer({
+    onSuccess: () => { setAmount(''); setRecipient('') },
+  })
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    await transfer({ receiver: recipient, amount: parseKLV(amount) })
+  }
+
+  return (
+    <form onSubmit={handleSubmit}>
+      <input value={recipient} onChange={(e) => setRecipient(e.target.value)} placeholder="Recipient address" />
+      <input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="Amount in KLV" />
+      <button type="submit" disabled={isLoading || !recipient || !amount}>
+        {isLoading ? 'Sending...' : 'Send KLV'}
+      </button>
+      {error && <p>{error.message}</p>}
+    </form>
+  )
+}
+```
+
+### `useStaking()`
+
+Complete staking workflow hook with freeze, unfreeze, delegate, claim, and withdraw operations.
+
+**Staking Flow:**
+
+1. **Freeze** — Stake assets to create bucket (KLV: creates bucket with bucketID; KDA: accumulates frozen amount)
+2. **Delegate** — Delegate KLV bucket to validator (KLV only)
+3. **Claim** — Claim rewards (APR or FPR based)
+4. **Undelegate** — Undelegate from validator
+5. **Unfreeze** — Start cooldown period
+6. **Withdraw** — Withdraw after cooldown
+
+```tsx
+import { useStaking } from '@klever/connect-react'
+import { parseReceipt } from '@klever/connect-provider'
+import { KLV_ASSET_ID } from '@klever/connect-core'
+import { useState } from 'react'
+
+function StakingComponent() {
+  const [bucketId, setBucketId] = useState<string>('')
+  const { freeze, unfreeze, delegate, claim, withdraw, isLoading, error } = useStaking()
+
+  const handleFreeze = async () => {
+    const result = await freeze(100000, KLV_ASSET_ID)
+    console.log('Transaction submitted:', result.hash)
+
+    const receipt = await result.wait()
+    const { bucketId, amount, kda } = parseReceipt.freeze(receipt)
+    console.log(`Created bucket ${bucketId} with ${amount} ${kda}`)
+    setBucketId(bucketId)
+  }
+
+  return (
+    <div>
+      <button onClick={handleFreeze} disabled={isLoading}>Stake 100K KLV</button>
+      <button onClick={() => delegate('klv1validator...', bucketId)} disabled={isLoading || !bucketId}>Delegate</button>
+      <button onClick={() => claim(0)} disabled={isLoading}>Claim Rewards</button>
+      <button onClick={() => unfreeze(KLV_ASSET_ID, bucketId)} disabled={isLoading || !bucketId}>Unfreeze KLV</button>
+      <button onClick={() => withdraw(0)} disabled={isLoading}>Withdraw</button>
+      {bucketId && <p>Bucket ID: {bucketId}</p>}
+      {error && <p>Error: {error.message}</p>}
+    </div>
+  )
+}
+```
+
+### `useFreeze()`
+
+Freeze (stake) assets to create staking buckets.
+
+```tsx
+import { useFreeze } from '@klever/connect-react'
+import { parseKLV, KLV_ASSET_ID } from '@klever/connect-core'
+import { parseReceipt } from '@klever/connect-provider'
+import { useState } from 'react'
+
+function FreezeComponent() {
+  const [bucketId, setBucketId] = useState<string>('')
+  const { freeze, isLoading, error } = useFreeze()
+
+  const handleFreeze = async () => {
+    const result = await freeze({ amount: parseKLV('1000'), kda: KLV_ASSET_ID })
+    const receipt = await result.wait()
+    const { bucketId } = parseReceipt.freeze(receipt)
+    setBucketId(bucketId)
+  }
+
+  return (
+    <div>
+      <button onClick={handleFreeze} disabled={isLoading}>
+        {isLoading ? 'Freezing...' : 'Freeze 1000 KLV'}
+      </button>
+      {error && <p>Error: {error.message}</p>}
+      {bucketId && <p>Bucket ID: {bucketId.slice(0, 10)}...{bucketId.slice(-8)}</p>}
+    </div>
+  )
+}
+```
+
+For KLV, creates a bucket (max 100 per user). For KDA, accumulates frozen amount without bucket limit.
+
+### `useUnfreeze()`
+
+Unfreeze (unstake) assets and start the cooldown period.
+
+```tsx
+import { useUnfreeze } from '@klever/connect-react'
+import { KLV_ASSET_ID } from '@klever/connect-core'
+import { parseReceipt } from '@klever/connect-provider'
+
+function UnfreezeComponent({ bucketId }: { bucketId: string }) {
+  const { unfreeze, isLoading, error, data } = useUnfreeze()
+
+  const handleUnfreeze = async () => {
+    const result = await unfreeze({ kda: KLV_ASSET_ID, bucketId })
+    const receipt = await result.wait()
+    const { availableAt } = parseReceipt.unfreeze(receipt)
+    if (availableAt) console.log('Available at:', new Date(availableAt).toLocaleString())
+  }
+
+  return (
+    <div>
+      <button onClick={handleUnfreeze} disabled={isLoading || !bucketId}>
+        {isLoading ? 'Unfreezing...' : 'Unfreeze KLV'}
+      </button>
+      {error && <p>Error: {error.message}</p>}
+      {data && <p>Cooldown started! Hash: {data.hash}</p>}
+    </div>
+  )
+}
+```
+
+For KLV, `bucketId` is required. For KDA, `bucketId` is optional.
+
+### `useClaim()`
+
+Claim staking rewards (APR) or FPR rewards.
+
+**Claim Types:**
+
+| Value | Type |
+| --- | --- |
+| `0` | Staking (APR-based rewards) |
+| `1` | Market (marketplace rewards) |
+| `2` | Allowance (allowance-based claims) |
+| `3` | FPR (dynamic rewards from KDA staking) |
+
+```tsx
+import { useClaim } from '@klever/connect-react'
+import { parseReceipt } from '@klever/connect-provider'
+
+function ClaimRewards() {
+  const { claim, isLoading, error } = useClaim()
+
+  const handleClaimStaking = async () => {
+    const result = await claim({ claimType: 0, id: 'KLV' })
+    const receipt = await result.wait()
+    const { rewards, totalClaimed } = parseReceipt.claim(receipt)
+    console.log(`Claimed ${totalClaimed} in ${rewards.length} assets`)
+  }
+
+  return (
+    <div>
+      <button onClick={handleClaimStaking} disabled={isLoading}>
+        {isLoading ? 'Claiming...' : 'Claim Staking Rewards'}
+      </button>
+      {error && <p>Error: {error.message}</p>}
+    </div>
+  )
+}
+```
+
+### `useBalance()`
+
+Monitor token balances with automatic polling every 10 seconds.
+
+```tsx
+import { useBalance } from '@klever/connect-react'
+import { useState } from 'react'
+
+function BalanceDisplay() {
+  const [token, setToken]             = useState('KLV')
+  const { balance, isLoading, error, refetch } = useBalance(token)
+
+  return (
+    <div>
+      <select value={token} onChange={(e) => setToken(e.target.value)}>
+        <option value="KLV">KLV</option>
+        <option value="KDA-TOKEN-1">Token 1</option>
+      </select>
+      {isLoading && <p>Loading balance...</p>}
+      {error && <p>Error: {error.message}</p>}
+      {balance && (
+        <div>
+          <h3>{balance.formatted} {balance.token}</h3>
+          <p>Raw amount: {balance.amount.toString()}</p>
+          <p>Precision: {balance.precision} decimals</p>
+          <button onClick={refetch}>Refresh</button>
+        </div>
+      )}
+    </div>
+  )
+}
+```
+
+You can also check the balance of any address (not just the connected wallet):
+
+```tsx
+const { balance } = useBalance('KLV', someOtherAddress)
+```
+
+**Features:** Auto-polls every 10 seconds, manual `refetch()`, returns formatted and raw amounts, network change triggers automatic refetch.
+
+### `useTransactionMonitor()`
+
+Real-time transaction monitoring with automatic polling and status updates.
+
+```tsx
+import { useTransactionMonitor, useTransaction } from '@klever/connect-react'
+import { useKlever } from '@klever/connect-react'
+
+function TransactionTracker() {
+  const { provider } = useKlever()
+  const { sendKLV } = useTransaction()
+
+  const { monitor, cancel, activeMonitors, isMonitoring, getStatus } = useTransactionMonitor({
+    provider,
+    initialDelay: 1500,
+    pollInterval:  2000,
+    timeout:      60000,
+    onStatusUpdate: (status) => {
+      console.log(`Attempt ${status.attempts}: ${status.status}`)
+    },
+    onComplete: (result) => {
+      console.log('Final status:', result.status)
+    },
+  })
+
+  const handleSendAndMonitor = async () => {
+    const result = await sendKLV('klv1receiver...', 1000000n)
+    const finalResult = await monitor(result.hash)
+    console.log('Transaction confirmed:', finalResult.status)
+  }
+
+  return (
+    <div>
+      <button onClick={handleSendAndMonitor}>Send & Monitor</button>
+      <p>Active monitors: {activeMonitors.length}</p>
+      {activeMonitors.map((hash) => {
+        const status = getStatus(hash)
+        return (
+          <div key={hash}>
+            <p>Hash: {hash.slice(0, 10)}...{hash.slice(-8)}</p>
+            <p>Status: {status?.status} | Attempts: {status?.attempts}</p>
+            <button onClick={() => cancel(hash)}>Cancel</button>
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+```
+
+**Features:** Monitor up to 10 concurrent transactions, exponential backoff, cancellable, automatic cleanup on unmount.
+
+## Parsing Transaction Receipts
+
+All transaction methods return `TransactionSubmitResult` with a `wait()` method. Use the `parseReceipt` utility from `@klever/connect-provider` for type-safe parsing:
+
+```tsx
+import { parseReceipt } from '@klever/connect-provider'
+
+// Parse freeze receipt to get bucketId
+const result  = await freeze(100000, 'KLV')
+const receipt = await result.wait()
+const { bucketId, amount, kda } = parseReceipt.freeze(receipt)
+
+// Parse claim receipt to get rewards
+const claimResult  = await claim(0)
+const claimReceipt = await claimResult.wait()
+const { rewards, totalClaimed } = parseReceipt.claim(claimReceipt)
+```
+
+Available parsers (returns primary/first operation in simple fields plus optional arrays for multi-operation transactions):
+
+| Parser | Returns |
+| --- | --- |
+| `parseReceipt.freeze(receipt)` | `{ bucketId, amount, kda, freezes? }` |
+| `parseReceipt.unfreeze(receipt)` | `{ bucketId, kda, availableAt? }` |
+| `parseReceipt.claim(receipt)` | `{ rewards[], totalClaimed, claimType? }` |
+| `parseReceipt.withdraw(receipt)` | `{ amount, kda, withdrawType?, withdrawals? }` |
+| `parseReceipt.delegate(receipt)` | `{ validator, bucketId }` |
+| `parseReceipt.undelegate(receipt)` | `{ bucketId, availableAt? }` |
+| `parseReceipt.transfer(receipt)` | `{ sender, receiver, amount, kda, transfers? }` |
+
+## Complete Examples
+
+### Full Wallet Connection Component
+
+```tsx
+import { useKlever } from '@klever/connect-react'
+import { useState } from 'react'
+
+function WalletConnector() {
+  const {
+    connect, disconnect, isConnected, isConnecting, address,
+    currentNetwork, switchNetwork, extensionInstalled, searchingExtension, error,
+  } = useKlever()
+
+  if (searchingExtension) return <div>Checking for Klever Extension...</div>
+
+  if (!extensionInstalled) {
+    return (
+      <div>
+        <h3>Klever Extension Not Found</h3>
+        <a href="https://klever.io/extension" target="_blank" rel="noopener noreferrer">
+          Download Extension
+        </a>
+      </div>
+    )
+  }
+
+  return (
+    <div>
+      {!isConnected ? (
+        <button onClick={connect} disabled={isConnecting}>
+          {isConnecting ? 'Connecting...' : 'Connect Wallet'}
+        </button>
+      ) : (
+        <div>
+          <p><strong>Address:</strong> {address?.slice(0, 10)}...{address?.slice(-8)}</p>
+          <p><strong>Network:</strong> {currentNetwork}</p>
+          <button onClick={() => switchNetwork('mainnet')}>Mainnet</button>
+          <button onClick={() => switchNetwork('testnet')}>Testnet</button>
+          <button onClick={disconnect}>Disconnect</button>
+        </div>
+      )}
+      {error && <p>Error: {error.message}</p>}
+    </div>
+  )
+}
+```
+
+### Token Transfer Component
+
+```tsx
+import { useTransfer, useBalance, useKlever } from '@klever/connect-react'
+import { parseKLV } from '@klever/connect-core'
+import { useState } from 'react'
+
+function TokenTransfer() {
+  const { isConnected, address } = useKlever()
+  const { balance } = useBalance('KLV')
+  const { transfer, isLoading, error, data, reset } = useTransfer()
+  const [recipient, setRecipient] = useState('')
+  const [amount, setAmount]       = useState('')
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    reset()
+    const result  = await transfer({ receiver: recipient, amount: parseKLV(amount) })
+    const receipt = await result.wait()
+    setRecipient('')
+    setAmount('')
+  }
+
+  if (!isConnected) return <div>Please connect your wallet first</div>
+
+  return (
+    <div>
+      <h2>Transfer KLV</h2>
+      {balance && <p>Balance: {balance.formatted} KLV</p>}
+
+      <form onSubmit={handleSubmit}>
+        <input value={recipient} onChange={(e) => setRecipient(e.target.value)} placeholder="klv1..." />
+        <input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0.00" />
+        <button type="submit" disabled={isLoading || !recipient || !amount}>
+          {isLoading ? 'Sending...' : 'Send KLV'}
+        </button>
+      </form>
+
+      {error && <p>Error: {error.message}</p>}
+      {data && <p>Success! Hash: {data.hash}</p>}
+    </div>
+  )
+}
+```
+
+### Staking Dashboard Component
+
+```tsx
+import { useStaking, useBalance, useKlever } from '@klever/connect-react'
+import { parseKLV, KLV_ASSET_ID } from '@klever/connect-core'
+import { parseReceipt } from '@klever/connect-provider'
+import { useState } from 'react'
+
+function StakingDashboard() {
+  const { isConnected } = useKlever()
+  const { balance }     = useBalance(KLV_ASSET_ID)
+  const { freeze, unfreeze, delegate, claim, isLoading, error } = useStaking()
+  const [bucketId, setBucketId]             = useState('')
+  const [validatorAddress, setValidatorAddress] = useState('')
+  const [stakeAmount, setStakeAmount]       = useState('1000')
+
+  const handleFreeze = async () => {
+    const result  = await freeze(parseKLV(stakeAmount), KLV_ASSET_ID)
+    const receipt = await result.wait()
+    const { bucketId: newBucketId } = parseReceipt.freeze(receipt)
+    setBucketId(newBucketId)
+  }
+
+  const handleClaim = async () => {
+    const result  = await claim(0)
+    const receipt = await result.wait()
+    const { totalClaimed, rewards } = parseReceipt.claim(receipt)
+    alert(`Claimed ${totalClaimed} in ${rewards.length} assets!`)
+  }
+
+  if (!isConnected) return <div>Please connect your wallet to access staking features</div>
+
+  return (
+    <div>
+      <h2>Staking Dashboard</h2>
+      {balance && <p>Available: {balance.formatted} KLV</p>}
+
+      <div>
+        <h3>1. Freeze (Stake) KLV</h3>
+        <input value={stakeAmount} onChange={(e) => setStakeAmount(e.target.value)} type="number" />
+        <button onClick={handleFreeze} disabled={isLoading}>Freeze {stakeAmount} KLV</button>
+        {bucketId && <p>Bucket ID: {bucketId.slice(0, 10)}...{bucketId.slice(-8)}</p>}
+      </div>
+
+      <div>
+        <h3>2. Delegate to Validator</h3>
+        <input value={validatorAddress} onChange={(e) => setValidatorAddress(e.target.value)} placeholder="Validator address" />
+        <button onClick={() => delegate(validatorAddress, bucketId)} disabled={isLoading}>Delegate</button>
+      </div>
+
+      <div>
+        <h3>3. Claim Rewards</h3>
+        <button onClick={handleClaim} disabled={isLoading}>Claim Staking Rewards</button>
+      </div>
+
+      <div>
+        <h3>4. Unfreeze (Unstake)</h3>
+        <button onClick={() => unfreeze(KLV_ASSET_ID, bucketId)} disabled={isLoading}>Unfreeze KLV</button>
+      </div>
+
+      {error && <p>Error: {error.message}</p>}
+    </div>
+  )
+}
+```
+
+## React Best Practices
+
+### Event Listener Cleanup
+
+```tsx
+useEffect(() => {
+  const handler = ({ address }) => setAddress(address)
+  wallet.on('accountChanged', handler)
+  return () => wallet.off('accountChanged', handler)
+}, [wallet])
+```
+
+### Memoization
+
+```tsx
+import { useMemo, useCallback } from 'react'
+
+const formattedBalance = useMemo(() => {
+  if (!balance) return '0'
+  return new Intl.NumberFormat('en-US', { minimumFractionDigits: 2 }).format(Number(balance.formatted))
+}, [balance])
+
+const handleMaxTransfer = useCallback(async () => {
+  if (!balance) return
+  const maxAmount = balance.amount - 1000000n // keep 1 KLV for fees
+  await sendKLV('klv1receiver...', maxAmount)
+}, [balance, sendKLV])
+```
+
+### Stop Polling When Tab is Hidden
+
+```tsx
+useEffect(() => {
+  const handleVisibilityChange = () => {
+    if (document.visibilityState === 'visible') refetch()
+  }
+  document.addEventListener('visibilitychange', handleVisibilityChange)
+  return () => document.removeEventListener('visibilitychange', handleVisibilityChange)
+}, [refetch])
+```
+
+### Error Boundaries
+
+```tsx
+import React, { Component, ReactNode } from 'react'
+
+class TransactionErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean; error?: Error }> {
+  constructor(props) {
+    super(props)
+    this.state = { hasError: false }
+  }
+
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, error }
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div>
+          <h3>Transaction Error</h3>
+          <p>{this.state.error?.message}</p>
+          <button onClick={() => this.setState({ hasError: false })}>Try Again</button>
+        </div>
+      )
+    }
+    return this.props.children
+  }
+}
+```
+
+## TypeScript Support
+
+```tsx
+import type {
+  KleverContextValue,
+  Balance,
+  UseTransactionReturn,
+  TransactionCallbacks,
+} from '@klever/connect-react'
+
+// Type-safe transaction callbacks
+const callbacks: TransactionCallbacks = {
+  onSuccess: (receipt) => console.log('Hash:', receipt.hash),
+  onError: (error) => console.error('Message:', error.message),
+}
+
+const { sendKLV, isLoading, error }: UseTransactionReturn = useTransaction(callbacks)
+```
+
+## Troubleshooting
+
+**Extension not detected:**
+```tsx
+// Refresh the page after installing extension.
+// If still not found, check browser console:
+console.log('Window.kleverWeb:', window.kleverWeb)
+```
+
+**Wallet not connecting:**
+```tsx
+// Clear stored state before retrying:
+localStorage.removeItem('klever-connected')
+localStorage.removeItem('klever-network')
+await connect()
+```
+
+**Transaction fails silently — always await `result.wait()`:**
+```tsx
+const result = await sendKLV('klv1receiver...', 1000000n)
+const receipt = await result.wait() // don't skip this!
+const tx = await provider.getTransaction(result.hash)
+console.log('On-chain status:', tx?.status)
+```
+
+**Balance not updating:**
+```tsx
+// Manually trigger a refetch after a transaction:
+const { balance, refetch } = useBalance('KLV')
+// ... after transaction confirms:
+setTimeout(() => refetch(), 2000)
+```

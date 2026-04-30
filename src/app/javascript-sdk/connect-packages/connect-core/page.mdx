@@ -1,0 +1,436 @@
+# @klever/connect-core
+
+Core types, constants, utilities, and error handling for the Klever Connect SDK.
+
+## Installation
+
+```bash
+npm install @klever/connect-core
+```
+
+## Overview
+
+This package provides the foundational building blocks used across the Klever Connect SDK:
+
+- **Branded Types** — Type-safe value handling with compile-time guarantees
+- **Constants** — Blockchain parameters (asset IDs, precision, limits, timeouts)
+- **Format Utilities** — Parse and format amounts between human-readable and smallest units
+- **Error Classes** — Standardized error handling with context and recovery suggestions
+- **Logger System** — Lightweight, configurable logging with multiple levels
+- **Environment Detection** — Runtime environment identification (browser, Node.js, React Native)
+- **Validation Functions** — Address validation and type guards
+- **Network Types** — Network configuration and endpoint definitions
+
+## Quick Start
+
+### Format and Parse Amounts
+
+```typescript
+import { parseKLV, formatKLV, parseUnits, formatUnits } from '@klever/connect-core'
+
+// Parse user input to blockchain units
+const amount = parseKLV('1.5') // 1500000n (1.5 KLV in smallest units)
+
+// Format blockchain units for display
+const display = formatKLV(1500000n) // '1.5'
+
+// Generic parsing with custom decimals
+const customAmount = parseUnits('100', 18) // 100000000000000000000n
+const customDisplay = formatUnits(100000000000000000000n, 18) // '100'
+```
+
+### Validate Addresses
+
+```typescript
+import { isKleverAddress, isValidAddress, createKleverAddress } from '@klever/connect-core'
+
+// Quick regex-based validation
+if (isKleverAddress(address)) {
+  console.log('Valid format')
+}
+
+// Full bech32 validation
+if (isValidAddress(address)) {
+  console.log('Valid Klever address')
+}
+
+// Create validated address
+const validatedAddress = createKleverAddress('klv1qqqqqqqqqqqqqpgq...')
+```
+
+### Use Branded Types
+
+```typescript
+import { KleverAddress, AssetAmount, createAssetAmount } from '@klever/connect-core'
+
+// Type-safe function signatures
+function transfer(to: KleverAddress, amount: AssetAmount) {
+  // TypeScript ensures only validated addresses and amounts are passed
+}
+
+const recipient = createKleverAddress('klv1abc...')
+const amount = createAssetAmount(1000000n)
+
+transfer(recipient, amount)
+```
+
+## API Reference
+
+### Format Utilities
+
+#### `parseKLV(amount: string | number): bigint`
+
+Parse KLV amount from human-readable string to smallest units.
+
+```typescript
+parseKLV('1')        // 1000000n (1 KLV)
+parseKLV('1.5')      // 1500000n (1.5 KLV)
+parseKLV(2)          // 2000000n (2 KLV)
+parseKLV('0.000001') // 1n (smallest KLV unit)
+```
+
+#### `formatKLV(amount: bigint | string | number): string`
+
+Format KLV amount from smallest units to human-readable string.
+
+```typescript
+formatKLV(1000000n)  // '1'
+formatKLV(1500000n)  // '1.5'
+formatKLV('2000000') // '2'
+```
+
+#### `parseUnits(value: string | number, decimals?: number): bigint`
+
+Parse a human-readable string to its smallest unit with custom decimals (default: 6).
+
+```typescript
+parseUnits('1')          // 1000000n
+parseUnits('1.5')        // 1500000n
+parseUnits('0.000001')   // 1n
+parseUnits('100', 3)     // 100000n
+
+// Throws on invalid input
+parseUnits('1.1234567', 6) // Error: Too many decimal places (max 6)
+```
+
+#### `formatUnits(value: bigint | string | number, decimals?: number): string`
+
+Format a value from its smallest unit to a human-readable string (default: 6 decimals).
+
+```typescript
+formatUnits(1000000n)    // '1'
+formatUnits(1500000n)    // '1.5'
+formatUnits(1234567n)    // '1.234567'
+formatUnits(500n)        // '0.0005'
+formatUnits(1000, 3)     // '1'
+```
+
+### Branded Types
+
+Branded types provide compile-time type safety without runtime overhead.
+
+#### Available Branded Types
+
+```typescript
+import type {
+  KleverAddress,    // Validated Klever address (klv1..., 62 chars)
+  TransactionHash,  // Validated transaction hash (64 hex chars)
+  AssetAmount,      // Asset amount in smallest units
+  AssetID,
+  BlockHeight,
+  BlockHash,
+  Nonce,
+  PublicKey,
+  PrivateKey,
+  Signature,
+  HexString,
+  Base58String,
+} from '@klever/connect-core'
+```
+
+#### Branded Type Creators
+
+```typescript
+import {
+  createKleverAddress,    // Throws if address is invalid
+  createTransactionHash,  // Throws if hash is invalid
+  createAssetAmount,      // Throws if amount is negative
+  formatAssetAmount,
+  parseAssetAmount,
+} from '@klever/connect-core'
+
+const address = createKleverAddress('klv1qqqqqqqqqqqqqpgq...')
+const hash = createTransactionHash('1234567890abcdef...')
+const amount1 = createAssetAmount(1000000n)   // From bigint
+const amount2 = createAssetAmount('1000000')  // From string
+const amount3 = createAssetAmount(1000000)    // From number
+
+formatAssetAmount(createAssetAmount(1500000n)) // '1.5'
+parseAssetAmount('1.5')                        // 1500000n as AssetAmount
+```
+
+### Type Guards and Validators
+
+```typescript
+import {
+  isKleverAddress,    // Quick regex-based validation
+  isValidAddress,     // Full bech32 validation
+  isTransactionHash,  // Validates 64 hex characters
+} from '@klever/connect-core'
+
+if (isKleverAddress(input)) {
+  // input is now typed as KleverAddress
+}
+
+if (isValidAddress('klv1qqqqqqqqqqqqqpgq...')) {
+  // Full bech32 check
+}
+
+if (isTransactionHash(input)) {
+  // input is now typed as TransactionHash
+}
+```
+
+### Constants
+
+```typescript
+import {
+  // Asset
+  KLV_ASSET_ID,    // 'KLV'
+  KFI_ASSET_ID,    // 'KFI'
+  KLV_PRECISION,   // 6
+  KFI_PRECISION,   // 6
+  KLV_MULTIPLIER,  // 1000000
+  KFI_MULTIPLIER,  // 1000000
+
+  // Address
+  ADDRESS_PREFIX,  // 'klv'
+  ADDRESS_LENGTH,  // 62
+
+  // Transaction
+  BASE_TX_SIZE,     // 250 bytes
+  MAX_MESSAGE_SIZE, // 102400 bytes (100 KB)
+  SIGNATURE_LENGTH, // 64 bytes
+  MAX_TX_SIZE,      // 32768 bytes (32 KB)
+
+  // Staking
+  MIN_SELF_DELEGATION,           // 1000000000000n (1M KLV)
+  UNBONDING_TIME,                // 1814400 seconds (21 days)
+  MAX_DELEGATORS_PER_VALIDATOR,  // 10000
+
+  // Block
+  BLOCK_TIME,        // 4 seconds
+  BLOCKS_PER_EPOCH,  // 5400 blocks (~6 hours)
+  BLOCKS_PER_YEAR,   // 7884000 blocks
+  EPOCH_DURATION,    // 21600 seconds (6 hours)
+
+  // API
+  DEFAULT_PAGE_SIZE,      // 100
+  MAX_PAGE_SIZE,          // 1000
+  DEFAULT_TIMEOUT,        // 30000 ms
+  DEFAULT_CONFIRMATIONS,  // 1
+
+  // WebSocket
+  WS_RECONNECT_DELAY,        // 1000 ms
+  WS_MAX_RECONNECT_ATTEMPTS, // 5
+  WS_PING_INTERVAL,          // 30000 ms
+} from '@klever/connect-core'
+```
+
+### Error Classes
+
+All error classes extend `BaseError` with standardized structure and context.
+
+```typescript
+import {
+  NetworkError,
+  TransactionError,
+  WalletError,
+  ValidationError,
+  ContractError,
+  AuthenticationError,
+  RetryableError,
+  RecoverableError,
+  AggregateError,
+  errorBoundary,
+} from '@klever/connect-core'
+
+// NetworkError — network requests fail
+throw new NetworkError('Failed to connect to node', { url, statusCode: 500 })
+
+// TransactionError — transaction operations fail
+throw new TransactionError('Transaction validation failed', { txHash: tx.hash })
+
+// WalletError — wallet operations fail
+throw new WalletError('Wallet not connected', { walletType: 'klever' })
+
+// ValidationError — input validation fails
+throw new ValidationError(`Invalid address: ${address}`, { address, expected: 'klv1...' })
+
+// ContractError — smart contract operations fail
+throw new ContractError('Contract call failed', { contract: address, method: 'transfer' })
+
+// RetryableError — with exponential backoff hints
+throw new RetryableError(
+  'Service temporarily unavailable',
+  ErrorCode.NetworkUnavailable,
+  { service: 'node' },
+  { retryAfter: 5000, maxRetries: 3 },
+)
+
+// RecoverableError — with user-facing suggestions
+throw new RecoverableError(
+  'Insufficient balance',
+  ErrorCode.InvalidAmount,
+  ['Top up your account', 'Use a smaller amount'],
+  { balance: '100', required: '1000' },
+)
+
+// AggregateError — combines multiple errors
+throw new AggregateError(failures, 'Multiple operations failed')
+
+// errorBoundary — wrapper with fallback and transform
+const result = await errorBoundary(async () => await riskyOperation(), {
+  fallback: defaultValue,
+  onError: (error) => console.error('Failed:', error),
+  transform: (error) => new CustomError('Wrapped error', { cause: error }),
+})
+```
+
+### Logger System
+
+```typescript
+import { createLogger, getGlobalLogger, setGlobalLoggerOptions } from '@klever/connect-core'
+
+// Create module-specific logger
+const logger = createLogger('MyModule', {
+  level: 'debug',    // 'debug' | 'info' | 'warn' | 'error' | 'silent'
+  timestamp: true,
+  colors: true,
+})
+
+logger.debug('Detailed debug info')
+logger.info('Operation started')
+logger.warn('Low memory warning')
+logger.error('Operation failed', error)
+
+// Child logger
+const childLogger = logger.child('SubModule')
+childLogger.info('Message from MyModule:SubModule')
+
+// Global logger (recommended)
+const logger2 = getGlobalLogger('MyModule')
+
+// Configure globally
+setGlobalLoggerOptions({
+  level: process.env.NODE_ENV === 'production' ? 'warn' : 'debug',
+  timestamp: true,
+})
+```
+
+#### Pre-configured Loggers
+
+```typescript
+import {
+  coreLogger,        // Core SDK operations
+  providerLogger,    // Provider/network operations
+  walletLogger,      // Wallet operations
+  transactionLogger, // Transaction operations
+  contractLogger,    // Smart contract operations
+} from '@klever/connect-core'
+```
+
+### Environment Detection
+
+```typescript
+import {
+  detectEnvironment, // Returns 'browser' | 'node' | 'react-native' | 'unknown'
+  isBrowser,
+  isNode,
+  isReactNative,
+} from '@klever/connect-core'
+
+const env = detectEnvironment()
+if (env === 'browser') {
+  // Use browser-specific APIs
+} else if (env === 'node') {
+  // Use Node.js-specific APIs
+}
+```
+
+### Network Types
+
+```typescript
+import type { Network, NetworkURI, NetworkConfig } from '@klever/connect-core'
+
+// NetworkURI — endpoint URIs
+const uris: NetworkURI = {
+  api:      'https://api.mainnet.klever.finance',
+  node:     'https://node.mainnet.klever.finance',
+  ws:       'wss://ws.mainnet.klever.finance',
+  explorer: 'https://kleverscan.org',
+}
+
+// NetworkConfig — flexible configuration
+const config1: NetworkConfig = 'mainnet'                     // Named network
+const config2: NetworkConfig = { api: 'https://custom.com' } // Custom URIs
+const config3: NetworkConfig = {                             // Full object
+  name: 'custom',
+  chainId: 'my-chain',
+  config: { api: 'https://api.mychain.com' },
+  isTestnet: true,
+  nativeCurrency: { name: 'MyToken', symbol: 'MTK', decimals: 6 },
+}
+```
+
+## Common Use Cases
+
+### Parse and Validate User Input
+
+```typescript
+import { parseKLV, isKleverAddress, ValidationError } from '@klever/connect-core'
+
+function prepareTransfer(toAddress: string, amountStr: string) {
+  if (!isKleverAddress(toAddress)) {
+    throw new ValidationError('Invalid recipient address', { address: toAddress })
+  }
+
+  const amount = parseKLV(amountStr)
+  if (amount <= 0n) {
+    throw new ValidationError('Amount must be positive', { amount: amountStr })
+  }
+
+  return {
+    to: createKleverAddress(toAddress),
+    amount: createAssetAmount(amount),
+  }
+}
+```
+
+### Error Handling with Context
+
+```typescript
+import { NetworkError, errorBoundary } from '@klever/connect-core'
+
+async function fetchWithRetry(url: string): Promise<Response> {
+  return errorBoundary(
+    async () => {
+      const response = await fetch(url)
+      if (!response.ok) {
+        throw new NetworkError('HTTP request failed', {
+          url,
+          status: response.status,
+          statusText: response.statusText,
+        })
+      }
+      return response
+    },
+    {
+      transform: (error) =>
+        error instanceof NetworkError
+          ? error
+          : new NetworkError('Unexpected error', { url }, error as Error),
+    },
+  )
+}
+```

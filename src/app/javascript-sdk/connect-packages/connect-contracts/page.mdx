@@ -1,0 +1,397 @@
+# @klever/connect-contracts
+
+Smart contract interaction for Klever Connect SDK — ethers.js-like API for deployment, queries, and transactions.
+
+## Installation
+
+```bash
+npm install @klever/connect-contracts
+```
+
+## Overview
+
+This package provides a comprehensive API for interacting with smart contracts on Klever blockchain, inspired by ethers.js:
+
+- **Contract Class** — High-level abstraction for contract interactions
+- **ABI-Based Encoding/Decoding** — Type-safe parameter encoding from ABI
+- **ContractFactory** — Deploy contracts with type safety
+- **Event Parsing** — Parse contract events from transaction logs
+- **Receipt Parsing** — Extract deployment addresses and call results
+- **Interface** — Low-level ABI utilities for advanced use cases
+
+## Quick Start
+
+### Deploy a Contract
+
+```typescript
+import { ContractFactory } from '@klever/connect-contracts'
+import { NodeWallet } from '@klever/connect-wallet'
+import contractAbi from './mycontract.abi.json'
+import contractWasm from './mycontract.wasm'
+
+const wallet = NodeWallet.fromPrivateKey(privateKey, provider)
+
+const factory = new ContractFactory(contractAbi, contractWasm, wallet)
+
+const contract = await factory.deploy(['constructor', 'args'], {
+  vmType: 0, // Rust VM
+  ownerAddress: wallet.address,
+})
+
+console.log('Contract deployed at:', contract.address)
+```
+
+### Call Contract Functions
+
+```typescript
+import { Contract } from '@klever/connect-contracts'
+
+const contract = new Contract(contractAddress, contractAbi, wallet)
+
+// Call mutable function (sends transaction)
+const tx = await contract.invoke('transfer', [recipientAddress, 1000n])
+console.log('Transaction hash:', tx.hash)
+
+// Wait for confirmation
+const receipt = await tx.wait()
+console.log('Transaction confirmed!')
+
+// Call readonly function (query, no transaction)
+const balance = await contract.query('balanceOf', [ownerAddress])
+console.log('Balance:', balance)
+```
+
+### Parse Contract Events
+
+```typescript
+import { EventParser } from '@klever/connect-contracts'
+
+const eventParser = new EventParser(contractAbi)
+const events = eventParser.parseEvents(receipt)
+
+for (const event of events) {
+  console.log(`Event: ${event.name}`)
+  console.log('Topics:', event.topics)
+  console.log('Data:', event.data)
+}
+```
+
+## API Reference
+
+### Contract Class
+
+The main class for interacting with deployed smart contracts.
+
+```typescript
+new Contract(
+  address: string,
+  abi: ContractABI,
+  signerOrProvider: Signer | Provider
+)
+```
+
+#### `invoke(functionName, args, options?): Promise<TransactionSubmitResult>`
+
+Call a mutable contract function (sends transaction).
+
+```typescript
+// Simple call
+const tx = await contract.invoke('transfer', [recipient, 1000n])
+
+// With KLV payment
+const tx = await contract.invoke('buyItem', [itemId], {
+  value: 100000000n, // 100 KLV in smallest units
+})
+
+// Wait for confirmation
+const receipt = await tx.wait()
+```
+
+#### `query(functionName, args): Promise<unknown>`
+
+Query a readonly contract function (does not send transaction).
+
+```typescript
+const balance = await contract.query('balanceOf', [address])
+
+// Multiple return values
+const [name, symbol, decimals] = await contract.query('getInfo', [])
+```
+
+#### `getEvents(txHash): Promise<ContractEvent[]>`
+
+Get and parse contract events from a transaction.
+
+```typescript
+const events = await contract.getEvents(txHash)
+for (const event of events) {
+  console.log(`Event: ${event.name}`, event.data)
+}
+```
+
+**Properties:** `address`, `abi`, `interface`, `signer`, `provider`
+
+### ContractFactory Class
+
+```typescript
+new ContractFactory(
+  abi: ContractABI,
+  bytecode: Uint8Array | string,
+  signer: Signer
+)
+```
+
+#### `deploy(constructorArgs, options?): Promise<Contract>`
+
+```typescript
+import { readFileSync } from 'fs'
+
+const wasm = readFileSync('./contract.wasm')
+const factory = new ContractFactory(contractAbi, wasm, wallet)
+
+const contract = await factory.deploy(['TokenName', 'TKN', 18], {
+  vmType: 0,         // 0 = Rust VM, 1 = C++
+  ownerAddress: wallet.address,
+})
+
+console.log('Deployed at:', contract.address)
+```
+
+#### `getDeployedAddress(txHash): Promise<string>`
+
+Get the deployed contract address from a deployment transaction.
+
+### Interface Class
+
+Low-level ABI utilities for encoding/decoding.
+
+```typescript
+import { Interface } from '@klever/connect-contracts'
+
+const iface = new Interface(contractAbi)
+
+// Get endpoint definition from ABI
+const endpoint = iface.getEndpoint('transfer')
+
+// Encode function call to hex
+const callData = iface.encodeFunctionCall('transfer', [recipient, 1000n])
+// Returns: "transfer@abc123...@03e8"
+
+// Decode function result from hex
+const result = iface.decodeFunctionResult('balanceOf', returnData)
+```
+
+### EventParser Class
+
+```typescript
+const parser = new EventParser(contractAbi)
+
+const events = parser.parseEvents(receipt.logs)
+for (const event of events) {
+  if (event.name === 'Transfer') {
+    console.log(`From ${event.args.from} to ${event.args.to}: ${event.args.amount}`)
+  }
+}
+```
+
+### Receipt Parsing Utilities
+
+```typescript
+import { parseDeployReceipt, parseCallReceipt } from '@klever/connect-contracts'
+
+// Extract contract address from deployment
+const { contractAddress } = parseDeployReceipt(receipt)
+
+// Extract return values from call
+const { returnData, returnCode, gasUsed } = parseCallReceipt(receipt)
+```
+
+## ABI Format
+
+Klever smart contracts use JSON ABI format:
+
+```json
+{
+  "buildInfo": {
+    "contractCrate": {
+      "name": "mycontract",
+      "version": "1.0.0"
+    }
+  },
+  "endpoints": [
+    {
+      "name": "transfer",
+      "mutability": "mutable",
+      "inputs": [
+        { "name": "to",     "type": "Address" },
+        { "name": "amount", "type": "BigUint" }
+      ],
+      "outputs": []
+    },
+    {
+      "name": "balanceOf",
+      "mutability": "readonly",
+      "inputs": [
+        { "name": "address", "type": "Address" }
+      ],
+      "outputs": [
+        { "type": "BigUint" }
+      ]
+    }
+  ]
+}
+```
+
+### Supported Types
+
+- **Primitive** — `u8`, `u16`, `u32`, `u64`, `BigUint`, `bool`
+- **Bytes** — `bytes`, `Address` (32 bytes)
+- **Strings** — `utf-8 string`, `TokenIdentifier`
+- **Collections** — `List<T>`, `Option<T>`
+- **Custom** — Structs and enums defined in ABI
+
+## Common Use Cases
+
+### ERC20-like Token Contract
+
+```typescript
+import { Contract } from '@klever/connect-contracts'
+import tokenAbi from './token.abi.json'
+
+const token = new Contract(tokenAddress, tokenAbi, wallet)
+
+const balance = await token.query('balanceOf', [myAddress])
+const tx = await token.invoke('transfer', [recipientAddress, 1000000n])
+await tx.wait()
+await token.invoke('approve', [spenderAddress, 5000000n])
+```
+
+### NFT Contract with Events
+
+```typescript
+const nft = new Contract(nftAddress, nftAbi, wallet)
+
+const tx = await nft.invoke('mint', [ownerAddress, tokenId, metadataUri])
+const receipt = await tx.wait()
+
+const eventParser = new EventParser(nftAbi)
+const events = eventParser.parseEvents(receipt.logs)
+
+for (const event of events) {
+  if (event.name === 'Mint') {
+    console.log('NFT minted:', event.args.tokenId)
+  }
+}
+```
+
+### Payable Contract Functions
+
+```typescript
+import { parseKLV } from '@klever/connect-core'
+import gameAbi from './game.abi.json'
+
+const game = new Contract(gameAddress, gameAbi, wallet)
+
+const tx = await game.invoke(
+  'bet',
+  [1, 50],         // BetType.UNDER, number
+  { value: parseKLV('10') }, // Bet 10 KLV
+)
+
+const lastBet = await game.query('getLastBet', [wallet.address])
+```
+
+### Read-Only Provider (No Signer)
+
+```typescript
+import { KleverProvider } from '@klever/connect-provider'
+
+// Provider-only — queries only, no transactions
+const provider = new KleverProvider('mainnet')
+const contract = new Contract(contractAddress, contractAbi, provider)
+
+const result = await contract.query('getInfo', [])
+// contract.invoke('transfer', [...]) would throw: No signer
+```
+
+### Full Deployment with Constructor
+
+```typescript
+const bytecode = readFileSync('./token.wasm')
+const factory = new ContractFactory(tokenAbi, bytecode, wallet)
+
+const token = await factory.deploy(
+  [
+    'MyToken',                  // name
+    'MTK',                      // symbol
+    18,                         // decimals
+    1000000000000000000000n,    // initial supply
+  ],
+  { vmType: 0 },
+)
+
+const totalSupply = await token.query('totalSupply', [])
+console.log('Total supply:', totalSupply)
+```
+
+## Encoding & Decoding
+
+### Manual Parameter Encoding
+
+```typescript
+import { encodeAddress, encodeU64, encodeString } from '@klever/connect-contracts'
+
+const addressHex = encodeAddress('klv1abc...')
+const amountHex  = encodeU64(1000n)
+const nameHex    = encodeString('TokenName')
+```
+
+### ABI-Aware Encoding (Recommended)
+
+```typescript
+import { ABIEncoder, ABIDecoder } from '@klever/connect-contracts'
+
+const encoder = new ABIEncoder(contractAbi)
+const decoder = new ABIDecoder(contractAbi)
+
+const encoded = encoder.encodeEndpoint('transfer', [recipient, 1000n])
+const decoded = decoder.decodeEndpoint('balanceOf', returnData)
+```
+
+## Error Handling
+
+```typescript
+import { ContractReceiptError, ParseError } from '@klever/connect-contracts'
+
+try {
+  const tx = await contract.invoke('transfer', [recipient, 1000n])
+  const receipt = await tx.wait()
+
+  if (receipt.status !== 'success') {
+    console.error('Contract execution failed:', receipt.returnMessage)
+  }
+} catch (error) {
+  if (error instanceof ContractReceiptError) {
+    console.error('Contract error:', error.message)
+    console.error('Return code:', error.returnCode)
+  } else if (error instanceof ParseError) {
+    console.error('ABI parsing error:', error.message)
+  }
+}
+```
+
+## Differences from ethers.js
+
+| Feature | ethers.js | @klever/connect-contracts |
+| --- | --- | --- |
+| Function calls | `contract.functionName(args)` | `contract.invoke('functionName', args)` |
+| Readonly queries | `contract.functionName(args)` | `contract.query('functionName', args)` |
+| ABI format | Solidity JSON | Klever/MultiversX JSON |
+| Encoding | RLP/ABI | Protocol Buffers + Custom |
+| Address format | Hex (`0x...`) | Bech32 (`klv...`) |
+
+**Why explicit `invoke`/`query`?**
+
+- Clear distinction between transactions (cost money) and queries (free)
+- Prevents accidental transaction sends when you meant to query
+- Explicit is better than implicit on non-EVM chains

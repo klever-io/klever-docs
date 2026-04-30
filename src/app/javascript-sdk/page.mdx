@@ -1,0 +1,41 @@
+# Javascript SDK
+
+The official JavaScript/TypeScript SDK for Klever Blockchain — a unified, developer-friendly interface for building dApps and backend services.
+
+> Looking for the old `@klever/sdk-web` or `@klever/sdk-node` docs? They've been moved to [Legacy](/legacy#web-sdk).
+
+## Installation
+
+```bash
+npm install @klever/connect
+# or
+yarn add @klever/connect
+# or
+pnpm add @klever/connect
+```
+
+## Quick Start
+
+```typescript
+import { KleverProvider, NodeWallet, parseKLV } from '@klever/connect'
+
+const provider = new KleverProvider('mainnet')
+const wallet   = new NodeWallet(provider, process.env.PRIVATE_KEY)
+
+await wallet.connect()
+
+const result  = await wallet.transfer({ receiver: 'klv1...', amount: parseKLV('100') })
+const receipt = await result.wait()
+console.log('Confirmed:', receipt.hash)
+```
+
+## Where to go next
+
+- **[Node.js](/javascript-sdk/node-js)** — Backend services, CLI tools, server-side signing
+- **[Web App](/javascript-sdk/web-app)** — React dApps, browser integration, Klever Extension
+- **[Connect Packages](/javascript-sdk/connect-packages)** — Individual package API reference
+
+## Source
+
+- [GitHub Repository](https://github.com/klever-io/klever-connect)
+- [npm Package](https://www.npmjs.com/package/@klever/connect)

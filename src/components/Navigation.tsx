@@ -4,12 +4,11 @@ import clsx from 'clsx'
 import { AnimatePresence, motion, useIsPresent } from 'framer-motion'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { useRef } from 'react'
+import { useEffect, useRef } from 'react'
 
 import { NavGroup, TreeNavGroup } from '@/types/NavGroup'
 
 import { Button } from '@/components/Button'
-import { useSectionStore } from '@/components/SectionProvider'
 import { navigation } from '@/consts/navigation'
 import { remToPx } from '@/lib/remToPx'
 import { TreeNavigationItem } from './TreeNavigationItem'
@@ -40,6 +39,23 @@ function TopLevelNavItem({
   )
 }
 
+function findScrollableParent(element: HTMLElement) {
+  let parent = element.parentElement
+
+  while (parent) {
+    let { overflowY } = window.getComputedStyle(parent)
+
+    if (
+      /(auto|scroll)/.test(overflowY) &&
+      parent.scrollHeight > parent.clientHeight
+    ) {
+      return parent
+    }
+
+    parent = parent.parentElement
+  }
+}
+
 function VisibleSectionHighlight({
   group,
   pathname,
@@ -47,33 +63,13 @@ function VisibleSectionHighlight({
   group: NavGroup
   pathname: string
 }) {
-  let [sections, visibleSections] = useInitialValue(
-    [
-      useSectionStore((s) => s.sections),
-      useSectionStore((s) => s.visibleSections),
-    ],
-    useIsInsideMobileNavigation(),
-  )
-
   let isPresent = useIsPresent()
-  let firstVisibleSectionIndex = Math.max(
-    0,
-    [{ id: '_top' }, ...sections].findIndex(
-      (section) => section.id === visibleSections[0],
-    ),
-  )
   let itemHeight = remToPx(2)
-  let height = isPresent
-    ? Math.max(1, visibleSections.length) * itemHeight
-    : itemHeight
-
-  let isFromChildren = false
   let top =
     group.links.findIndex((link) => {
       if (link.href === pathname) return true
 
       if (link.children) {
-        isFromChildren = true
         return findActivePageRecursive({
           parentRef: link.href,
           pathname,
@@ -81,10 +77,9 @@ function VisibleSectionHighlight({
         })
       }
     }) *
-      itemHeight +
-    firstVisibleSectionIndex * itemHeight
+    itemHeight
 
-  let final = isFromChildren ? remToPx(2) : height
+  let height = isPresent ? remToPx(2) : itemHeight
 
   return (
     <motion.div
@@ -93,7 +88,7 @@ function VisibleSectionHighlight({
       animate={{ opacity: 1, transition: { delay: 0.2 } }}
       exit={{ opacity: 0 }}
       className="absolute inset-x-0 top-0 bg-zinc-800/2.5 will-change-transform dark:bg-white/2.5"
-      style={{ borderRadius: 8, height: final, top }}
+      style={{ borderRadius: 8, height, top }}
     />
   )
 }
@@ -174,10 +169,7 @@ function NavigationGroup({
   // state, so that the state does not change during the close animation.
   // The state will still update when we re-open (re-render) the navigation.
   let isInsideMobileNavigation = useIsInsideMobileNavigation()
-  let [pathname, sections] = useInitialValue(
-    [usePathname(), useSectionStore((s) => s.sections)],
-    isInsideMobileNavigation,
-  )
+  let pathname = useInitialValue(usePathname(), isInsideMobileNavigation)
 
   let isActiveGroup =
     group.links.findIndex((link) => {
@@ -230,34 +222,6 @@ function NavigationGroup({
                 <NavLink href={link.href} active={link.href === pathname}>
                   {link.title}
                 </NavLink>
-                <AnimatePresence mode="popLayout" initial={false}>
-                  {link.href === pathname && sections.length > 0 && (
-                    <motion.ul
-                      role="list"
-                      initial={{ opacity: 0 }}
-                      animate={{
-                        opacity: 1,
-                        transition: { delay: 0.1 },
-                      }}
-                      exit={{
-                        opacity: 0,
-                        transition: { duration: 0.15 },
-                      }}
-                    >
-                      {sections.map((section) => (
-                        <li key={section.id}>
-                          <NavLink
-                            href={`${link.href}#${section.id}`}
-                            tag={section.tag}
-                            isAnchorLink
-                          >
-                            {section.title}
-                          </NavLink>
-                        </li>
-                      ))}
-                    </motion.ul>
-                  )}
-                </AnimatePresence>
               </motion.li>
             ),
           )}
@@ -268,8 +232,53 @@ function NavigationGroup({
 }
 
 export function Navigation(props: React.ComponentPropsWithoutRef<'nav'>) {
+  let pathname = usePathname()
+  let navRef = useRef<HTMLElement>(null)
+
+  useEffect(() => {
+    let nav = navRef.current
+
+    if (!nav) {
+      return
+    }
+
+    let animationFrame = window.requestAnimationFrame(() => {
+      let activeLink = Array.from(
+        nav.querySelectorAll<HTMLAnchorElement>('a[href]'),
+      ).find((link) => link.getAttribute('href') === pathname)
+
+      if (!activeLink) {
+        return
+      }
+
+      let scrollableParent = findScrollableParent(activeLink)
+
+      if (!scrollableParent) {
+        return
+      }
+
+      let activeLinkTop =
+        activeLink.getBoundingClientRect().top -
+        scrollableParent.getBoundingClientRect().top +
+        scrollableParent.scrollTop
+      let prefersReducedMotion = window.matchMedia(
+        '(prefers-reduced-motion: reduce)',
+      ).matches
+
+      scrollableParent.scrollTo({
+        top:
+          activeLinkTop -
+          scrollableParent.clientHeight / 2 +
+          activeLink.clientHeight / 2,
+        behavior: prefersReducedMotion ? 'auto' : 'smooth',
+      })
+    })
+
+    return () => window.cancelAnimationFrame(animationFrame)
+  }, [pathname])
+
   return (
-    <nav {...props}>
+    <nav ref={navRef} {...props}>
       <ul role="list">
         <TopLevelNavItem href="/">API</TopLevelNavItem>
         <TopLevelNavItem href="#">Documentation</TopLevelNavItem>

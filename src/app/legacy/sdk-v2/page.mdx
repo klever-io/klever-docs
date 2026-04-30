@@ -1,0 +1,240 @@
+# SDK v2 (`@klever/sdk`)
+
+> **This is historical documentation for SDK v2**, which uses a WebAssembly + PEM file model. It is no longer maintained. For current documentation, see [Introduction to Klever Blockchain SDK](/javascript-sdk).
+
+---
+
+## Installation
+
+```bash
+npm install @klever/sdk
+```
+
+or
+
+```bash
+yarn add @klever/sdk
+```
+
+## Setup
+
+### Web App
+
+After installation, the `KleverSDK` folder will automatically appear inside your `public`, `assets`, or `static` folder (depending on the framework).
+
+To load the KleverSDK WASM file into your DOM, import the loader script in your `index.html` or `app.html`:
+
+```html
+<!-- React -->
+<script src="%PUBLIC_URL%/kleverSDK/kleverSDKLoader.js"></script>
+
+<!-- Vue or Svelte -->
+<script src="/kleverSDK/kleverSDKLoader.js"></script>
+
+<!-- SvelteKit -->
+<script src="%sveltekit.assets%/kleverSDK/kleverSDKLoader.js"></script>
+
+<!-- Angular -->
+<script src="assets/kleverSDK/kleverSDKLoader.js"></script>
+```
+
+```tsx
+{/* NextJS */}
+import Script from 'next/script'
+
+<Script src="/kleverSDK/kleverSDKLoader.js" strategy="beforeInteractive" />
+```
+
+### Node.js
+
+Node.js 18+ is required.
+
+```js
+// CommonJS
+require('./kleverSDK/kleverSDKLoader')
+```
+
+## Basic Usage
+
+**Simple call:**
+
+```typescript
+import { sendTransaction, TransactionType } from '@klever/sdk'
+
+sendTransaction(TransactionType.Transfer, {
+  sender: 'address',
+  privateKey: 'privateKey',
+  receiver: 'receiver',
+  amount: 100,
+})
+```
+
+**With an account instance:**
+
+```typescript
+import { Account } from '@klever/sdk'
+
+const account = new Account('address', 'privateKey')
+await account.sendTransfer({ receiver: 'receiver', amount: 100 })
+```
+
+## Transactions
+
+| ID | Type |
+| --- | --- |
+| 0 | Transfer |
+| 1 | Create Asset |
+| 2 | Create Validator |
+| 3 | Validator Config |
+| 4 | Freeze |
+| 5 | Unfreeze |
+| 6 | Delegate |
+| 7 | Undelegate |
+| 8 | Withdraw |
+| 9 | Claim |
+| 10 | Unjail |
+| 11 | Asset Trigger |
+| 12 | Set Account Name |
+| 13 | Proposal |
+| 14 | Vote |
+| 15 | Config ITO Prices |
+| 16 | Set ITO Prices |
+| 17 | Buy |
+| 18 | Sell |
+| 19 | Cancel Market Order |
+| 20 | Create Marketplace |
+| 21 | Config Marketplace |
+| 22 | Update Account Permission |
+
+## Usage Inside a Context (React)
+
+```tsx
+import { useState, createContext, useContext } from 'react'
+import { Account, core } from '@klever/sdk'
+
+interface ISdkContext {
+  isLoaded(): Promise<boolean>
+  getAccount(): Account | null
+  setAccount(account: Account): void
+}
+
+const SdkContext = createContext({} as ISdkContext)
+
+const SdkProvider: React.FC = ({ children }) => {
+  const [acc, setAcc] = useState<Account | null>(null)
+
+  const values: ISdkContext = {
+    isLoaded:   () => core.isSDKLoaded(),
+    getAccount: () => acc,
+    setAccount: account => setAcc(account),
+  }
+  return <SdkContext.Provider value={values}>{children}</SdkContext.Provider>
+}
+
+const useSdk = () => useContext(SdkContext)
+
+export { SdkContext, SdkProvider, useSdk }
+```
+
+Wrap your `App.tsx`:
+
+```tsx
+import { SdkProvider } from './MyCustomHook'
+
+<SdkProvider>
+  ...
+</SdkProvider>
+```
+
+## Optional Params
+
+### Metadata
+
+```typescript
+const metadata = 'this text will be stored in the blockchain transaction'
+await account.sendTransfer(payload, { metadata })
+```
+
+### Disable Autobroadcast
+
+```typescript
+const rawTransaction = await account.sendTransfer(transferPayload, { autobroadcast: false })
+const broadcastResponse = await broadcast(JSON.stringify(rawTransaction))
+```
+
+### Multiple Contracts (PreviousTX)
+
+```typescript
+const transferContract = await account.sendTransfer(transferPayload, { autobroadcast: false })
+const multiContractTx  = await account.sendFreeze(freezePayload, { previousTX: transferContract })
+// autobroadcasts the multi-contract TX
+```
+
+## Sign Message / Verify Signature
+
+```typescript
+import { core } from '@klever/sdk'
+
+const { signature } = await core.signMessage(message, privateKey)
+const { valid }     = await core.verifySignature(message, signature, walletAddress)
+console.log(valid)
+```
+
+## Raw WASM Functions
+
+```typescript
+// Browser
+window.kleverWeb.sendTransaction(transactionType, payload, props)
+
+// Node.js
+globalThis.kleverWeb.sendTransaction(transactionType, payload, props)
+```
+
+Available raw functions:
+
+```
+getAccount(address)
+createAccount()
+getAddressFromPrivateKey(privateKey)
+generateMnemonic()
+parsePemFileData(pemString)
+decodePEM(cipheredPem, password)
+signMessage(JSON.stringify({ message, privatekey }))
+verifySignature(JSON.stringify({ message, signature, publicKey }))
+setApiUrl(newApiUrl)
+setNodeUrl(newNodeUrl)
+sendTransaction(transactionType, payload, props)
+signTx(JSON.stringify({ rawTx, privateKey }))
+broadcast(JSON.stringify(signedTx))
+```
+
+### Raw Broadcast Flow
+
+```typescript
+const rawTx = await globalThis.kleverWeb.sendTransaction(transactionType, JSON.stringify(payload))
+
+const { signature } = await globalThis.kleverWeb.signTx(JSON.stringify({ rawTx, privateKey }))
+
+const signedTx       = { ...rawTx, Signature: signature }
+const broadcastResponse = await globalThis.kleverWeb.broadcast(JSON.stringify(signedTx))
+```
+
+### sendTransaction Payload
+
+```typescript
+const payload = JSON.stringify({ receiver, amount, asset, sender, nonce })
+const rawTx   = await globalThis.kleverWeb.sendTransaction(0, payload)
+```
+
+### sendTransaction Props
+
+```typescript
+// Metadata
+const props = JSON.stringify({ metadata: 'stored in blockchain on broadcast' })
+const rawTx = await globalThis.kleverWeb.sendTransaction(0, payload, props)
+
+// Multi-contract chain
+const singleContractTx = await globalThis.kleverWeb.sendTransaction(0, payload)
+const props2           = JSON.stringify({ previousTX: singleContractTx[0] })
+const multiContractTx  = await globalThis.kleverWeb.sendTransaction(2, payload2, props2)
+```

@@ -1,0 +1,387 @@
+# @klever/connect-wallet
+
+Wallet implementations for Klever Connect SDK — manage keys and sign transactions.
+
+## Installation
+
+```bash
+npm install @klever/connect-wallet
+```
+
+## Overview
+
+`@klever/connect-wallet` provides secure wallet management for the Klever Blockchain with support for multiple environments and wallet types.
+
+**Key Features:**
+
+- **Multi-Environment Support** — Node.js, Browser, and React Native (coming soon)
+- **Dual-Mode BrowserWallet** — Extension mode (secure) or private key mode (testing)
+- **NodeWallet** — Server-side operations with PEM file support
+- **WalletFactory** — Automatic environment detection for cross-platform apps
+- **Transaction Signing** — Ed25519 signature scheme for all transaction types
+- **Message Signing** — Sign arbitrary messages for authentication
+- **Event System** — Listen for account changes and connection events
+- **PEM Support** — Import encrypted/unencrypted PEM files
+- **TypeScript First** — Full type safety and IntelliSense support
+
+## Wallet Comparison
+
+| Feature | BrowserWallet (Extension) | BrowserWallet (Private Key) | NodeWallet |
+| --- | --- | --- | --- |
+| **Environment** | Browser only | Browser only | Node.js |
+| **Security** | High (extension vault) | Medium (memory) | Medium |
+| **User Confirmation** | Yes (extension UI) | No | No |
+| **Best For** | Production dApps | Testing/Development | Backends |
+| **Klever Extension Required** | Yes | No | No |
+| **Account Switching** | Yes (automatic) | No | No |
+| **PEM File Support** | Yes (via extension) | Yes | Yes |
+
+**When to use each:**
+
+- **BrowserWallet (Extension Mode)** — Production dApps where users control their own keys
+- **BrowserWallet (Private Key Mode)** — Testing and development only, NOT for production
+- **NodeWallet** — Backend services, CLI tools, server-side transaction signing
+
+## BrowserWallet — Extension Mode
+
+```typescript
+import { BrowserWallet } from '@klever/connect-wallet'
+import { KleverProvider } from '@klever/connect-provider'
+
+const provider = new KleverProvider({ network: 'mainnet' })
+const wallet = new BrowserWallet(provider)
+
+await wallet.connect() // Opens Klever Extension
+console.log('Connected:', wallet.address)
+
+// Send a transaction (user confirms in extension)
+const result = await wallet.transfer({
+  receiver: 'klv1...',
+  amount: 1000000, // 1 KLV (6 decimals)
+})
+console.log('Transaction hash:', result.hash)
+```
+
+### Listening to Account Changes
+
+```typescript
+const wallet = new BrowserWallet(provider)
+await wallet.connect()
+
+wallet.on('accountChanged', ({ address }) => {
+  console.log('Account switched to:', address)
+  // Update UI, reload balances, etc.
+})
+
+wallet.on('disconnect', () => {
+  console.log('User disconnected or switched chains')
+})
+```
+
+### Signing Messages for Authentication
+
+```typescript
+const message = `Sign in to MyDapp\nNonce: ${Date.now()}`
+const signature = await wallet.signMessage(message)
+
+// Send to backend for verification
+await fetch('/api/auth', {
+  method: 'POST',
+  body: JSON.stringify({
+    address: wallet.address,
+    message,
+    signature: signature.toHex(),
+  }),
+})
+```
+
+## BrowserWallet — Private Key Mode
+
+> **Warning:** Only use private key mode for testing. Never use with real funds in production.
+
+```typescript
+const wallet = new BrowserWallet(provider, {
+  privateKey: '0x123...',
+})
+
+await wallet.connect() // No extension needed
+```
+
+### Using PEM Files in Browser
+
+```typescript
+const pemContent = await file.text()
+
+const wallet = new BrowserWallet(provider, {
+  pemContent,
+  pemPassword: 'your-password', // Optional for encrypted PEMs
+})
+
+await wallet.connect()
+```
+
+## NodeWallet — Server Side
+
+```typescript
+import { NodeWallet } from '@klever/connect-wallet'
+import { KleverProvider } from '@klever/connect-provider'
+
+const provider = new KleverProvider({ network: 'mainnet' })
+const wallet = new NodeWallet(provider, process.env.PRIVATE_KEY)
+
+await wallet.connect()
+
+const balance = await wallet.getBalance()
+const nonce = await wallet.getNonce()
+```
+
+### Loading from PEM Files
+
+```typescript
+import { cryptoProvider } from '@klever/connect-crypto'
+
+const pemResult = await cryptoProvider.importPrivateKeyFromPemFile('./wallet.pem', {
+  password: process.env.PEM_PASSWORD,
+})
+
+const wallet = new NodeWallet(provider, pemResult.toHex())
+await wallet.connect()
+```
+
+### Generating New Wallets
+
+```typescript
+const newWallet = await NodeWallet.generate(provider)
+await newWallet.connect()
+
+console.log('New address:', newWallet.address)
+// IMPORTANT: Save private key securely!
+```
+
+### Secure Disconnect
+
+```typescript
+await wallet.disconnect(true) // true = clear private key from memory
+```
+
+## WalletFactory — Cross-Platform
+
+```typescript
+import { WalletFactory, createWallet } from '@klever/connect-wallet'
+import { KleverProvider } from '@klever/connect-provider'
+
+const provider = new KleverProvider({ network: 'mainnet' })
+const factory = new WalletFactory(provider)
+
+// Auto-creates NodeWallet in Node.js, BrowserWallet in browser
+const wallet = await factory.createWallet({
+  privateKey: process.env.PRIVATE_KEY,
+})
+
+await wallet.connect()
+
+// Or use convenience function
+const wallet2 = await createWallet({
+  network: 'testnet',
+  privateKey: process.env.PRIVATE_KEY,
+})
+await wallet2.connect()
+```
+
+## API Reference
+
+### BaseWallet (Abstract)
+
+Base class for all wallet implementations.
+
+**Properties:** `address`, `publicKey`, `provider`
+
+**Methods:**
+
+- `connect(): Promise<void>`
+- `disconnect(clearPrivateKey?: boolean): Promise<void>`
+- `isConnected(): boolean`
+- `signMessage(message: string | Uint8Array): Promise<Signature>`
+- `signTransaction(tx: Transaction): Promise<Transaction>`
+- `verifyMessage(message: string | Uint8Array, signature: Signature | string): Promise<boolean>`
+- `getBalance(): Promise<bigint>`
+- `getNonce(): Promise<number>`
+- `broadcastTransaction(tx: Transaction): Promise<TransactionHash>`
+- `broadcastTransactions(txs: Transaction[]): Promise<TransactionHash[]>`
+- `sendTransaction(contract: ContractRequestData): Promise<TransactionSubmitResult>`
+- `transfer(params: TransferRequest): Promise<TransactionSubmitResult>`
+- `on(event, handler): void`
+- `off(event, handler): void`
+- `removeAllListeners(event?): void`
+
+### NodeWallet
+
+**Constructor:** `new NodeWallet(provider: IProvider, privateKey?: string)`
+
+**Static:** `NodeWallet.generate(provider): Promise<NodeWallet>` — Generate new random wallet
+
+**Instance:** `setPrivateKey(privateKey: string): void` — Set/change private key (only when disconnected)
+
+### BrowserWallet
+
+**Constructor:** `new BrowserWallet(provider: IProvider, config?: WalletConfig)`
+
+```typescript
+interface WalletConfig {
+  privateKey?: string   // Private key mode
+  pemContent?: string   // PEM file content
+  pemPassword?: string  // Password for encrypted PEM
+}
+```
+
+**Additional extension-mode methods:**
+
+- `buildTransaction(contracts, txData?, options?): Promise<Transaction>`
+- `buildTransfer(to, amount, token?): Promise<Transaction>`
+- `getExtensionProvider(): NetworkURI`
+- `updateProvider(provider: NetworkURI): void`
+- `createAccount(): Promise<{ privateKey: string; address: string }>`
+- `parsePemFileData(pemData): Promise<{ privateKey: string; address: string }>`
+- `validateSignature(message, signature, address): Promise<{ isValid: boolean; signer?: string }>`
+
+### WalletConfig
+
+```typescript
+interface WalletConfig {
+  privateKey?: string
+  pemContent?: string
+  pemPassword?: string
+  network?: Network
+  provider?: IProvider
+}
+```
+
+### TransferRequest
+
+```typescript
+interface TransferRequest {
+  receiver: string
+  amount: string | number
+  kda?: string  // Defaults to KLV
+}
+```
+
+## Build and Sign Transactions
+
+```typescript
+import { TransactionBuilder } from '@klever/connect-transactions'
+import { TXType } from '@klever/connect-core'
+
+const builder = new TransactionBuilder(provider)
+builder
+  .addContract({
+    contractType: TXType.Transfer,
+    receiver: 'klv1...',
+    amount: '1000000',
+  })
+  .sender(wallet.address)
+
+const unsignedTx = await builder.build()
+const signedTx = await wallet.signTransaction(unsignedTx)
+const hash = await wallet.broadcastTransaction(signedTx)
+```
+
+## Verify Signatures
+
+```typescript
+const message = 'Hello, Klever!'
+const signature = await wallet.signMessage(message)
+
+// Verify with Signature object
+const isValid = await wallet.verifyMessage(message, signature)
+
+// Verify with hex string
+const isValidHex = await wallet.verifyMessage(message, signature.toHex())
+
+// Verify with base64
+const isValidBase64 = await wallet.verifyMessage(message, signature.toBase64())
+```
+
+## Multi-Signature Workflows
+
+```typescript
+import { TransactionBuilder } from '@klever/connect-transactions'
+
+const builder = new TransactionBuilder(provider)
+const tx = await builder
+  .transfer({ receiver: 'klv1...', amount: '1000000' })
+  .sender(wallet1.address)
+  .build()
+
+await wallet1.signTransaction(tx)
+await wallet2.signTransaction(tx)
+await wallet3.signTransaction(tx)
+
+const hash = await wallet1.broadcastTransaction(tx)
+```
+
+## Security Best Practices
+
+**Never expose private keys** — don't hardcode, don't log, don't commit.
+
+**Node.js — use environment variables:**
+```bash
+# .env (add to .gitignore!)
+PRIVATE_KEY=your_private_key_here
+```
+```typescript
+const wallet = new NodeWallet(provider, process.env.PRIVATE_KEY)
+```
+
+**Production key management (AWS Secrets Manager):**
+```typescript
+import { SecretsManagerClient, GetSecretValueCommand } from '@aws-sdk/client-secrets-manager'
+
+const client = new SecretsManagerClient({ region: 'us-east-1' })
+const response = await client.send(new GetSecretValueCommand({ SecretId: 'klever/private-key' }))
+const wallet = new NodeWallet(provider, response.SecretString)
+```
+
+**Browser — always use extension mode for production:**
+```typescript
+// Extension mode: keys never enter your application code
+const wallet = new BrowserWallet(provider)
+await wallet.connect()
+```
+
+**PEM file permissions:**
+```bash
+chmod 600 wallet.pem  # Only owner can read/write
+```
+
+## Troubleshooting
+
+**Extension not found:**
+```typescript
+if (typeof window.kleverWeb === 'undefined') {
+  alert('Please install Klever Extension: https://klever.io/extension')
+} else {
+  await wallet.connect()
+}
+```
+
+**Invalid private key format:**
+```typescript
+// Correct: 64 hex characters, no 0x prefix, no whitespace
+const privateKey = 'a1b2c3d4...'.trim()
+```
+
+**PEM decryption failed:** Verify password is correct and trim whitespace:
+```typescript
+const password = process.env.PEM_PASSWORD?.trim()
+const pemResult = await cryptoProvider.importPrivateKeyFromPemFile('./wallet.pem', { password })
+```
+
+**React — memory leak with event listeners:**
+```typescript
+useEffect(() => {
+  const handler = ({ address }) => setAddress(address)
+  wallet.on('accountChanged', handler)
+  return () => wallet.off('accountChanged', handler)
+}, [wallet])
+```
