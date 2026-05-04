@@ -39,23 +39,27 @@ import { useKlever, useTransaction } from '@klever/connect-react'
 import { parseKLV } from '@klever/connect-core'
 
 function SendButton() {
-  const { connect, isConnected, address } = useKlever()
-  const { sendKLV, isLoading } = useTransaction()
+  const { connect, isConnected, address, provider } = useKlever()
+  const { sendKLV, isLoading, error } = useTransaction()
 
   const handleClick = async () => {
     if (!isConnected) {
       await connect() // Opens Klever Extension
     } else {
-      const result  = await sendKLV('klv1receiver...', parseKLV('10'))
-      const receipt = await result.wait()
-      console.log('Confirmed in block:', receipt.blockNumber)
+      const result = await sendKLV('klv1receiver...', String(parseKLV('10')))
+      console.log('Transaction hash:', result.hash)
+      const confirmed = await provider.waitForTransaction(result.hash)
+      console.log('Confirmed in block:', confirmed?.blockNum)
     }
   }
 
   return (
-    <button onClick={handleClick} disabled={isLoading}>
-      {!isConnected ? 'Connect Wallet' : isLoading ? 'Sending...' : 'Send 10 KLV'}
-    </button>
+    <div>
+      <button onClick={handleClick} disabled={isLoading}>
+        {!isConnected ? 'Connect Wallet' : isLoading ? 'Sending...' : 'Send 10 KLV'}
+      </button>
+      {error && <p style={{ color: 'red' }}>{error.message}</p>}
+    </div>
   )
 }
 ```
@@ -137,8 +141,8 @@ import { parseKLV } from '@klever/connect-core'
 import { useState } from 'react'
 
 function TransferForm() {
-  const { isConnected } = useKlever()
-  const { balance }     = useBalance('KLV')
+  const { isConnected, provider } = useKlever()
+  const { balance }               = useBalance('KLV')
   const { transfer, isLoading, error, data } = useTransfer()
   const [recipient, setRecipient] = useState('')
   const [amount, setAmount]       = useState('')
@@ -147,9 +151,10 @@ function TransferForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    const result  = await transfer({ receiver: recipient, amount: parseKLV(amount) })
-    const receipt = await result.wait()
-    console.log('Confirmed in block:', receipt.blockNumber)
+    const result = await transfer({ receiver: recipient, amount: String(parseKLV(amount)) })
+    console.log('Transaction hash:', result.hash)
+    const confirmed = await provider.waitForTransaction(result.hash)
+    console.log('Confirmed in block:', confirmed?.blockNum)
     setRecipient('')
     setAmount('')
   }
@@ -205,8 +210,8 @@ sendButton.onclick = async () => {
     amount: parseKLV('100'),
   })
   console.log('Hash:', result.hash)
-  const receipt = await result.wait()
-  console.log('Confirmed!')
+  const confirmed = await provider.waitForTransaction(result.hash)
+  console.log('Confirmed in block:', confirmed?.blockNum)
 }
 ```
 
@@ -232,7 +237,8 @@ function AccountWatcher() {
 
 ```typescript
 // Vanilla JS
-wallet.on('accountChanged', ({ address }) => {
+wallet.on('accountChanged', (data) => {
+  const { address } = data as { address: string }
   console.log('Account switched to:', address)
   // reload balances, update UI, etc.
 })
