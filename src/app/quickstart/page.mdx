@@ -1,79 +1,70 @@
 export const metadata = {
   title: 'Quickstart',
   description:
-    'This guide will get you all set up and ready to use Klever Wallet in your application. We’ll cover how to get started and how to make your first method call.',
+    'Get started with the Klever JavaScript SDK. Choose between Node.js for backend services or the Web App integration for React dApps.',
 }
 
 # Quickstart
 
-This guide will get you all set up and ready to use Klever Wallet in your application. We’ll cover how to get started using vanilla JavaScript and how to make your first method call. {{ className: 'lead' }}
+Get started building with the Klever JavaScript SDK — a unified interface for sending transactions, reading blockchain state, and integrating Klever Wallet into your applications. {{ className: 'lead' }}
 
-<Note>
-  Before you can procced with this quickstart, make sure your Klever Wallet is
-  properly installed and configured. If you haven't done so already, check out
-  the [Klever Wallet
-  Installer](https://chromewebstore.google.com/detail/klever-wallet/ifclboecfhkjbpmhgehodcjpciihhmif).
-</Note>
+## Installation
 
-## Verify installation
+```bash
+npm install @klever/connect
+```
 
-The presence of the Klever Wallet provider object, `window.klever`, in a user's browser indicates an Klever user. Is extremelly recommend this step for better user experience and error handling.
+## Node.js
 
-```js {{ 'title': 'index.js' }}
-if (typeof window.klever !== 'undefined') {
-  console.log('Klever Wallet is installed!')
+For backend services, CLI tools, scripts, and server-side signing. Uses a private key or PEM file directly — no browser extension required.
+
+```typescript
+import { KleverProvider, NodeWallet, parseKLV } from '@klever/connect'
+
+const provider = new KleverProvider('mainnet')
+const wallet = new NodeWallet(provider, process.env.PRIVATE_KEY)
+
+await wallet.connect()
+
+const result = await wallet.transfer({
+  receiver: 'klv1receiver...',
+  amount: parseKLV('10'),
+})
+console.log('Transaction hash:', result.hash)
+```
+
+→ **[Node.js guide](/javascript-sdk/node-js)**
+
+---
+
+## Web App
+
+For React dApps and browser-based integrations. Connects to the Klever Extension wallet or mobile wallet, with ready-to-use React hooks.
+
+```typescript
+import { KleverProvider, useKlever, useTransaction } from '@klever/connect'
+import { parseKLV } from '@klever/connect-core'
+
+function App() {
+  const { connect, isConnected, address } = useKlever()
+  const { sendKLV, isLoading } = useTransaction()
+
+  const handleSend = async () => {
+    const result = await sendKLV('klv1receiver...', String(parseKLV('10')))
+    console.log('Transaction hash:', result.hash)
+  }
+
+  return isConnected
+    ? <button onClick={handleSend} disabled={isLoading}>Send 10 KLV</button>
+    : <button onClick={connect}>Connect Wallet</button>
 }
 ```
 
-## User's account
+→ **[Web App guide](/javascript-sdk/web-app)**
 
-<Row>
-  <Col>
-    To access user's account information is necessary to request to user and validate the access.
-
-    When acessing a user's accounts:
-    * **Only** initiate a connection request in response to direct user action, such as selecting a connect button.
-    * **Always** disable the connect button while the connection request is pending.
-
-  </Col>
-  <Col>
-
-    ```js {{ title: 'index.js' }}
-      await window.klever.initialize();
-      const address = await window.klever.getWalletAddress();
-      if (!address || address.length === 0) {
-        throw new Error("Session not properly initialized");
-      }
-    ```
-
-  </Col>
-</Row>
-
-## Secure your application
-
-To increase security of your application and trying to verify integrity of user's wallet,
-you can add more one step in account validation, a message verification through a signed value.
-
-After retrieve user's address, you can request a signed value to user and validate it.
-
-```js {{ title: 'index.js' }}
-// ...
-
-const messageToSign = 'Validate this message to proceed.'
-const signedMessage = await window.klever.signMessage(messageToSign)
-const isValid = await window.klever.validateSignature(
-  messageToSign,
-  signedMessage,
-  address,
-)
-if (!isValid) {
-  throw new Error('Invalid signature')
-}
-```
+---
 
 ## What's next?
 
-Great, you're now make a secure connection with Klever Wallet. Here are a few links that might be handy as you venture further into Klever Wallet:
-
-- [Framework implementations](/sdks)
-- [Check out the Klever Provider methods](/web-app#examples-by-framework)
+- [JavaScript SDK overview](/javascript-sdk)
+- [Connect Packages reference](/javascript-sdk/connect-packages)
