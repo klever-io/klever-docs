@@ -1,0 +1,358 @@
+# @klever/connect-provider
+
+Network provider for Klever Connect SDK — handles all blockchain communication.
+
+## Installation
+
+```bash
+npm install @klever/connect-provider
+```
+
+## Overview
+
+`@klever/connect-provider` is the network layer of the Klever Connect SDK. It provides a comprehensive interface for interacting with the Klever blockchain, similar to ethers.js providers.
+
+**Key Features:**
+
+- Multiple network support (mainnet, testnet, devnet, custom)
+- Built-in request caching with configurable TTL
+- Automatic retry logic with exponential backoff
+- Transaction monitoring with confirmation tracking
+- Type-safe receipt parsing for all transaction types
+- Batch request optimization
+- Smart contract querying
+- Testnet faucet integration
+
+## Quick Start
+
+### Basic Usage
+
+```typescript
+import { KleverProvider } from '@klever/connect-provider'
+
+// Connect to mainnet (default)
+const provider = new KleverProvider()
+
+// Get account balance
+const balance = await provider.getBalance('klv1...')
+console.log(`Balance: ${balance}`) // bigint
+
+// Get account details
+const account = await provider.getAccount('klv1...')
+console.log(`Nonce: ${account.nonce}`)
+
+// Get current block number
+const blockNumber = await provider.getBlockNumber()
+```
+
+### Network Configuration
+
+```typescript
+import { KleverProvider, NETWORKS } from '@klever/connect-provider'
+
+// Named networks
+const mainnet = new KleverProvider('mainnet')
+const testnet = new KleverProvider('testnet')
+const devnet  = new KleverProvider('devnet')
+
+// Config object
+const provider = new KleverProvider({ network: 'testnet' })
+
+// Custom network
+const custom = new KleverProvider({
+  url:     'https://custom-node.example.com',
+  chainId: '12345',
+})
+```
+
+## API Reference
+
+### `new KleverProvider(config?)`
+
+Create a new provider instance.
+
+**Parameters:**
+
+- `config.network` — Network configuration (default: mainnet)
+- `config.cacheOptions` — Cache configuration
+- `config.timeout` — Request timeout in ms (default: 30000)
+- `config.headers` — Custom HTTP headers
+- `config.retry` — Retry configuration (`{ maxRetries: number }` or `false`)
+- `config.cache` — Cache configuration (`{ ttl, maxSize }` or `false`)
+- `config.debug` — Enable debug logging
+
+### Account & Balance
+
+- `getBalance(address: Address, kda?: string): Promise<bigint>` — Get KLV or KDA balance
+- `getAccount(address: Address): Promise<Account>` — Get full account details
+- `getAccountInfo(address: Address): Promise<Account>` — Alias for `getAccount()`
+
+### Transaction Operations
+
+- `sendRawTransaction(txHex: string): Promise<TransactionHash>` — Broadcast transaction
+- `sendTransaction(tx: unknown): Promise<BroadcastResult>` — Alias for `broadcastTransaction()`
+- `getTransactionReceipt(hash: TransactionHash): Promise<Receipt[]>` — Get receipts
+- `waitForTransaction(hash, confirmations?, onProgress?): Promise<Transaction>` — Wait for confirmation
+- `getTransaction(hash: TransactionHash): Promise<Transaction | null>` — Get transaction details
+
+### Blockchain Queries
+
+- `getBlock(height: number | 'latest'): Promise<Block>` — Get block by height
+- `getBlockNumber(): Promise<number>` — Get current block height
+- `queryContract(params): Promise<ContractQueryResult>` — Query smart contract
+
+### Utility Methods
+
+- `batch<T>(requests: (() => Promise<T>)[]): Promise<T[]>` — Execute multiple requests in parallel
+- `clearCache(): void` — Clear all cached data
+- `getNetwork(): Network` — Get current network config
+- `getNetworkName(): string` — Get current network name
+- `getTransactionUrl(hash: string): string` — Get block explorer URL
+- `requestTestKLV(address, amount?): Promise<FaucetResult>` — Request testnet KLV
+
+## Common Use Cases
+
+### Monitoring Transactions
+
+```typescript
+import { KleverProvider } from '@klever/connect-provider'
+
+const provider = new KleverProvider()
+
+const txHash = await provider.sendRawTransaction(signedTx)
+
+// Simple wait
+const tx = await provider.waitForTransaction(txHash)
+if (tx) {
+  console.log(`Confirmed in block ${tx.blockNum}`)
+}
+
+// Wait with progress updates
+const confirmedTx = await provider.waitForTransaction(
+  txHash,
+  3, // confirmations
+  (status, data) => {
+    switch (status) {
+      case 'pending':
+        console.log(`Waiting... attempt ${data.attempts}/${data.maxAttempts}`)
+        break
+      case 'confirming':
+        console.log(`Confirming... ${data.confirmations}/${data.required}`)
+        break
+      case 'failed':
+        console.error('Transaction failed!')
+        break
+      case 'timeout':
+        console.warn('Transaction timeout')
+        break
+    }
+  },
+)
+
+if (confirmedTx?.status === 'success') {
+  console.log('Transaction successful!')
+}
+```
+
+### Batch Requests
+
+```typescript
+// Instead of sequential requests
+const [account1, account2, balance1, balance2] = await provider.batch([
+  () => provider.getAccount('klv1address1...'),
+  () => provider.getAccount('klv1address2...'),
+  () => provider.getBalance('klv1address1...'),
+  () => provider.getBalance('klv1address2...'),
+])
+```
+
+### Receipt Parsing
+
+```typescript
+import { KleverProvider, parseReceipt } from '@klever/connect-provider'
+
+const provider = new KleverProvider()
+
+// Parse freeze receipt
+const freezeTx = await provider.getTransaction(freezeTxHash)
+if (freezeTx) {
+  const { bucketId, amount, kda, freezes } = parseReceipt.freeze(freezeTx)
+  console.log(`Frozen ${amount} ${kda} in bucket ${bucketId}`)
+}
+
+// Parse transfer receipt
+const transferTx = await provider.getTransaction(transferTxHash)
+if (transferTx) {
+  const { sender, receiver, amount, kda } = parseReceipt.transfer(transferTx)
+  console.log(`${sender} sent ${amount} ${kda} to ${receiver}`)
+}
+
+// Parse claim receipt
+const claimTx = await provider.getTransaction(claimTxHash)
+if (claimTx) {
+  const { rewards, totalClaimed, claimType } = parseReceipt.claim(claimTx)
+  console.log(`Claimed ${totalClaimed} across ${rewards.length} assets`)
+}
+
+// Parse delegate receipt
+const delegateTx = await provider.getTransaction(delegateTxHash)
+if (delegateTx) {
+  const { validator, bucketId } = parseReceipt.delegate(delegateTx)
+  console.log(`Delegated bucket ${bucketId} to ${validator}`)
+}
+```
+
+**Available parsers:**
+
+- `parseReceipt.freeze(tx)` → `{ bucketId, amount, kda, freezes? }`
+- `parseReceipt.unfreeze(tx)` → `{ bucketId, kda, availableAt? }`
+- `parseReceipt.claim(tx)` → `{ rewards[], totalClaimed, claimType? }`
+- `parseReceipt.withdraw(tx)` → `{ amount, kda, withdrawType?, withdrawals? }`
+- `parseReceipt.delegate(tx)` → `{ validator, bucketId }`
+- `parseReceipt.undelegate(tx)` → `{ bucketId, availableAt? }`
+- `parseReceipt.transfer(tx)` → `{ sender, receiver, amount, kda, transfers? }`
+
+### Error Handling
+
+```typescript
+import { NetworkError, ValidationError, TransactionError } from '@klever/connect-core'
+
+try {
+  const account = await provider.getAccount('klv1...')
+} catch (error) {
+  if (error instanceof ValidationError) {
+    console.error('Invalid input:', error.message)
+  } else if (error instanceof NetworkError) {
+    console.error('Network error — retry logic here')
+  }
+}
+
+try {
+  const hash = await provider.sendRawTransaction(signedTx)
+  const tx = await provider.waitForTransaction(hash)
+
+  if (!tx) throw new Error('Transaction timeout')
+  if (tx.status === 'failed') throw new TransactionError('Failed on-chain', { hash })
+
+  console.log('Transaction successful:', hash)
+} catch (error) {
+  if (error instanceof TransactionError) {
+    console.error('TX Error:', error.context)
+  }
+}
+```
+
+### Advanced Configuration
+
+```typescript
+// Production-ready configuration
+const provider = new KleverProvider({
+  network: 'mainnet',
+  timeout: 10000,
+  headers: {
+    'User-Agent': 'MyApp/1.0.0',
+    'X-API-Key': process.env.API_KEY || '',
+  },
+  retry: {
+    maxRetries: 5,
+  },
+  cache: {
+    ttl: 15000,     // Cache for 15 seconds
+    maxSize: 200,   // Store up to 200 entries
+  },
+  debug: process.env.DEBUG === 'true',
+})
+
+// Disable caching for real-time data
+const realtimeProvider = new KleverProvider({
+  network: 'mainnet',
+  cache: false,
+})
+
+// Custom network
+import { createCustomNetwork } from '@klever/connect-provider'
+
+const customNetwork = createCustomNetwork({
+  chainId: '999',
+  api:      'https://api.my-network.com',
+  node:     'https://node.my-network.com',
+  ws:       'wss://ws.my-network.com',
+  explorer: 'https://explorer.my-network.com',
+  isTestnet: true,
+})
+
+const customProvider = new KleverProvider({ network: customNetwork })
+```
+
+### Smart Contract Queries
+
+```typescript
+const result = await provider.queryContract({
+  scAddress: 'klv1contract...',
+  funcName:  'getBalance',
+  args:      ['klv1user...'],
+})
+
+if (result.error) {
+  console.error('Query failed:', result.error)
+} else {
+  console.log('Return data:', result.data?.returnData)
+  console.log('Gas remaining:', result.data?.gasRemaining)
+}
+```
+
+### Testnet Faucet
+
+```typescript
+const provider = new KleverProvider('testnet')
+
+const faucetResult = await provider.requestTestKLV('klv1...')
+await provider.waitForTransaction(faucetResult.txHash)
+
+const balance = await provider.getBalance('klv1...')
+console.log('New balance:', balance)
+```
+
+### Cache Management
+
+```typescript
+// Force skip cache for real-time data
+const account = await provider.getAccount('klv1...', { skipCache: true })
+
+// Clear all cached data
+provider.clearCache()
+```
+
+## Performance Tips
+
+**Batch related requests:**
+```typescript
+// Bad: Sequential
+const a = await provider.getAccount('klv1a...')
+const b = await provider.getAccount('klv1b...')
+
+// Good: Parallel
+const [a, b] = await provider.batch([
+  () => provider.getAccount('klv1a...'),
+  () => provider.getAccount('klv1b...'),
+])
+```
+
+**Reuse provider instances:**
+```typescript
+// Bad: New instance on every call
+function getBalance(address: string) {
+  return new KleverProvider().getBalance(address) // don't do this
+}
+
+// Good: Single shared instance
+const provider = new KleverProvider()
+function getBalance(address: string) {
+  return provider.getBalance(address)
+}
+```
+
+**Use polling intervals that match block time (4 seconds):**
+```typescript
+const pollInterval = 3000 // slightly under 1 block
+```

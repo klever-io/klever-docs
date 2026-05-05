@@ -50,9 +50,9 @@ import { CodeGroup } from '@/components/Code'
 
 Useful links and info for devs that want to integrate the Klever Blockchain to their projects
 
-## Web SDK
+## JavaScript SDK
 
-If you want to create a web app that communicates with the Klever Blockchain via the Klever web extension or via the Klever mobile app's built-in browser, you can find more info on our javascript library in this link:
+To build a web or Node.js application that communicates with the Klever Blockchain, use the [Klever JavaScript SDK](/javascript-sdk). It provides a unified API for browser dApps (via Klever Extension or mobile wallet) and backend services.
 
 ## Klever Blockchain API
 
@@ -96,47 +96,39 @@ If, for some reason, your transaction was broadcast but doesn't appear in the pr
 
 ## Sending a transaction to the Klever Blockchain
 
-If you plan on using the raw endpoints, you'll need to do three main steps: building, signing and broadcasting the transaction.
+Sending a transaction involves three steps: **building**, **signing**, and **broadcasting**.
 
-### 1. Build
+### Using the JavaScript SDK
 
-To build the transaction, if you are creating a web application, you can use the window method injected by the Klever extension (or the Klever 5 mobile browser).
-
-```typescript
-const unsignedTransaction = await window.kleverWeb.buildTransaction([
-  {
-    payload,
-    type: TransactionType.Transfer,
-  },
-])
-```
-
-Even though you can use the window kleverWeb object directly, we suggest you [use the Klever Blockchain JS SDK,](/sdks) if you are using javascript.
-
-Alternatively you can send the params [through the `send` endpoint](https://node.mainnet.klever.org/swagger/index.html#/Transaction/post_transaction_send), and will receive an unsigned transaction as response.
-
-### 2. Sign
-
-To sign the transaction, if you are creating a web application, again, you can use the window method injected by the Klever extension (or the Klever 5 mobile browser).
+The [Klever JavaScript SDK](/javascript-sdk) handles all three steps automatically:
 
 ```typescript
-const signedTransaction =
-  await window.kleverWeb.signTransaction(unsignedTransaction)
+import { KleverProvider } from '@klever/connect-provider'
+import { BrowserWallet } from '@klever/connect-wallet' // or NodeWallet for backend
+import { parseKLV } from '@klever/connect-core'
+
+const provider = new KleverProvider('mainnet')
+const wallet = new BrowserWallet(provider)
+await wallet.connect()
+
+const result = await wallet.transfer({
+  receiver: 'klv1receiver...',
+  amount: parseKLV('10'),
+})
+console.log('Transaction hash:', result.hash)
 ```
 
-Alternatively, to sign the transaction, you will need to do it using a backend application, so you don't expose your private key. For instance, you can [use the GO SDK](https://github.com/klever-io/klever-go-sdk) or [the Klever Blockchain JS SDK](/node.js) with NodeJS.
+See the [Web App guide](/javascript-sdk/web-app) or [Node.js guide](/javascript-sdk/node-js) for more examples.
 
-### 3. Broadcast
+### Using the raw API
 
-To broadcast the transaction, if you are creating a web application, again, you can use the window method.
+If you need to interact with the blockchain endpoints directly:
 
-```typescript
-const broadcastResponse = await window.kleverWeb.broadcastTransactions([
-  signedTransaction,
-])
-```
+**1. Build** — POST to the [`/transaction/send` endpoint](https://node.mainnet.klever.org/swagger/index.html#/Transaction/post_transaction_send) and receive an unsigned transaction as response.
 
-Alternatively you can send a signed transaction [through the `broadcast` endpoint](https://node.mainnet.klever.org/swagger/index.html#/Transaction/post_transaction_broadcast) to be processed and validated by the blockchain.
+**2. Sign** — Use the [Go SDK](https://github.com/klever-io/klever-go-sdk) or the [Node.js SDK](/javascript-sdk/node-js) to sign without exposing your private key in the browser.
+
+**3. Broadcast** — POST the signed transaction to the [`/transaction/broadcast` endpoint](https://node.mainnet.klever.org/swagger/index.html#/Transaction/post_transaction_broadcast) to be processed and validated by the blockchain.
 
 ## Checking the status of the transaction
 

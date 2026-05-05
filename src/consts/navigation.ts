@@ -210,26 +210,38 @@ export const navigation: Array<NavGroup> = [
   },
 
   {
-    title: 'Klever SDK',
+    title: 'Javascript SDK',
     links: [
       {
-        title: 'Introduction to Klever Blockchain SDK',
-        href: '/introduction-to-kleverchain-sdk',
+        title: 'Javascript SDK',
+        href: '/javascript-sdk',
+        children: [
+          { title: 'Node.js', href: '/node-js' },
+          { title: 'Web App', href: '/web-app' },
+          {
+            title: 'Connect Packages',
+            href: '/connect-packages',
+            children: [
+              { title: 'connect-core', href: '/connect-core' },
+              { title: 'connect-encoding', href: '/connect-encoding' },
+              { title: 'connect-crypto', href: '/connect-crypto' },
+              { title: 'connect-provider', href: '/connect-provider' },
+              { title: 'connect-transactions', href: '/connect-transactions' },
+              { title: 'connect-wallet', href: '/connect-wallet' },
+              { title: 'connect-contracts', href: '/connect-contracts' },
+              { title: 'connect-react', href: '/connect-react' },
+            ],
+          },
+        ],
       },
-      { title: 'Klever Blockchain SDKs', href: '/sdks' },
       {
-        title: "Go",
-        href: "/go",
+        title: 'Go',
+        href: '/go',
       },
       {
-        title: "C#",
-        href: "/csharp",
+        title: 'C#',
+        href: '/csharp',
       },
-      {
-        title: 'Node.js',
-        href: '/node.js',
-      },
-      { title: 'Web App', href: '/web-app' },
       { title: 'Unity', href: '/unity' },
       { title: 'Available Transactions', href: '/available-transactions' },
       { title: 'Contract Details', href: '/contract-details' },
@@ -240,7 +252,13 @@ export const navigation: Array<NavGroup> = [
       { title: 'Types', href: '/types' },
 
       //Legacy
-      { title: 'Legacy', href: '/legacy' },
+      {
+        title: 'Legacy',
+        href: '/legacy',
+        children: [
+          { title: 'SDK v2 (@klever/sdk)', href: '/sdk-v2' },
+        ],
+      },
     ],
 
   },

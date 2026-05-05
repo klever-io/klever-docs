@@ -1,0 +1,648 @@
+# @klever/connect-transactions
+
+Transaction building for Klever Connect SDK — build and sign transactions offline.
+
+## Installation
+
+```bash
+npm install @klever/connect-transactions
+```
+
+## Features
+
+- **Chainable API** — Fluent transaction building with method chaining
+- **Offline-First** — Build transactions without network connectivity using `buildProto()`
+- **Online Building** — Node-assisted building with automatic fee calculation using `build()`
+- **Type Safe** — Full TypeScript with branded types and IntelliSense
+- **20+ Transaction Types** — Transfers, staking, governance, assets, NFTs, marketplace, smart contracts
+- **Fee Management** — Automatic or manual fee control
+- **Nonce Management** — Automatic from network or manual for batch transactions
+- **Proto Encoding** — Built-in protobuf encoding compatible with Klever blockchain
+- **Multiple Contracts** — Multiple contracts in a single transaction
+- **Performance** — ~0.003ms transaction building, ~0.0002ms proto encoding
+
+## Quick Start
+
+### Basic Transfer (Node-Assisted)
+
+```typescript
+import { TransactionBuilder } from '@klever/connect-transactions'
+import { KleverProvider } from '@klever/connect-provider'
+
+const provider = new KleverProvider({ network: 'mainnet' })
+
+const tx = await TransactionBuilder.create(provider)
+  .sender('klv1...')
+  .transfer({
+    receiver: 'klv1...',
+    amount: '1000000', // 1 KLV
+  })
+  .build()
+
+await tx.sign(privateKey)
+const txHash = await provider.sendRawTransaction(tx.toHex())
+```
+
+### Offline Building
+
+```typescript
+import { TransactionBuilder } from '@klever/connect-transactions'
+
+const tx = TransactionBuilder.create()
+  .sender('klv1...')
+  .nonce(123) // Must provide nonce manually
+  .transfer({
+    receiver: 'klv1...',
+    amount: '1000000',
+  })
+  .buildProto({
+    chainId: '100', // Mainnet
+    fees: {
+      kAppFee: 500000,
+      bandwidthFee: 100000,
+    },
+  })
+
+await tx.sign(privateKey)
+// Later: provider.sendRawTransaction(tx.toHex())
+```
+
+## Building Modes
+
+| Feature | `build()` | `buildProto()` | `buildRequest()` |
+| --- | --- | --- | --- |
+| **Network Required** | Yes | No | No |
+| **Nonce Management** | Automatic | Manual | Manual |
+| **Fee Calculation** | Automatic | Manual | Automatic (later) |
+| **Performance** | ~100-300ms | ~0.003ms | ~0.001ms |
+| **Best For** | Standard dApps | Air-gapped/hardware wallets | Custom integrations |
+
+### `build()` — Node-Assisted
+
+Best for standard applications with internet connectivity.
+
+```typescript
+const tx = await TransactionBuilder.create(provider)
+  .sender('klv1...')
+  .transfer({ receiver: 'klv1...', amount: '1000000' })
+  .build() // Auto nonce + auto fees + validation
+
+await tx.sign(privateKey)
+const hash = await provider.sendRawTransaction(tx.toHex())
+```
+
+### `buildProto()` — Offline
+
+Best for air-gapped signing, hardware wallets, maximum security.
+
+```typescript
+const account = await provider.getAccount('klv1...')
+
+const tx = TransactionBuilder.create()
+  .sender('klv1...')
+  .nonce(account.nonce)
+  .transfer({ receiver: 'klv1...', amount: '1000000' })
+  .buildProto({
+    chainId: '100',
+    fees: {
+      kAppFee: 500000,
+      bandwidthFee: 100000,
+    },
+  })
+
+await tx.sign(privateKey)
+const hex = tx.toHex()
+// Send hex from an online machine later
+```
+
+### `buildRequest()` — Inspect Before Sending
+
+Best for debugging, custom integrations.
+
+```typescript
+const request = TransactionBuilder.create()
+  .sender('klv1...')
+  .transfer({ receiver: 'klv1...', amount: '1000000' })
+  .buildRequest()
+
+// Inspect or modify the JSON object
+console.log(JSON.stringify(request, null, 2))
+
+// Send to node endpoint manually
+const response = await fetch('https://api.mainnet.klever.finance/v1.0/transaction/build', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify(request),
+})
+const data = await response.json()
+const tx = Transaction.fromObject(data.result)
+await tx.sign(privateKey)
+```
+
+## Transaction Types
+
+### Transfer (Type 0)
+
+Transfer KLV, KDA tokens, or NFTs.
+
+```typescript
+// KLV transfer
+const tx = await TransactionBuilder.create(provider)
+  .sender('klv1...')
+  .transfer({
+    receiver: 'klv1recipient...',
+    amount: '1000000', // 1 KLV
+  })
+  .build()
+
+// Custom KDA token
+const tx = await TransactionBuilder.create(provider)
+  .sender('klv1...')
+  .transfer({
+    receiver: 'klv1recipient...',
+    amount: '5000000',
+    kda: 'MYTOKEN-ABCD',
+  })
+  .build()
+
+// NFT with royalties
+const tx = await TransactionBuilder.create(provider)
+  .sender('klv1...')
+  .transfer({
+    receiver: 'klv1recipient...',
+    amount: '1',
+    kda: 'NFT-COLLECTION/NONCE-1',
+    kdaRoyalties: '100000',
+    klvRoyalties: '50000',
+  })
+  .build()
+
+// Multiple transfers in one transaction
+const tx = await TransactionBuilder.create(provider)
+  .sender('klv1...')
+  .transfer({ receiver: 'klv1alice...', amount: '1000000' })
+  .transfer({ receiver: 'klv1bob...', amount: '2000000' })
+  .transfer({ receiver: 'klv1charlie...', amount: '3000000', kda: 'MYTOKEN-ABCD' })
+  .build()
+```
+
+### Staking
+
+#### Freeze (Type 4) — Lock KLV to create a staking bucket
+
+```typescript
+const tx = await TransactionBuilder.create(provider)
+  .sender('klv1...')
+  .freeze({ amount: '5000000' })
+  .build()
+
+// Freeze custom KDA
+const tx = await TransactionBuilder.create(provider)
+  .sender('klv1...')
+  .freeze({ amount: '1000000', kda: 'MYTOKEN-ABCD' })
+  .build()
+```
+
+#### Unfreeze (Type 5) — Unlock frozen tokens
+
+```typescript
+const tx = await TransactionBuilder.create(provider)
+  .sender('klv1...')
+  .unfreeze({ kda: 'KLV', bucketId: 'bucket-hash-123' })
+  .build()
+```
+
+#### Delegate (Type 6) — Assign bucket to validator
+
+```typescript
+const tx = await TransactionBuilder.create(provider)
+  .sender('klv1...')
+  .delegate({ receiver: 'klv1validator...', bucketId: 'bucket-hash-123' })
+  .build()
+```
+
+#### Undelegate (Type 7) — Remove delegation
+
+```typescript
+const tx = await TransactionBuilder.create(provider)
+  .sender('klv1...')
+  .undelegate({ bucketId: 'bucket-hash-123' })
+  .build()
+```
+
+#### Withdraw (Type 8) — Withdraw staking rewards
+
+```typescript
+const tx = await TransactionBuilder.create(provider)
+  .sender('klv1...')
+  .withdraw({ withdrawType: 0 })   // 0 = Staking, 1 = FPR
+  .build()
+```
+
+#### Claim (Type 9) — Claim rewards
+
+```typescript
+const tx = await TransactionBuilder.create(provider)
+  .sender('klv1...')
+  .claim({ claimType: 0 })  // 0 = Staking, 1 = Market, 2 = Allowance, 3 = FPR
+  .build()
+```
+
+### Asset Management
+
+#### Create Asset (Type 1) — Fungible or NFT
+
+```typescript
+// Fungible token
+const tx = await TransactionBuilder.create(provider)
+  .sender('klv1...')
+  .createAsset({
+    type: 0, // 0 = Fungible Token
+    name: 'My Token',
+    ticker: 'MTK',
+    ownerAddress: 'klv1...',
+    precision: 6,
+    maxSupply: '1000000000000',
+    initialSupply: '100000000000',
+    properties: {
+      canMint: true,
+      canBurn: true,
+      canPause: true,
+      canWipe: false,
+      canFreeze: false,
+      canChangeOwner: true,
+      canAddRoles: true,
+    },
+  })
+  .build()
+
+// NFT collection
+const tx = await TransactionBuilder.create(provider)
+  .sender('klv1...')
+  .createAsset({
+    type: 1, // 1 = NFT
+    name: 'My NFT Collection',
+    ticker: 'MYNFT',
+    ownerAddress: 'klv1...',
+    precision: 0,
+    maxSupply: 0, // Unlimited
+    logo: 'https://example.com/logo.png',
+    uris: { website: 'https://mynft.com' },
+    royalties: {
+      address: 'klv1royalty...',
+      transferPercentage: [{ amount: 0, percentage: 5 }],
+    },
+    properties: { canMint: true, canBurn: false },
+  })
+  .build()
+```
+
+#### Asset Trigger (Type 11) — Mint, burn, pause, resume
+
+```typescript
+// Mint NFT (triggerType 0)
+const tx = await TransactionBuilder.create(provider)
+  .sender('klv1...')
+  .addContract({
+    contractType: 11,
+    triggerType: 0,
+    assetId: 'MYNFT-ABCD',
+    receiver: 'klv1recipient...',
+    uris: { image: 'ipfs://QmXyz...' },
+    mime: 'image/png',
+  })
+  .build()
+
+// Burn tokens (triggerType 1)
+const tx = await TransactionBuilder.create(provider)
+  .sender('klv1...')
+  .addContract({ contractType: 11, triggerType: 1, assetId: 'MYTOKEN-ABCD', amount: '1000000' })
+  .build()
+```
+
+### Validator Operations
+
+```typescript
+// Create validator
+const tx = await TransactionBuilder.create(provider)
+  .sender('klv1...')
+  .createValidator({
+    blsPublicKey: '0xabcd1234...',
+    ownerAddress: 'klv1owner...',
+    commission: 10, // 10%
+    canDelegate: true,
+    name: 'My Validator',
+    logo: 'https://validator.com/logo.png',
+  })
+  .build()
+
+// Unjail
+const tx = await TransactionBuilder.create(provider)
+  .sender('klv1...')
+  .addContract({ contractType: 10 })
+  .build()
+```
+
+### Governance
+
+```typescript
+// Create proposal (Type 13)
+const tx = await TransactionBuilder.create(provider)
+  .sender('klv1...')
+  .addContract({
+    contractType: 13,
+    parameters: { 1: '1000000', 5: '500000' },
+    description: 'Update network parameters',
+    epochsDuration: 10,
+  })
+  .build()
+
+// Vote (Type 14) — type: 0 = Abstain, 1 = Yes, 2 = No
+const tx = await TransactionBuilder.create(provider)
+  .sender('klv1...')
+  .vote({ proposalId: 5, type: 1, amount: '1000000' })
+  .build()
+```
+
+### Smart Contracts (Type 63)
+
+```typescript
+// Deploy contract
+const tx = await TransactionBuilder.create(provider)
+  .sender('klv1...')
+  .smartContract({ address: 'klv1000...', scType: 0 })
+  .data(['contractCode', 'initArgs'])
+  .build()
+
+// Invoke function
+const tx = await TransactionBuilder.create(provider)
+  .sender('klv1...')
+  .smartContract({
+    address: 'klv1contract...',
+    scType: 1,
+    callValue: { KLV: '1000000' },
+  })
+  .data(['transfer', 'klv1recipient...', '500000'])
+  .build()
+```
+
+## API Reference
+
+### TransactionBuilder
+
+**Constructor Methods:**
+
+- `TransactionBuilder.create(provider?)` — Create new builder with optional provider
+- `new TransactionBuilder(provider?)`
+
+**Configuration Methods:**
+
+- `.sender(address)` — Set transaction sender (required)
+- `.nonce(nonce)` — Set nonce manually (for offline building)
+- `.setChainId(chainId)` — Override chain ID
+- `.kdaFee(fee)` — Pay fees in custom KDA
+- `.permissionId(id)` — Set permission ID for multi-sig
+- `.data(data)` — Set transaction data (for smart contracts)
+
+**Contract Methods:**
+
+- `.transfer(params)` — Add transfer contract
+- `.freeze(params)` — Add freeze contract
+- `.unfreeze(params)` — Add unfreeze contract
+- `.delegate(params)` — Add delegation contract
+- `.undelegate(params)` — Add undelegation contract
+- `.withdraw(params)` — Add withdrawal contract
+- `.claim(params)` — Add claim contract
+- `.createAsset(params)` — Add asset creation contract
+- `.createValidator(params)` — Add validator creation contract
+- `.vote(params)` — Add vote contract
+- `.smartContract(params)` — Add smart contract call
+- `.addContract(contract)` — Add any contract by type
+
+**Build Methods:**
+
+- `.build()` — Build using node (requires provider)
+- `.buildProto(options)` — Build offline (no network)
+- `.buildRequest()` — Build JSON request object
+
+**Utility Methods:**
+
+- `.reset()` — Clear all contracts and state
+- `.getProvider()` / `.setProvider(provider)`
+
+### Transaction Instance Methods
+
+- `sign(privateKey)` — Sign transaction
+- `toHex()` — Get hex-encoded proto bytes
+- `toBytes()` — Get proto bytes as Uint8Array
+- `toJSON()` — Convert to JSON object
+- `isSigned()` — Check if signed
+- `getTotalFee()` — Get total fee amount
+- `getHash()` — Get transaction hash
+- `getHashBytes()` — Get transaction hash as bytes
+
+**Static Methods:**
+
+- `Transaction.fromHex(hex)`
+- `Transaction.fromBytes(bytes)`
+- `Transaction.fromObject(obj)`
+
+## Advanced Patterns
+
+### Multi-Operation Transactions
+
+```typescript
+// Atomic: Transfer + Freeze + Delegate
+const tx = await TransactionBuilder.create(provider)
+  .sender('klv1...')
+  .transfer({ receiver: 'klv1friend...', amount: '1000000' })
+  .freeze({ amount: '5000000' })
+  .delegate({ receiver: 'klv1validator...', bucketId: 'bucket-123' })
+  .build()
+
+// Airdrop to multiple recipients
+const builder = TransactionBuilder.create(provider).sender('klv1sender...')
+
+recipients.forEach((r) => {
+  builder.transfer({ receiver: r.address, amount: r.amount })
+})
+
+const tx = await builder.build()
+```
+
+### Custom KDA Fee
+
+```typescript
+const tx = await TransactionBuilder.create(provider)
+  .sender('klv1...')
+  .kdaFee({ kda: 'MYTOKEN-ABCD', amount: '1000000' })
+  .transfer({ receiver: 'klv1...', amount: '1000000' })
+  .build()
+```
+
+### Offline Transaction Signing (Air-Gapped)
+
+```typescript
+// Step 1: On connected machine — fetch nonce
+const account = await provider.getAccount('klv1...')
+console.log('Nonce:', account.nonce)
+
+// Step 2: On air-gapped machine — build and sign
+const tx = TransactionBuilder.create()
+  .sender('klv1...')
+  .nonce(123)
+  .transfer({ receiver: 'klv1...', amount: '1000000' })
+  .buildProto({
+    chainId: '100',
+    fees: { kAppFee: 500000, bandwidthFee: 100000 },
+  })
+
+await tx.sign(privateKey)
+const signedHex = tx.toHex()
+
+// Step 3: On connected machine — broadcast
+const hash = await provider.sendRawTransaction(signedHex)
+```
+
+### Batch Transactions with Sequential Nonces
+
+```typescript
+const account = await provider.getAccount('klv1sender...')
+let currentNonce = account.nonce
+const transactions: Transaction[] = []
+
+for (let i = 0; i < 10; i++) {
+  const tx = TransactionBuilder.create()
+    .sender('klv1sender...')
+    .nonce(currentNonce++)
+    .transfer({ receiver: recipients[i], amount: '1000000' })
+    .buildProto({
+      chainId: '100',
+      fees: { kAppFee: 500000, bandwidthFee: 100000 },
+    })
+
+  await tx.sign(privateKey)
+  transactions.push(tx)
+}
+
+const hashes = await provider.sendRawTransactions(transactions.map((tx) => tx.toHex()))
+```
+
+### Hardware Wallet Integration
+
+```typescript
+// Build unsigned transaction
+const tx = TransactionBuilder.create()
+  .sender('klv1...')
+  .nonce(account.nonce)
+  .transfer({ receiver: 'klv1...', amount: '1000000' })
+  .buildProto({
+    chainId: '100',
+    fees: { kAppFee: 500000, bandwidthFee: 100000 },
+  })
+
+// Get transaction hash bytes for hardware wallet
+const txHashBytes = tx.getHashBytes()
+
+// Sign with hardware wallet (pseudocode)
+const signature = await hardwareWallet.signTransaction(txHashBytes, derivationPath)
+
+// Add signature
+tx.Signature = [signature]
+
+// Broadcast
+const hash = await provider.sendRawTransaction(tx.toHex())
+```
+
+### Reusing Builder Instances
+
+```typescript
+const builder = TransactionBuilder.create(provider)
+const sender = 'klv1sender...'
+
+const tx1 = await builder
+  .sender(sender)
+  .transfer({ receiver: 'klv1abc...', amount: '1000000' })
+  .build()
+
+await tx1.sign(privateKey)
+await provider.sendRawTransaction(tx1.toHex())
+
+// Reset and reuse
+const tx2 = await builder.reset().sender(sender).freeze({ amount: '5000000' }).build()
+```
+
+## Error Handling
+
+```typescript
+import { ValidationError, TransactionError } from '@klever/connect-core'
+
+try {
+  const tx = await TransactionBuilder.create(provider)
+    .sender('klv1...')
+    .transfer({ receiver: 'klv1...', amount: '1000000' })
+    .build()
+
+  await tx.sign(privateKey)
+  const hash = await provider.sendRawTransaction(tx.toHex())
+} catch (error) {
+  if (error instanceof ValidationError) {
+    console.error('Validation failed:', error.message)
+    // Invalid address, negative amount, missing fields, invalid nonce
+  } else if (error instanceof TransactionError) {
+    console.error('Transaction failed:', error.message)
+    // Signing failed, insufficient balance, rejected by network
+  }
+}
+```
+
+### Check Balance Before Building
+
+```typescript
+async function safeTransfer(provider, sender, receiver, amount: bigint) {
+  const balance = await provider.getBalance(sender)
+  const estimatedFee = 600000n
+
+  if (balance < amount + estimatedFee) {
+    throw new Error(`Insufficient balance. Have: ${balance}, Need: ${amount + estimatedFee}`)
+  }
+
+  const tx = await TransactionBuilder.create(provider)
+    .sender(sender)
+    .transfer({ receiver, amount })
+    .build()
+
+  await tx.sign(privateKey)
+  return provider.sendRawTransaction(tx.toHex())
+}
+```
+
+## Helper Functions
+
+```typescript
+import {
+  createTransfer,
+  createFreeze,
+  createDelegate,
+  toKLVUnits,
+  fromKLVUnits,
+  toUnits,
+  fromUnits,
+} from '@klever/connect-transactions'
+
+// Amount conversion
+const amount = toKLVUnits('1.5')    // '1500000'
+const klv = fromKLVUnits('1500000') // '1.5'
+
+const amount2 = toUnits('1.5', 8)   // '150000000'
+const readable = fromUnits('150000000', 8) // '1.5'
+```
+
+## Performance
+
+Benchmarks on Apple M1 Pro, Node.js v20:
+
+- **Transaction building** (`buildProto`): ~0.003ms (335,000 ops/sec)
+- **Proto encoding** (`toBytes`): ~0.0002ms (4.1M ops/sec)
+- **Signature generation** (`sign`): ~0.5ms (2,000 ops/sec)
+- **Node-assisted building** (`build`): ~100-300ms (depends on network latency)

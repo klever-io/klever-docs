@@ -1,0 +1,47 @@
+# Connect Packages
+
+`@klever/connect` is a monorepo of modular packages. You can install the meta-package to get everything, or install individual packages for smaller bundles.
+
+```bash
+# Everything
+npm install @klever/connect
+
+# Or only what you need
+npm install @klever/connect-core @klever/connect-provider @klever/connect-wallet
+```
+
+## Package Overview
+
+| Package | Description |
+| --- | --- |
+| [`@klever/connect-core`](/javascript-sdk/connect-packages/connect-core) | Foundation: types, constants, errors, `parseKLV`, `formatKLV` |
+| [`@klever/connect-encoding`](/javascript-sdk/connect-packages/connect-encoding) | Protocol Buffer encoding/decoding, Bech32/hex/base58/base64, Blake2b |
+| [`@klever/connect-crypto`](/javascript-sdk/connect-packages/connect-crypto) | Ed25519 key generation, signing, verification, PEM support |
+| [`@klever/connect-provider`](/javascript-sdk/connect-packages/connect-provider) | Network communication, transaction monitoring, receipt parsing |
+| [`@klever/connect-transactions`](/javascript-sdk/connect-packages/connect-transactions) | Transaction builder for all 20+ transaction types |
+| [`@klever/connect-wallet`](/javascript-sdk/connect-packages/connect-wallet) | NodeWallet, BrowserWallet, WalletFactory |
+| [`@klever/connect-contracts`](/javascript-sdk/connect-packages/connect-contracts) | Smart contract interactions, ABI encoding, ContractFactory |
+| [`@klever/connect-react`](/javascript-sdk/connect-packages/connect-react) | React hooks: useKlever, useTransaction, useStaking, useBalance, and more |
+
+## Bundle Size
+
+| Package | Approximate Size |
+| --- | --- |
+| `@klever/connect-core` | ~15 KB |
+| `@klever/connect-provider` | ~25 KB |
+| `@klever/connect-transactions` | ~20 KB |
+| `@klever/connect-wallet` | ~18 KB |
+| `@klever/connect-contracts` | ~22 KB |
+| `@klever/connect-crypto` | ~30 KB |
+| `@klever/connect-encoding` | ~35 KB |
+| **Full SDK (`@klever/connect`)** | **~165 KB** |
+
+Modern bundlers (webpack 5+, Vite, esbuild) tree-shake unused exports.
+
+## Package Dependencies
+
+```
+connect-react → connect-wallet → connect-transactions → connect-provider
+                                           ↓                    ↓
+connect-contracts → connect-encoding → connect-crypto → connect-core
+```

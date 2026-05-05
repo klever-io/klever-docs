@@ -1,451 +1,322 @@
 # Legacy
-All content here will be functional for v2 of the sdk (If you need to use the wasm-pemFile model).
 
-**Current version is v3**
+> **You are viewing legacy documentation.** For current SDK docs, see [Introduction to Klever Blockchain SDK](/javascript-sdk).
 
-## Introduction to Klever Blockchain SDK
+---
 
-Introduction to develop and start integration with Klever Blockchain main methods
+<div id="node-sdk" />
 
-The SDK module provides a quick and easy way to make contract calls directly to the Klever blockchain directly.
+## Node.js SDK (`@klever/sdk-node`)
+
+This package is still functional but no longer the recommended way to integrate with the Klever Blockchain. Use [`@klever/connect`](/javascript-sdk) and [`NodeWallet`](/javascript-sdk/node-js) instead.
 
 ### Installation
 
 ```bash
-$ npm install @klever/sdk
+npm install @klever/sdk-node
+```
+
+### Quick Start
+
+```typescript
+import { Account, TransactionType } from '@klever/sdk-node'
+
+const account = new Account('yourPrivateKey')
+await account.ready
+
+const broadcastRes = await account.quickSend([
+  {
+    payload: { amount, receiver, kda },
+    type: TransactionType.Transfer,
+  },
+])
+
+console.log(broadcastRes)
+```
+
+### Changing Network
+
+```typescript
+import { utils, IProvider } from '@klever/sdk-node'
+
+const provider: IProvider = {
+  api:  'https://api.testnet.klever.org',
+  node: 'https://node.testnet.klever.org',
+}
+
+utils.setProviders(provider)
+```
+
+### Account Methods
+
+| Method | Parameters | Return | Description |
+| :---: | :---: | :---: | --- |
+| `getBalance` | () | number | Gets the account's balance |
+| `getNonce` | () | number | Gets the account's nonce |
+| `getAddress` | () | string | Gets the account's address |
+| `sync` | () | `Promise<void>` | Syncs balance and nonce with node |
+| `buildTransaction` | (contracts, txData?, options?) | `Promise<ITransaction>` | Builds a transaction ready to sign |
+| `signMessage` | (message: string) | `Promise<string>` | Signs any message |
+| `signTransaction` | (tx: ITransaction) | `Promise<ITransaction>` | Signs a transaction |
+| `quickSend` | (contracts, txData?, options?) | `Promise<IBroadcastResponse>` | Build + sign + broadcast |
+| `broadcastTransactions` | (txs: ITransaction[]) | `Promise<IBroadcastResponse>` | Broadcasts transactions |
+| `validateSignature` | (message, signature) | `Promise<boolean>` | Verifies a signature |
+| `downloadAsPem` | (path?) | `Promise<void>` | Saves `.pem` file |
+
+### Utility Methods
+
+| Method | Parameters | Return | Description |
+| --- | --- | --- | --- |
+| `getAddressFromPrivateKey` | (privatekey) | `Promise<string>` | Derives address from private key |
+| `generateKeyPair` | () | `Promise<{ privatekey, address }>` | Generates new keypair |
+| `setProviders` | (providers: IProvider) | void | Sets network endpoints |
+| `getProviders` | () | IProvider | Gets current provider |
+| `broadcastTransactions` | (txs) | `Promise<IBroadcastResponse>` | Broadcasts transactions |
+| `decodeTransaction` | (tx) | `Promise<IDecodedTransaction>` | Human-readable JSON decode |
+| `validateSignature` | (message, signature, address) | `Promise<boolean>` | Verifies a signature |
+| `decodeAddress` | (address) | `Promise<Uint8Array>` | Decodes Klever address |
+
+---
+
+<div id="web-sdk" />
+
+## Web SDK (`@klever/sdk-web` / `@klever/sdk-node`)
+
+These packages are still functional but no longer the recommended way to integrate with the Klever Blockchain. The new package is [`@klever/connect`](/javascript-sdk).
+
+### Installation
+
+#### Web App
+
+```bash
+$ npm install @klever/sdk-web
 ```
 
 or
 
 ```bash
-$ yarn add @klever/sdk
+$ yarn add @klever/sdk-web
 ```
 
-### Setup
+You can also import the script directly from [this url](https://kleverchain-sdk-web.s3.us-east-1.amazonaws.com/kleverchain-sdk-web-esm-1-0-x.js), as [exemplified here](/legacy#vanilla-js).
 
-### Web App
+#### NodeJS
 
-After installation, the KleverSDK folder will automatically appear inside your public, assets or static folder (according to the framework used).
+NodeJS must be above version 18.0.0
 
-To load the KleverSDK WASM file into your DOM you just need to import the loader script in your `index.html` or `app.html`:
-
-You can achieve this placing one of the script tags below:
-
-```tsx
-//If you're using React:
-<script src="%PUBLIC_URL%/kleverSDK/kleverSDKLoader.js"></script>
+```bash
+$ npm install @klever/sdk-node
 ```
 
-```tsx
-//If you're using Vue or Svelte:
-<script src="/kleverSDK/kleverSDKLoader.js"></script>
+or
+
+```bash
+$ yarn add @klever/sdk-node
 ```
 
-```tsx
-//If you're using Sveltekit:
-<script src="%sveltekit.assets%/kleverSDK/kleverSDKLoader.js"></script>
-```
+### Web App Usage
 
-```tsx
-//If you're using Angular:
-<script src="assets/kleverSDK/kleverSDKLoader.js"></script>
-```
+To use the Klever Blockchain sdk in a web application, use the `web` object. It manages the window object to use the appropriate account manager (web extension or mobile wallet).
 
-```tsx
-//If you're using NextJS:
-import Script from "next/script";
+#### Vanilla JS
 
-<Script
-  src="/kleverSDK/kleverSDKLoader.js"
-  strategy="beforeInteractive"
-/>
-```
+```javascript
+import {
+  web,
+  TransactionType,
+} from 'https://sdk.kleverscan.org/kleverchain-sdk-web-esm-1-0-x.js'
 
-You can use any framework you like.
-
-### NodeJS
-
-NodeJS version 18+ is required, since we rely on the newly implemented fetch API.
-
-Just require the `kleverSDKLoader` that appeared on the root level of your project after installation.
-
-```tsx
-//CommonJS
-require("./kleverSDK/kleverSDKLoader");
-...
-```
-
-
-## How to use Klever Blockchain SDK
-Getting started with the Klever Blockchain SDK
-
-
-### Basic usage
-
-There are _two ways t_o make a contract call: you can call only one method passing the user data plus the contract data or you can create an instance of an account.
-
-> Sender address and private key is required in all transactions.
->
->
-With a simple call:
-
-```typescript
-import { sendTransaction, TransactionType } from "@klever/sdk";
-
-const transactionType = TransactionType.Transfer;
-const transactionPayload = {
-  sender: "address",
-  privateKey: "privateKey",
-  receiver: "receiver",
-  amount: 100,
-};
-
-sendTransaction(transactionType, transactionPayload);
-```
-
-With an account instance:
-
-```typescript
-import { Account } from "@klever/sdk";
-
-const account = new Account("address", "privateKey");
-const transactionPayload = {
-  receiver: "receiver",
-  amount: 100,
-};
-
-account.sendTransfer(transactionPayload);
-```
-
-### Transactions
-
-All available transactions:
-
-| ID  | Type                            |
-| --- | ------------------------------- |
-| 0   | Transfer                        |
-| 1   | Create Asset                    |
-| 2   | Create Validator                |
-| 3   | Validator Config                |
-| 4   | Freeze                          |
-| 5   | Unfreeze                        |
-| 6   | Delegate                        |
-| 7   | Undelegate                      |
-| 8   | Withdraw                        |
-| 9   | Claim                           |
-| 10  | Unjail                          |
-| 11  | Asset Trigger                   |
-| 12  | Set Account Name                |
-| 13  | Proposal                        |
-| 14  | Vote                            |
-| 15  | Config ITO Prices               |
-| 16  | Set ITO Prices                  |
-| 17  | Buy                             |
-| 18  | Sell                            |
-| 19  | Cancel Market Order             |
-| 20  | Create Marketplace              |
-| 21  | Config Marketplace              |
-| 22  | Update Account Permission       |
-
-
-### Usage Inside a Context
-
-If you want a global instance of your account to use throughout your app, you can create a custom hook to help you with that.
-
-Using React as an example, you can create a `MyCustomHook.tsx` file and create your provider as follows:
-
-```tsx
-import { useState, createContext, useContext } from 'react';
-import { Account, core } from '@klever/sdk';
-
-interface ISdkContext {
-  isLoaded(): Promise<boolean>;
-  getAccount(): Account | null;
-  setAccount(account: Account): void;
+const provider = {
+  api: 'https://api.testnet.klever.org',
+  node: 'https://node.testnet.klever.org',
 }
 
-const SdkContext = createContext({} as ISdkContext);
+web.setProvider(provider)
 
-const SdkProvider: React.FC = ({ children }) => {
-  const [acc, setAcc] = useState<Account | null>(null);
+const connectWallet = async () => {
+  await web.initialize()
+}
 
-  const values: ISdkContext = {
-    isLoaded: () => core.isSDKLoaded(),
-    getAccount: () => acc,
-    setAccount: account => setAcc(account),
-  };
-  return <SdkContext.Provider value={values}>{children}</SdkContext.Provider>;
-};
+const sendTransaction = async () => {
+  const payload = {
+    amount: 100 * 10 ** 6,
+    receiver: 'klv1fpwjz234gy8aaae3gx0e8q9f52vymzzn3z5q0s5h60pvktzx0n0qwvtux5',
+    kda: 'KLV',
+  }
 
-const useSdk = () => useContext(SdkContext);
+  try {
+    const unsignedTx = await web.buildTransaction([
+      {
+        payload,
+        type: TransactionType.Transfer,
+      },
+    ])
 
-export { SdkContext, SdkProvider, useSdk };
+    const signedTx = await web.signTransaction(unsignedTx)
+    const response = await web.broadcastTransactions([signedTx])
+    console.log(response)
+  } catch (error) {
+    console.log(error)
+  }
+}
 ```
 
-And wrap your entire `App.tsx` in it:
+#### React TS
 
 ```typescript
-import { SdkProvider } from './MyCustomHook';
-...
-  <SdkProvider>
-    ...
-  </SdkProvider>
-...
+import React from 'react'
+import { IProvider, web, ITransfer, TransactionType } from '@klever/sdk-web'
+
+const provider: IProvider = {
+  api: 'https://api.testnet.klever.org',
+  node: 'https://node.testnet.klever.org',
+}
+
+web.setProvider(provider)
+
+const connectWallet = async () => {
+  await web.initialize()
+}
+
+const sendTransaction = async () => {
+  const payload: ITransfer = {
+    amount: 100 * 10 ** 6,
+    receiver: 'klv1fpwjz234gy8aaae3gx0e8q9f52vymzzn3z5q0s5h60pvktzx0n0qwvtux5',
+    kda: 'KLV',
+  }
+
+  try {
+    const unsignedTx = await web.buildTransaction([
+      { payload, type: TransactionType.Transfer },
+    ])
+    const signedTx = await web.signTransaction(unsignedTx)
+    const response = await web.broadcastTransactions([signedTx])
+    console.log(response)
+  } catch (error) {
+    console.log(error)
+  }
+}
 ```
 
-With that, you can use it on any child component you want, without the need to instantiate an account every time:
+### Changing Network
 
-```typescript
-import { useSdk } from './MyCustomHook';
-...
-const sdk = useSdk();
-const account = sdk.getAccount();
-...
-await account.sendTransfer(payload)
-...
+```ts
+import { web, IProvider } from '@klever/sdk-web'
+
+const provider: IProvider = {
+  api: 'https://api.testnet.klever.org',
+  node: 'https://node.testnet.klever.org',
+}
+
+web.setProvider(provider)
+web.initialize()
 ```
 
-**The same pattern of global provider can be achieved in any framework you want, not only React.**
+### All `web` Object Methods
 
+| Method                | Parameters                                                                      | Return                        | Description                                                        |
+| --------------------- | ------------------------------------------------------------------------------- | ----------------------------- | ------------------------------------------------------------------ |
+| isKleverWebLoaded     | ()                                                                              | boolean                       | Checks if a Klever Web account manager is loaded.                  |
+| isKleverWebActive     | ()                                                                              | boolean                       | Checks if the loaded account manager is initialized.               |
+| broadcastTransactions | (transactions: ITransaction[])                                                  | `Promise<IBroadcastResponse>` | Broadcasts transactions to the provided node.                      |
+| signMessage           | (message: string, privateKey: string)                                           | `Promise<string>`             | Signs any message using the account manager.                       |
+| signTransaction       | (transaction: ITransaction)                                                     | `Promise<ITransaction>`       | Signs a transaction using the account manager.                     |
+| validateSignature     | (message: string, signature: string, publickey: string)                         | `Promise<boolean>`            | Checks if the signature and signer are compatible.                 |
+| buildTransaction      | (contracts: IContractRequest[], txData?: string[], options?: ITxOptionsRequest) | `Promise<ITransaction>`       | Builds a simplified transaction ready to be signed.                |
+| initialize            | (timeout?: number)                                                              | `Promise<void>`               | Initializes the account manager (default timeout: 5000ms).         |
+| getWalletAddress      | ()                                                                              | string                        | Returns the selected account address.                              |
+| getProvider           | ()                                                                              | IProvider                     | Gets the current provider object.                                  |
+| setProvider           | (providers: IProvider)                                                          | void                          | Sets the provider object.                                          |
 
-## Optional Params
-How to send more than one contract per transaction and how to send metadata
+---
 
-When using the SDK you may have the need to send more than one contract per transaction or to send metadata within the transaction.
+<div id="sdk-v2" />
 
-Both these things are achieved passing an additional param to either  `sendTransaction` or to the `account.send`Contract`` methods.
+## SDK v2 (`@klever/sdk`)
 
-The second parameter is a "props" object that contains these parameters:
+The oldest SDK version, using a WebAssembly + PEM file model. No longer maintained.
 
-- **metadata**
-- **autobroadcast**
-- **previousTX**
+Full v2 documentation has been archived at [Legacy / SDK v2](/legacy/sdk-v2).
 
-### Sending Metadata
+---
 
-***Sending metadata will cause additional fee charges to be applied for every byte.***
+<div id="web-app" />
 
-To add metadata to a transaction, just add a string to the **metadata prop**.
+## Web App (`@klever/sdk-web`)
 
-Ex:
+This package is still functional but no longer the recommended way to build browser-based dApps. Use [`@klever/connect-react`](/javascript-sdk/connect-packages/connect-react) or [`BrowserWallet`](/javascript-sdk/web-app) instead.
 
-```typescript
-const metadata = "this text will be sent in the blockchain transaction"
+### Installation
 
-await account.sendTransfer(payload, {metadata})
+```bash
+npm install @klever/sdk-web
 ```
 
-### Autobroadcast
+### Vanilla JS
 
-Autobroadcast is on by default, meaning that if you call a send transaction method, it will be sent to the blockchain with the parameters you called, but you can disable this option with the  autobroadcast prop.
+```javascript
+import { web, TransactionType } from '@klever/sdk-web'
 
-In this way, you can get the raw transaction and contracts info that are built inside the SDK before the transaction is sent to be processed by the blockchain. You can get some useful info, like the fees you/the user will be paying for that transaction.
-
-If you disable the autobroadcast, you can manually broadcast the transaction using the `broadcast()` method.
-Ex:
-
-```typescript
-const rawTransaction: ITransactionResponse = await account.sendTransfer(
-transferPayload, {
-    autobroadcast: false
+web.setProvider({
+  api:  'https://api.testnet.klever.org',
+  node: 'https://node.testnet.klever.org',
 })
 
-console.log({rawTransaction})
-//insert any rawTX treatment, like confirming the fees
+// Connect
+await web.initialize()
 
-const broadcastResponse: IBroadcastResponse = await broadcast(JSON.stringify(rawTransaction))
-
+// Transfer
+const unsignedTx = await web.buildTransaction([{
+  payload: { amount: 100 * 10 ** 6, receiver: 'klv1receiver...', kda: 'KLV' },
+  type: TransactionType.Transfer,
+}])
+const signedTx   = await web.signTransaction(unsignedTx)
+const response   = await web.broadcastTransactions([signedTx])
+console.log(response)
 ```
 
-### Sending multiple contracts per transaction
+### React TS
 
-By default when you use a "send" method, it automatically broadcasts the transaction to the blockchain.
+```tsx
+import { web, IProvider, TransactionType } from '@klever/sdk-web'
 
-So if you want to send multiple contracts, disable this option with the autobroadcast prop, then chain-build (using the previousTX prop) the contracts you want to broadcast. After that, broadcast the transaction containing all the contracts.
-
-Ex:
-
-```typescript
-const transferContract: ITransactionResponse = await account.sendTransfer(
-transferPayload, {
-    autobroadcast: false
+web.setProvider({
+  api:  'https://api.testnet.klever.org',
+  node: 'https://node.testnet.klever.org',
 })
 
-const freezeAndTransferContract: IBroadcastResponse = await account.sendTransfer(
-freezePayload, {
-    previousTX: transferContract,
-}) // this will autobroadcast the multi-contract TX
+function ConnectButton() {
+  return <button onClick={() => web.initialize()}>Connect</button>
+}
+
+function SendTXButton() {
+  const send = async () => {
+    const unsignedTx = await web.buildTransaction([{
+      payload: { amount: 100 * 10 ** 6, receiver: 'klv1receiver...', kda: 'KLV' },
+      type: TransactionType.Transfer,
+    }])
+    const signedTx = await web.signTransaction(unsignedTx)
+    await web.broadcastTransactions([signedTx])
+  }
+
+  return <button onClick={send}>Send</button>
+}
 ```
 
-## Sign Message/Verify Signature
-Usage of the sign/verify flow
+### All web object methods
 
-***As of 30/Aug the verifySignature method is only supported by the legacy pem-file method***
-
-When using the main methods for generating transactions, the user signs them with their private key automatically upon sending them.
-
-However any message can be signed with the private key and the signature can be verified using the public key and comparing, which can be useful for authentication of contracts of any sort between users.
-
-For Klever Blockchain regular accounts, the public key is the address of the account.
-
-Usage example:
-
-```typescript
-import { core } from '@klever/sdk';
-
-const message = 'hello world';
-
-// sign the message "hello world"
-const { signature } = await core.signMessage(
-        message,
-        privateKey,
-      );
-//signature is a cipher not decryptable with just the message content, but verifiable
-
-//"valid" is a boolean, which is the return of the verifySignature promise
-const { valid } = await core.verifySignature(
-        message,
-        signature,
-        walletAddress,
-      );
-
-console.log(valid);
-// should log true if the message/signature and privateKey/walletAddress
-// combinations are compatible
-
-```
-
-## Raw Functions
-The Klever Blockchain SDK provides an easy way to interact with the blockchain by introducing a TypeScript interface to the webassembly(wasm) underlying functions, this functions, however, are still acessible via the global object interface, inside the kleverWeb object.
-
-Ex for using in the browser:
-
-```typescript
-window.kleverWeb.sendTransaction(transactionType, payload, props)
-```
-
-Ex for using in Node.js:
-
-```typescript
-globalThis.kleverWeb.sendTransaction(transactionType, payload, props)
-```
-
-Note that as you are calling raw wasm functions, there will be no type interface unless you enforce it in your own code.
-
-### Wasm Functions
-
-All the following functions that can be called this way:
-
-```
-- getAccount(address)
-- createAccount()
-- getAddressFromPrivateKey(privateKey)
-- generateMnemonic()
-- parsePemFileData(pemString)
-- decodePEM(cipheredPem, password)
-- signMessage(JSON.stringify({message, privatekey}))
-- verifySignature(JSON.stringify({message, signature, publicKey}))
-- setApiUrl(newApiUrl)
-- setNodeUrl(newNodeUrl)
-- sendTransaction(transactionType, payload, props)
-- signTx(JSON.stringify({ rawTx, privateKey }))
-- broadcast(JSON.stringify(signedTx))
-```
-
-All the functions above return a promise, so be sure to use "await" or other promise treatment.
-
-### Raw Transaction Broadcast Flow
-
-This is automatically managed by the extension, but if you choose to use the raw functions, please note that there are some underlying steps.
-
-The base flow is sendTransaction -> signTx -> broadcast.
-
-"Send" in this case means converting the payload in a object that can be read by the blockchain, which we will call "raw TX"
-
-Example flow:
-
-```typescript
-
-const rawTx = await globalThis.kleverWeb.sendTransaction(
-    transactionType,
-    JSON.stringify(payload),
-    JSON.stringify(props)
-  );
-
- const { signature } = await globalThis.kleverWeb.signTx(JSON.stringify({
-    rawTx,
-    privateKey
-}))
-
-const signedTx = { ...rawTx,
-    Signature: signature
-    }
-
-const broadcastResponse = await globalThis.kleverWeb.broadcast(JSON.stringify(signedTx))
-
-console.log(broadcastResponse)
-```
-<div id="legacy-raw-functions-sendTransaction payload and props"/>
-<br/>
-### sendTransaction payload and props
-
-### payload:
-
-The payload is a stringified object that will always need a sender and nonce properties, and additional ones depending on the contract type.
-
-Ex:
-
-```typescript
-const payload = JSON.stringify({
-  receiver,
-  amount,
-  asset,
-  sender,
-  nonce
-})
-
-const rawTx = await globalThis.kleverWeb.sendTransaction(0,payload)
-// The first argument can be either 0, "0" or "TransferContractType"
-
-console.log(rawTx)
-```
-
-### props:
-
-The props is a stringified object that is optional, it has two independent properties: metadata and previousTX.
-
-Metadata can be any string that will be stored in the transaction when it is in the blockchain, notably used when storing metadata in a NFT through the update metadata asset trigger. If you store metadata in a transaction, be sure to store it's hash.
-
-Storing data in a TX will increase the bandwidth fee
-
-Ex:
-
-```typescript
-const props = JSON.stringify({
-    metadata: "this string will be stored in the blockchain upon broadcast"
-})
-
-const rawTx = await globalThis.kleverWeb.sendTransaction(0,payload, props)
-
-console.log(rawTx)
-```
-
-PreviousTX is a way of chaining transactions, so you can create a multi-contract transaction.
-
-Multi-contract flow: sendTransaction -> ... -> sendTransaction -> signTx -> broadcast
-
-Ex:
-
-```typescript
-const singleContractTx = await globalThis.kleverWeb.sendTransaction(0,payload)
-
-const props = JSON.stringify({
-    previousTX: singleContractTx[0],
-})
-
-const multiContractTx = await globalThis.kleverWeb.sendTransaction(2,payload2,props)
-
-console.log(multiContractTx)
-```
+| Method | Parameters | Return | Description |
+| --- | --- | --- | --- |
+| `initialize` | (timeout?) | `Promise<void>` | Initializes the account manager |
+| `buildTransaction` | (contracts, txData?, options?) | `Promise<ITransaction>` | Builds a transaction |
+| `signTransaction` | (tx) | `Promise<ITransaction>` | Signs a transaction |
+| `broadcastTransactions` | (txs) | `Promise<IBroadcastResponse>` | Broadcasts transactions |
+| `signMessage` | (message, privateKey) | `Promise<string>` | Signs a message |
+| `validateSignature` | (message, signature, publickey) | `Promise<boolean>` | Verifies a signature |
+| `getWalletAddress` | () | string | Returns selected account address |
+| `setProvider` | (providers) | void | Sets the provider object |
+| `getProvider` | () | IProvider | Gets current provider |
+| `isKleverWebLoaded` | () | boolean | Checks if wallet is loaded |
+| `isKleverWebActive` | () | boolean | Checks if wallet is initialized |
 
 If you want to chain contracts with metadata, use both props, each metadata will be assigned to the respective contract, they are related by the data array index.
