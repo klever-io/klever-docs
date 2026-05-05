@@ -210,7 +210,7 @@ export const navigation: Array<NavGroup> = [
   },
 
   {
-    title: 'Javascript SDK',
+    title: 'SDKs & Tools',
     links: [
       {
         title: 'Javascript SDK',
