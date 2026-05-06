@@ -1,0 +1,94 @@
+# Klever MCP Server Reference
+
+Complete reference for all capabilities of the Klever MCP (Model Context Protocol) Server.
+
+## Overview
+
+The Klever MCP Server provides AI agents with specialized functions and access to a comprehensive knowledge base for Klever smart contract development.
+
+**Key Features**:
+- **12 specialized tools** (functions) for contract development
+- **4 guided workflows** (prompts) for common tasks
+- **Comprehensive knowledge base** across 11 categories
+- **Dual server profiles** (local and public)
+
+## Reference Sections
+
+### [Functions](/ai-for-kvm/mcp-reference/functions)
+
+Complete reference for all 12 MCP tools/functions:
+
+**Knowledge Management** (7 tools):
+- `query_context` - Search knowledge base
+- `search_documentation` - Human-readable docs search
+- `get_context` - Get specific entry
+- `find_similar` - Find related content
+- `get_knowledge_stats` - Knowledge statistics
+- `add_context` - Add new knowledge (local only)
+- `enhance_with_context` - AI-enhanced queries
+
+**Analysis**:
+- `analyze_contract` - Contract code analysis
+
+**Project Management** (2 tools):
+- `init_klever_project` - Initialize new project
+- `add_helper_scripts` - Add deployment scripts
+
+**SDK Management** (2 tools, local only):
+- `check_sdk_status` - Check SDK installation
+- `install_klever_sdk` - Install Klever SDK
+
+[View complete functions reference →](/ai-for-kvm/mcp-reference/functions)
+
+### [MCP Prompts](/ai-for-kvm/mcp-reference/mcp-prompts)
+
+Guided workflows for common development tasks:
+
+**Available Prompts**:
+- `/create_smart_contract` - Create contract from scratch
+- `/add_feature` - Add features to existing contracts
+- `/debug_error` - Diagnose and fix errors
+- `/review_contract` - Security and quality review
+
+**How they work**:
+- Interactive guidance through complex tasks
+- Automatic knowledge base searches
+- Context-aware suggestions
+- Best practice recommendations
+
+[Learn about MCP prompts →](/ai-for-kvm/mcp-reference/mcp-prompts)
+
+### [Knowledge Base](/ai-for-kvm/mcp-reference/knowledge-base)
+
+Curated entries covering all aspects of Klever development:
+
+**11 Categories**:
+1. **Core** - Contract structure and fundamentals
+2. **Storage** - Storage mappers and patterns
+3. **Events** - Event handling and emission
+4. **Tokens** - KLV/KDA operations
+5. **Modules** - Built-in modules (admin, pause)
+6. **Tools** - koperator and ksc CLI reference
+7. **Scripts** - Helper scripts for deployment
+8. **Examples** - Complete contract implementations
+9. **Errors** - Common errors and solutions
+10. **Best Practices** - Security and optimization
+11. **Documentation** - API reference and guides
+
+**Access via**:
+- MCP Resources: `klever://knowledge/{category}`
+- Search tools: `query_context`, `search_documentation`
+- MCP Prompts (automatic integration)
+
+[Explore knowledge base →](/ai-for-kvm/mcp-reference/knowledge-base)
+
+## Resources
+
+- **Installation**: [AI Environment Setup](/ai-for-kvm/ai-environment-setup)
+- **Functions**: [Complete Functions Reference](/ai-for-kvm/mcp-reference/functions)
+- **Prompts**: [MCP Prompts Guide](/ai-for-kvm/mcp-reference/mcp-prompts)
+- **Knowledge**: [Knowledge Base Overview](/ai-for-kvm/mcp-reference/knowledge-base)
+- **Klever AI Portal**: [ai.klever.org](https://ai.klever.org)
+- **Repository**: [github.com/klever-io/mcp-klever-vm](https://github.com/klever-io/mcp-klever-vm)
+
+**Remember**: The MCP server is a development assistant. Always review, test, and validate all generated code and suggestions before deployment.

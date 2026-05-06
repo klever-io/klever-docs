@@ -11,6 +11,16 @@
     --shiki-token-punctuation: theme('colors.zinc.200');
   }
 
+  html {
+    scroll-behavior: smooth;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+  }
+
   [inert] ::-webkit-scrollbar {
     display: none;
   }

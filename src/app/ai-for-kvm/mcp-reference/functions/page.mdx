@@ -1,0 +1,236 @@
+# MCP Server Functions
+
+Complete reference for all available functions in the Klever MCP Server.
+
+## Overview
+
+The Klever MCP Server provides AI agents with specialized functions for Klever smart contract development.
+
+**Available Functions**:
+- **Public Mode**: 9 tools (7 read-only + 2 project template tools)
+- **Local Mode**: 12 tools (all public tools + additional local-only tools for project setup, SDK management, and context writing)
+
+**Server Profiles**:
+- **Local Profile** (default): Full filesystem access, all 12 tools enabled
+- **Public Profile**: Read-only operations, project tools return templates instead of creating files
+
+## Knowledge Management
+
+### `query_context`
+**Purpose**: Search the knowledge base for development guidance and examples
+
+**Parameters**:
+- `query` (optional): Search query string
+- `types` (optional): Filter by context types array
+- `tags` (optional): Filter by tags array (OR logic)
+- `contractType` (optional): Filter by contract type (token, nft, defi, dao)
+- `limit` (optional): Results limit 1-100 (default: 10)
+- `offset` (optional): Results offset for pagination (default: 0)
+
+**Available Context Types**:
+- `code_example`: Complete contract implementations and code snippets
+- `best_practice`: Development guidelines and recommended patterns
+- `security_tip`: Security recommendations and vulnerability prevention
+- `optimization`: Performance optimizations and gas efficiency
+- `documentation`: API and framework references
+- `error_pattern`: Common errors and solutions
+- `deployment_tool`: Deployment and tooling guides
+
+**Returns**: JSON with results array, total count, and pagination info
+
+### `search_documentation`
+**Purpose**: Human-readable search of the Klever VM documentation and knowledge base
+
+**Parameters**:
+- `query` (required): Natural language search query
+- `category` (optional): Filter by knowledge category
+
+**Available Categories**: core, storage, events, tokens, modules, tools, scripts, examples, errors, best-practices, documentation
+
+**Returns**: Formatted markdown with titles, descriptions, and code snippets
+
+**Difference from `query_context`**: Optimized for "how do I..." questions with formatted documentation vs. structured JSON results
+
+### `get_context`
+**Purpose**: Retrieve specific context by ID
+
+**Parameters**:
+- `id` (required): UUID format context ID
+
+**Returns**: Full entry with content, metadata, tags, and related context IDs
+
+### `find_similar`
+**Purpose**: Find contexts similar to a given context based on tags and content
+
+**Parameters**:
+- `id` (required): Reference context ID
+- `limit` (optional): Results limit 1-20 (default: 5)
+
+**Returns**: Array of related contexts ranked by similarity
+
+### `get_knowledge_stats`
+**Purpose**: Get statistics about the knowledge base
+
+**Parameters**: None
+
+**Returns**:
+- Total contexts count
+- Breakdown by context type
+- Sample entries from each category
+
+### `add_context`
+**Purpose**: Add new development context to knowledge base
+
+**Availability**: Local mode only (blocked in public mode)
+
+**Parameters**:
+- `type` (required): Context type (code_example, best_practice, security_tip, optimization, documentation, error_pattern, deployment_tool)
+- `content` (required): The content/code/documentation
+- `metadata` (required): Object with:
+  - `title` (required): Entry title
+  - `description` (optional): 1-2 sentence summary
+  - `tags` (optional): Searchable tags array
+  - `contractType` (optional): Contract category
+  - `author` (optional): Attribution
+
+**Returns**: Generated UUID for the new context
+
+## AI Enhancement
+
+### `enhance_with_context`
+**Purpose**: Enhance user queries with relevant Klever VM development context
+
+**Parameters**:
+- `query` (required): User query to enhance
+- `autoInclude` (optional): Auto-append relevant contexts (default: true)
+
+**Process**:
+1. Analyzes the user query for Klever-specific keywords
+2. Searches knowledge base for most relevant contexts (limit: 3)
+3. Combines query with relevant examples and best practices
+4. Returns enhanced query with context for better AI responses
+
+**Keyword Extraction**: Recognizes 50+ Klever-specific terms:
+- Technical: `storage`, `mapper`, `endpoint`, `payable`, `deploy`, `upgrade`
+- Tools: `koperator`, `ksc`, `testnet`, `mainnet`
+- Access: `admin`, `only_admin`, `only_owner`, `permission`
+- Types: `bigint`, `biguint`, `managed`, `token`
+- Patterns: `singlemapper`, `setmapper`, `mapmapper`, `vecmapper`
+
+**Returns**: Original query, extracted keywords, enhanced markdown response
+
+### `analyze_contract`
+**Purpose**: Analyze Klever smart contract Rust source code for common issues
+
+**Parameters**:
+- `sourceCode` (required): Full Rust source code to analyze
+- `contractName` (optional): Human-readable name for the contract
+
+**Checks For**:
+- Missing imports (`use klever_sc::imports::*`)
+- Missing contract macro (`#[klever_sc::contract]`)
+- Missing endpoint annotations (`#[endpoint]`, `#[init]`, `#[upgrade]`)
+- Payable handlers without `call_value()` usage
+- Storage mappers without proper annotations
+- Missing event definitions
+
+**Returns**: Array of findings with:
+- `severity`: error, warning, or info
+- `pattern`: Detected issue pattern
+- `message`: Description of the issue
+- `suggestion`: How to fix it
+- `relatedKnowledge`: Links to relevant knowledge entries
+
+## Project Management
+
+### `init_klever_project`
+**Purpose**: Initialize a complete Klever smart contract project with structure and helper scripts
+
+**Parameters**:
+- `name` (required): Contract name
+- `template` (optional): Template type (default: "empty")
+- `noMove` (optional): Don't move files to current directory (default: false)
+
+**Behavior**:
+- **Local Mode**: Creates actual project files and directories
+- **Public Mode**: Returns template JSON structure (no filesystem changes)
+
+**What it creates**:
+```
+project-name/
+├── src/lib.rs              # Contract source code
+├── Cargo.toml              # Rust project configuration
+├── tests/                  # Test directory
+├── scenarios/              # Test scenarios
+├── scripts/
+│   ├── build.sh           # Build contract to WASM
+│   ├── deploy.sh          # Deploy to network
+│   ├── upgrade.sh         # Upgrade existing contract
+│   ├── query.sh           # Query contract state
+│   ├── interact.sh        # Interact with endpoints
+│   └── common.sh          # Shared utilities
+└── output/
+    └── history.json       # Deployment history tracking
+```
+
+### `add_helper_scripts`
+**Purpose**: Add helper scripts to existing Klever project
+
+**Parameters**:
+- `contractName` (optional): Contract name for script customization
+
+**Availability**: All modes (local creates files, public returns templates)
+
+**Generated Scripts**:
+- **build.sh**: Compiles Rust code to WASM with proper optimization
+- **deploy.sh**: Deploys contract to testnet/mainnet with network configuration
+- **upgrade.sh**: Upgrades existing contract preserving state
+- **query.sh**: Queries contract state with returnData parsing
+- **interact.sh**: Interactive endpoint calls with parameter encoding
+- **test.sh**: Run contract tests
+- **common.sh**: Shared utilities (data conversion, formatting, network helpers)
+
+## SDK Management
+
+### `check_sdk_status`
+**Purpose**: Check whether the Klever SDK is installed and report component status
+
+**Availability**: Local mode only (blocked in public mode)
+
+**Parameters**: None
+
+**Returns**: JSON with installation state for:
+- `ksc`: Klever Smart Contract compiler
+- `koperator`: Operator CLI for contract operations
+- `libvmexeccapi`: VM execution library
+- `walletKey`: Wallet key file presence
+- Versions for installed components
+
+### `install_klever_sdk`
+**Purpose**: Download and install Klever SDK tools to `~/klever-sdk/`
+
+**Availability**: Local mode only (blocked in public mode)
+
+**Parameters**:
+- `tool` (optional): "ksc" | "koperator" | "all" (default: "all")
+
+**Supported Platforms**:
+- macOS (arm64, amd64)
+- Linux (amd64)
+
+**Process**:
+1. Fetches latest versions from Klever CDN
+2. Downloads and extracts binaries
+3. Sets up directory structure
+4. Configures executable permissions
+
+**Returns**: Installation results with status and paths
+
+## Next Steps
+
+- **Try MCP Prompts**: [Use guided workflows for common tasks](/ai-for-kvm/mcp-reference/mcp-prompts)
+- **Explore Knowledge Base**: [Browse curated Klever development entries](/ai-for-kvm/mcp-reference/knowledge-base)
+- **See Workflow Example**: [Complete development workflow](/ai-for-kvm/mcp-workflow)
+- **Installation Guide**: [Set up your development environment](/ai-for-kvm/ai-environment-setup)
+
+**Try it online**: Start developing with AI assistance at [ai.klever.org](https://ai.klever.org).

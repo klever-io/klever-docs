@@ -6,6 +6,38 @@ export const navigation: Array<NavGroup> = [
     links: [{ title: 'Introduction', href: '/' }],
   },
   {
+    title: 'AI-Assisted Development',
+    links: [
+      { title: 'Overview', href: '/ai' },
+      {
+        title: 'Klever MCP Server',
+        href: '/ai-for-kvm',
+        children: [
+          {
+            title: 'Setup',
+            href: '/ai-environment-setup',
+            children: [
+              { title: 'Quick Setup', href: '/quick-setup' },
+              { title: 'Run Locally', href: '/run-locally' },
+            ],
+          },
+          {
+            title: 'Reference',
+            href: '/mcp-reference',
+            children: [
+              { title: 'Functions', href: '/functions' },
+              { title: 'MCP Prompts', href: '/mcp-prompts' },
+              { title: 'Knowledge Base', href: '/knowledge-base' },
+            ],
+          },
+          { title: 'Workflow Example', href: '/mcp-workflow' },
+          { title: 'Project Structure', href: '/project-structure-for-ai-coding' },
+        ],
+      },
+      { title: 'Skills', href: '/skills' },
+    ],
+  },
+  {
     title: 'Klever Wallet',
     links: [{ title: 'Quickstart', href: '/quickstart' }],
   },
@@ -125,16 +157,6 @@ export const navigation: Array<NavGroup> = [
           },
         ],
       },
-      {
-        title: 'Using AI on KVM',
-        href: '/using-ai-on-kvm',
-        children: [
-              { title: 'Installation Guide', href: '/ai-environment-setup' },
-              { title: 'Reference', href: '/mcp-reference' },
-              { title: 'Workflow Example', href: '/mcp-workflow' },
-              { title: 'Project structure for I.A coding', href: '/project-structure-for-ai-coding' },
-            ],
-          },
       { title: 'Staking', href: '/staking' },
       { title: 'Delegation', href: '/delegation' },
       { title: 'Account Permissions', href: '/account-permissions' },
@@ -188,26 +210,38 @@ export const navigation: Array<NavGroup> = [
   },
 
   {
-    title: 'Klever SDK',
+    title: 'SDKs & Tools',
     links: [
       {
-        title: 'Introduction to Klever Blockchain SDK',
-        href: '/introduction-to-kleverchain-sdk',
+        title: 'Javascript SDK',
+        href: '/javascript-sdk',
+        children: [
+          { title: 'Node.js', href: '/node-js' },
+          { title: 'Web App', href: '/web-app' },
+          {
+            title: 'Connect Packages',
+            href: '/connect-packages',
+            children: [
+              { title: 'connect-core', href: '/connect-core' },
+              { title: 'connect-encoding', href: '/connect-encoding' },
+              { title: 'connect-crypto', href: '/connect-crypto' },
+              { title: 'connect-provider', href: '/connect-provider' },
+              { title: 'connect-transactions', href: '/connect-transactions' },
+              { title: 'connect-wallet', href: '/connect-wallet' },
+              { title: 'connect-contracts', href: '/connect-contracts' },
+              { title: 'connect-react', href: '/connect-react' },
+            ],
+          },
+        ],
       },
-      { title: 'Klever Blockchain SDKs', href: '/sdks' },
       {
-        title: "Go",
-        href: "/go",
+        title: 'Go',
+        href: '/go',
       },
       {
-        title: "C#",
-        href: "/csharp",
+        title: 'C#',
+        href: '/csharp',
       },
-      {
-        title: 'Node.js',
-        href: '/node.js',
-      },
-      { title: 'Web App', href: '/web-app' },
       { title: 'Unity', href: '/unity' },
       { title: 'Available Transactions', href: '/available-transactions' },
       { title: 'Contract Details', href: '/contract-details' },
@@ -218,13 +252,20 @@ export const navigation: Array<NavGroup> = [
       { title: 'Types', href: '/types' },
 
       //Legacy
-      { title: 'Legacy', href: '/legacy' },
+      {
+        title: 'Legacy',
+        href: '/legacy',
+        children: [
+          { title: 'SDK v2 (@klever/sdk)', href: '/sdk-v2' },
+        ],
+      },
     ],
 
   },
     {
     title: 'Side Pill',
     links: [
+      { title: 'Benchmark Tool', href: '/benchmark-tool' },
       { title: 'Converting Contract from ETH to Klever', href: '/converting-contract-from-eth-to-klever' }
     ],
 

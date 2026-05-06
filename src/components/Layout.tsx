@@ -1,5 +1,6 @@
 'use client'
 
+import clsx from 'clsx'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { motion } from 'framer-motion'
@@ -9,6 +10,7 @@ import { Header } from '@/components/Header'
 import { Logo } from '@/components/Logo'
 import { Navigation } from '@/components/Navigation'
 import { type Section, SectionProvider } from '@/components/SectionProvider'
+import { TableOfContents } from '@/components/TableOfContents'
 
 export function Layout({
   children,
@@ -18,9 +20,11 @@ export function Layout({
   allSections: Record<string, Array<Section>>
 }) {
   let pathname = usePathname()
+  let sections = allSections[pathname] ?? []
+  let hasTableOfContents = sections.length > 0
 
   return (
-    <SectionProvider sections={allSections[pathname] ?? []}>
+    <SectionProvider sections={sections}>
       <div className="h-full lg:ml-72 xl:ml-80">
         <motion.header
           layoutScroll
@@ -36,7 +40,15 @@ export function Layout({
             <Navigation className="hidden lg:mt-10 lg:block" />
           </div>
         </motion.header>
-        <div className="relative flex h-full flex-col px-4 pt-14 sm:px-6 lg:px-8">
+        <div
+          className={clsx(
+            'relative flex h-full flex-col px-4 pt-14 sm:px-6 lg:px-8',
+            hasTableOfContents && 'xl:pr-72',
+          )}
+        >
+          {hasTableOfContents && (
+            <TableOfContents className="hidden xl:block" />
+          )}
           <main className="flex-auto">{children}</main>
           <Footer />
         </div>

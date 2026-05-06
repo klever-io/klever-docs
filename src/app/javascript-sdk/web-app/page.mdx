@@ -1,0 +1,327 @@
+# Web App
+
+Browser and React integration with the Klever Blockchain using `@klever/connect`.
+
+## Installation
+
+```bash
+npm install @klever/connect
+```
+
+Or install only what you need:
+
+```bash
+npm install @klever/connect-react @klever/connect-wallet @klever/connect-provider @klever/connect-core
+```
+
+## React — Quick Start
+
+Wrap your app in `KleverProvider`, then use hooks anywhere inside it.
+
+### 1. Add the Provider
+
+```tsx
+import { KleverProvider } from '@klever/connect-react'
+
+function App() {
+  return (
+    <KleverProvider config={{ network: 'mainnet' }}>
+      <YourApp />
+    </KleverProvider>
+  )
+}
+```
+
+### 2. Connect and Send
+
+```tsx
+import { useKlever, useTransaction } from '@klever/connect-react'
+import { parseKLV } from '@klever/connect-core'
+
+function SendButton() {
+  const { connect, isConnected, address, provider } = useKlever()
+  const { sendKLV, isLoading, error } = useTransaction()
+
+  const handleClick = async () => {
+    if (!isConnected) {
+      await connect() // Opens Klever Extension
+    } else {
+      const result = await sendKLV('klv1receiver...', String(parseKLV('10')))
+      console.log('Transaction hash:', result.hash)
+      const confirmed = await provider.waitForTransaction(result.hash)
+      console.log('Confirmed in block:', confirmed?.blockNum)
+    }
+  }
+
+  return (
+    <div>
+      <button onClick={handleClick} disabled={isLoading}>
+        {!isConnected ? 'Connect Wallet' : isLoading ? 'Sending...' : 'Send 10 KLV'}
+      </button>
+      {error && <p style={{ color: 'red' }}>{error.message}</p>}
+    </div>
+  )
+}
+```
+
+## Changing Network
+
+```tsx
+import { useKlever } from '@klever/connect-react'
+
+function NetworkSwitcher() {
+  const { currentNetwork, switchNetwork } = useKlever()
+
+  return (
+    <div>
+      <p>Current: {currentNetwork}</p>
+      <button onClick={() => switchNetwork('mainnet')}>Mainnet</button>
+      <button onClick={() => switchNetwork('testnet')}>Testnet</button>
+      <button onClick={() => switchNetwork('devnet')}>Devnet</button>
+    </div>
+  )
+}
+```
+
+Or pass a config object to `KleverProvider`:
+
+```tsx
+<KleverProvider config={{ network: 'testnet' }}>
+  <YourApp />
+</KleverProvider>
+```
+
+## React Connect Button
+
+```tsx
+import { useKlever } from '@klever/connect-react'
+
+function ConnectButton() {
+  const {
+    connect, disconnect, isConnected, isConnecting, address,
+    extensionInstalled, searchingExtension, error,
+  } = useKlever()
+
+  if (searchingExtension) return <div>Detecting wallet...</div>
+
+  if (!extensionInstalled) {
+    return (
+      <div>
+        <p>Please install the Klever Extension to continue.</p>
+        <a href="https://klever.io/extension" target="_blank" rel="noopener noreferrer">
+          Download Extension
+        </a>
+      </div>
+    )
+  }
+
+  return (
+    <div>
+      {!isConnected ? (
+        <button onClick={connect} disabled={isConnecting}>
+          {isConnecting ? 'Connecting...' : 'Connect Wallet'}
+        </button>
+      ) : (
+        <div>
+          <p>Connected: {address?.slice(0, 10)}...{address?.slice(-8)}</p>
+          <button onClick={disconnect}>Disconnect</button>
+        </div>
+      )}
+      {error && <p style={{ color: 'red' }}>{error.message}</p>}
+    </div>
+  )
+}
+```
+
+## React Send Transaction Button
+
+```tsx
+import { useTransfer, useBalance, useKlever } from '@klever/connect-react'
+import { parseKLV } from '@klever/connect-core'
+import { useState } from 'react'
+
+function TransferForm() {
+  const { isConnected, provider } = useKlever()
+  const { balance }               = useBalance('KLV')
+  const { transfer, isLoading, error, data } = useTransfer()
+  const [recipient, setRecipient] = useState('')
+  const [amount, setAmount]       = useState('')
+
+  if (!isConnected) return <div>Connect your wallet first.</div>
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    const result = await transfer({ receiver: recipient, amount: String(parseKLV(amount)) })
+    console.log('Transaction hash:', result.hash)
+    const confirmed = await provider.waitForTransaction(result.hash)
+    console.log('Confirmed in block:', confirmed?.blockNum)
+    setRecipient('')
+    setAmount('')
+  }
+
+  return (
+    <form onSubmit={handleSubmit}>
+      {balance && <p>Balance: {balance.formatted} KLV</p>}
+      <input
+        value={recipient}
+        onChange={(e) => setRecipient(e.target.value)}
+        placeholder="klv1recipient..."
+      />
+      <input
+        type="number"
+        value={amount}
+        onChange={(e) => setAmount(e.target.value)}
+        placeholder="Amount in KLV"
+      />
+      <button type="submit" disabled={isLoading || !recipient || !amount}>
+        {isLoading ? 'Sending...' : 'Send KLV'}
+      </button>
+      {error && <p style={{ color: 'red' }}>{error.message}</p>}
+      {data && <p>Success! Hash: {data.hash}</p>}
+    </form>
+  )
+}
+```
+
+## Vanilla JS (Browser Wallet — No Framework)
+
+For plain JavaScript or non-React frameworks, use `BrowserWallet` directly.
+
+```typescript
+import { BrowserWallet } from '@klever/connect-wallet'
+import { KleverProvider } from '@klever/connect-provider'
+import { parseKLV } from '@klever/connect-core'
+
+const provider = new KleverProvider({ network: 'mainnet' })
+const wallet   = new BrowserWallet(provider)
+
+// Connect (opens Klever Extension)
+const connectButton = document.getElementById('connect-button')
+connectButton.onclick = async () => {
+  await wallet.connect()
+  console.log('Connected:', wallet.address)
+}
+
+// Send a transfer
+const sendButton = document.getElementById('send-button')
+sendButton.onclick = async () => {
+  const result = await wallet.transfer({
+    receiver: 'klv1fpwjz234gy8aaae3gx0e8q9f52vymzzn3z5q0s5h60pvktzx0n0qwvtux5',
+    amount: parseKLV('100'),
+  })
+  console.log('Hash:', result.hash)
+  const confirmed = await provider.waitForTransaction(result.hash)
+  console.log('Confirmed in block:', confirmed?.blockNum)
+}
+```
+
+```html
+<body>
+  <button id="connect-button">Connect</button>
+  <button id="send-button">Send 100 KLV</button>
+  <script type="module" src="./app.js"></script>
+</body>
+```
+
+## Listen for Account Changes
+
+```tsx
+// React
+import { useKlever } from '@klever/connect-react'
+
+function AccountWatcher() {
+  const { address } = useKlever() // re-renders automatically when account switches
+  return <p>Current account: {address}</p>
+}
+```
+
+```typescript
+// Vanilla JS
+wallet.on('accountChanged', (data) => {
+  const { address } = data as { address: string }
+  console.log('Account switched to:', address)
+  // reload balances, update UI, etc.
+})
+
+wallet.on('disconnect', () => {
+  console.log('Wallet disconnected')
+})
+```
+
+## Sign Messages for Authentication
+
+```tsx
+import { useKlever } from '@klever/connect-react'
+
+function AuthExample() {
+  const { wallet, address } = useKlever()
+
+  const signIn = async () => {
+    const message   = `Sign in to MyDapp\nNonce: ${Date.now()}`
+    const signature = await wallet.signMessage(message)
+
+    await fetch('/api/auth', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        address,
+        message,
+        signature: signature.toHex(),
+      }),
+    })
+  }
+
+  return <button onClick={signIn}>Sign In with Klever</button>
+}
+```
+
+## Private Key Mode (Testing Only)
+
+> **Warning:** Only use private key mode for development and testing. Never use with real funds in production.
+
+```tsx
+import { BrowserWallet } from '@klever/connect-wallet'
+import { KleverProvider } from '@klever/connect-provider'
+
+const provider = new KleverProvider({ network: 'testnet' })
+const wallet   = new BrowserWallet(provider, {
+  privateKey: process.env.NEXT_PUBLIC_TEST_KEY,
+})
+
+await wallet.connect() // no extension needed
+```
+
+## Available Hooks
+
+| Hook | Purpose |
+| --- | --- |
+| `useKlever()` | Wallet connection, network, provider |
+| `useTransaction()` | Send any transaction type |
+| `useTransfer()` | KLV/KDA transfers |
+| `useFreeze()` | Freeze/stake assets |
+| `useUnfreeze()` | Unfreeze/unstake assets |
+| `useClaim()` | Claim staking or FPR rewards |
+| `useStaking()` | Full staking workflow in one hook |
+| `useBalance()` | Auto-polling token balance |
+| `useTransactionMonitor()` | Real-time transaction status |
+
+See [@klever/connect-react](/javascript-sdk/connect-packages/connect-react) for full hook documentation.
+
+## Encode and Decode Smart Contract Data
+
+Use `@klever/connect-contracts` for ABI-aware encoding/decoding when interacting with smart contracts:
+
+```typescript
+import { Interface } from '@klever/connect-contracts'
+
+const iface = new Interface(contractAbi)
+
+// Encode function call
+const callData = iface.encodeFunctionCall('transfer', ['klv1recipient...', 1000n])
+// Returns: "transfer@<encoded-address>@<encoded-amount>"
+
+// Decode function result
+const result = iface.decodeFunctionResult('balanceOf', returnData)
+```
+
+See [@klever/connect-contracts](/javascript-sdk/connect-packages/connect-contracts) for full documentation.

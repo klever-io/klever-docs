@@ -1,0 +1,199 @@
+# MCP Prompts
+
+Guided workflows for common smart contract development tasks.
+
+## What are MCP Prompts?
+
+MCP Prompts are **guided workflows** that help you through complex development tasks. Unlike MCP tools (which execute specific actions), prompts are interactive templates that:
+
+- Guide you through multi-step processes
+- Automatically search for relevant knowledge
+- Provide contextual suggestions and examples
+- Act as AI-powered development assistants
+
+## How to Use
+
+### In Claude Code
+
+Access prompts using the `/` command in Claude Code:
+
+```
+/create_smart_contract
+/add_feature
+/debug_error
+/review_contract
+```
+
+Or simply ask Claude to use a prompt:
+
+```
+Help me create a smart contract using the create_smart_contract prompt
+```
+
+## Available Prompts
+
+### `create_smart_contract`
+**Purpose**: Guided workflow to create a complete Klever smart contract from scratch
+
+**Parameters**:
+- `contractName` (optional): Name for the contract
+- `contractType` (optional): Contract category (token, nft, defi, dao)
+
+**What it does**:
+1. Searches for relevant examples and patterns
+2. Helps you define contract structure
+3. Guides through endpoint implementation
+4. Suggests storage patterns
+5. Provides testing recommendations
+
+**Example Usage**:
+```
+/create_smart_contract
+
+# Or with parameters
+Use the create_smart_contract prompt to build a token contract called MyToken
+```
+
+**What happens**:
+- Claude automatically calls `search_documentation` and `query_context`
+- Finds relevant token examples and best practices
+- Walks you through each step of implementation
+- Provides code snippets and explanations
+
+### `add_feature`
+**Purpose**: Add a new feature to an existing smart contract
+
+**Parameters**:
+- `featureName` (required): Name of the feature to add
+- `contractName` (optional): Target contract name
+
+**What it does**:
+1. Analyzes your existing contract structure
+2. Searches for similar feature implementations
+3. Guides through feature integration
+4. Ensures compatibility with existing code
+5. Suggests testing strategies
+
+**Example Usage**:
+```
+/add_feature
+
+# Or with parameters
+Use the add_feature prompt to add staking functionality to my token contract
+```
+
+**What happens**:
+- Searches knowledge base for staking patterns
+- Suggests storage mappers needed
+- Provides endpoint implementations
+- Warns about potential conflicts
+
+### `debug_error`
+**Purpose**: Diagnose and fix compiler or runtime errors
+
+**Parameters**:
+- `errorMessage` (required): The error message to debug
+- `sourceCode` (optional): Contract source code for context
+
+**What it does**:
+1. Searches knowledge base for similar error patterns
+2. Identifies common causes
+3. Provides step-by-step solutions
+4. Suggests preventive measures
+5. Links to relevant documentation
+
+**Example Usage**:
+```
+/debug_error
+
+# Or with context
+Use the debug_error prompt to help me fix this error:
+error: cannot find macro `endpoint` in this scope
+```
+
+**What happens**:
+- Searches `error_pattern` contexts
+- Finds that `#[endpoint]` attribute is missing
+- Checks if imports are correct
+- Provides the fix with explanation
+
+### `review_contract`
+**Purpose**: Comprehensive security and quality review of your smart contract
+
+**Parameters**:
+- `contractName` (optional): Contract to review
+
+**What it does**:
+1. Analyzes contract code using `analyze_contract` tool
+2. Checks for security vulnerabilities
+3. Suggests best practice improvements
+4. Identifies optimization opportunities
+5. Provides detailed recommendations
+
+**Example Usage**:
+```
+/review_contract
+
+# Or with your code
+Use the review_contract prompt to review my contract:
+[paste your contract code]
+```
+
+**What happens**:
+- Calls `analyze_contract` tool
+- Searches for security tips and best practices
+- Checks for common vulnerabilities
+- Provides prioritized list of improvements
+- Links to relevant documentation for each finding
+
+## Behind the Scenes
+
+When you use a prompt, Claude:
+
+1. **Activates the workflow template** - Understands the multi-step process
+2. **Calls MCP tools automatically** - Uses `search_documentation`, `query_context`, `analyze_contract` as needed
+3. **Provides guided assistance** - Walks you through each step with context-aware suggestions
+4. **Learns from the knowledge base** - Incorporates Klever-specific knowledge entries
+
+## Prompt vs Tool
+
+| Aspect | MCP Tools | MCP Prompts |
+|--------|-----------|-------------|
+| **Type** | Functions | Workflows |
+| **Usage** | Execute specific actions | Guide through processes |
+| **Output** | Direct results (JSON, files) | Interactive guidance |
+| **Examples** | `query_context`, `init_klever_project` | `create_smart_contract`, `debug_error` |
+| **Best for** | Single operations | Multi-step tasks |
+
+## Example Workflow
+
+Here's a complete development workflow using prompts:
+
+```bash
+# 1. Create initial contract
+/create_smart_contract
+> "I want to create a staking contract"
+
+# 2. Add a feature
+/add_feature
+> "Add reward distribution functionality"
+
+# 3. Debug any errors
+/debug_error
+> "Getting: cannot borrow as mutable"
+
+# 4. Review before deployment
+/review_contract
+> [paste final contract code]
+```
+
+Each prompt automatically searches the knowledge base, provides relevant examples, and guides you through implementation with Klever-specific best practices.
+
+## Next Steps
+
+- **View All Functions**: [Complete MCP tools reference](/ai-for-kvm/mcp-reference/functions)
+- **Explore Knowledge Base**: [Browse curated Klever development entries](/ai-for-kvm/mcp-reference/knowledge-base)
+- **See Workflow Example**: [Complete development workflow](/ai-for-kvm/mcp-workflow)
+- **Installation Guide**: [Set up your development environment](/ai-for-kvm/ai-environment-setup)
+
+**Try it online**: Start using MCP prompts at [ai.klever.org](https://ai.klever.org).
