@@ -1,0 +1,163 @@
+# Setup — Manual install
+
+Use this path when your MCP client doesn't speak the marketplace plugin spec (Claude Desktop, Cursor, VS Code, Windsurf), when you want to pin a specific version of the server, or when you want to run the server locally.
+
+## Quick start (npx)
+
+The simplest manual install runs the published npm package directly with `npx` — no clone, no build:
+
+```bash
+npx -y @klever/klever-connect-mcp
+```
+
+This boots the server in `stdio` mode (the mode MCP clients expect). Most clients accept the same `command + args + env` shape — the per-IDE configs below all use this `npx` invocation.
+
+> **Heads-up:** the server's HTTP mode (`MODE=http`) listens on port 3000 by default. If you're running it locally for HTTP-based clients, see [Run from source](#run-from-source) below.
+
+## Per-client configuration
+
+### Claude Desktop
+
+Edit `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS) or `%APPDATA%\Claude\claude_desktop_config.json` (Windows):
+
+```json
+{
+  "mcpServers": {
+    "klever-connect": {
+      "command": "npx",
+      "args": ["-y", "@klever/klever-connect-mcp"],
+      "env": { "MODE": "mcp" }
+    }
+  }
+}
+```
+
+Restart Claude Desktop. The Klever Connect tools should appear in the tool picker.
+
+### Cursor
+
+Create or edit `.cursor/mcp.json` in your project root (or `~/.cursor/mcp.json` for global config):
+
+```json
+{
+  "mcpServers": {
+    "klever-connect": {
+      "command": "npx",
+      "args": ["-y", "@klever/klever-connect-mcp"],
+      "env": { "MODE": "mcp" }
+    }
+  }
+}
+```
+
+Restart Cursor.
+
+### VS Code (Continue, Cline, etc.)
+
+For Continue (`~/.continue/config.json` or workspace-level config), add an entry under `experimental.modelContextProtocolServers`:
+
+```json
+{
+  "experimental": {
+    "modelContextProtocolServers": [
+      {
+        "name": "klever-connect",
+        "transport": {
+          "type": "stdio",
+          "command": "npx",
+          "args": ["-y", "@klever/klever-connect-mcp"],
+          "env": { "MODE": "mcp" }
+        }
+      }
+    ]
+  }
+}
+```
+
+Refer to your VS Code MCP extension's docs for the exact field names — the `command + args + env` triplet is consistent across them.
+
+### Claude Code (HTTP transport)
+
+If you'd rather run the server in HTTP mode locally and connect Claude Code to it:
+
+```bash
+# Terminal 1 — boot the HTTP server
+npx -y @klever/klever-connect-mcp
+# (default MODE=http, listens on http://localhost:3000/mcp)
+```
+
+```bash
+# Terminal 2 — register the running server with Claude Code
+claude mcp add klever-connect --transport http http://localhost:3000/mcp
+```
+
+### Windsurf / Zed / others
+
+Most MCP-compatible clients accept the same JSON shape as Claude Desktop / Cursor. Use:
+
+```json
+{
+  "mcpServers": {
+    "klever-connect": {
+      "command": "npx",
+      "args": ["-y", "@klever/klever-connect-mcp"],
+      "env": { "MODE": "mcp" }
+    }
+  }
+}
+```
+
+…and check your client's MCP-config docs for the location of its config file.
+
+## Run from source
+
+For development, debugging, or modifying the knowledge base:
+
+```bash
+git clone https://github.com/klever-io/mcp-klever-connect.git
+cd mcp-klever-connect
+pnpm install
+pnpm build
+```
+
+Then run the built server:
+
+```bash
+# stdio mode (for Claude Desktop, Cursor, etc.)
+MODE=mcp node dist/index.js
+
+# HTTP mode (default)
+node dist/index.js
+# -> http://localhost:3000/mcp
+```
+
+Point your client's `command` at `node` and `args` at `["/absolute/path/to/mcp-klever-connect/dist/index.js"]`:
+
+```json
+{
+  "mcpServers": {
+    "klever-connect": {
+      "command": "node",
+      "args": ["/absolute/path/to/mcp-klever-connect/dist/index.js"],
+      "env": { "MODE": "mcp" }
+    }
+  }
+}
+```
+
+## Environment variables
+
+The server is configurable via environment variables — see the full [Env Vars reference](/mcp/klever-connect/reference/env-vars).
+
+## Troubleshooting
+
+- **`MODULE_NOT_FOUND` from `npx`** — make sure you're on Node `>=18.14.0`. Check with `node -v`.
+- **Server starts but tools don't show up** — confirm you set `MODE=mcp` (not `http`) for stdio-based clients (Claude Desktop, Cursor).
+- **Port 3000 in use** — set `PORT=3001` (or any free port) in the `env` block before booting.
+- **`KNOWLEDGE_DIR` not found** — only relevant if you're running from source with a custom path. The published npm package bundles the `knowledge/` folder.
+
+## Next steps
+
+- [Tool reference →](/mcp/klever-connect/reference/tools)
+- [Env Vars reference →](/mcp/klever-connect/reference/env-vars)
+- [Marketplace install (Claude Code) →](/mcp/klever-connect/setup/marketplace)

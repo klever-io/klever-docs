@@ -1,0 +1,38 @@
+# Klever Connect MCP Reference
+
+Complete technical reference for the Klever Connect MCP server.
+
+## Sections
+
+### [Tools](/mcp/klever-connect/reference/tools)
+
+The 6 MCP tools (functions) exposed by the server: `query_context`, `get_context`, `find_similar`, `get_knowledge_stats`, `enhance_with_context`, `search_documentation`. Each entry includes the parameter schema and an example call.
+
+### [Resources](/mcp/klever-connect/reference/resources)
+
+The 4 `knowledge://` URI templates the server exposes as MCP resources. Use these when you want to *list* or *browse* the knowledge base instead of searching it.
+
+### [Env Vars](/mcp/klever-connect/reference/env-vars)
+
+All environment variables that control server behavior — `MODE`, `PORT`, `HOST`, `KNOWLEDGE_DIR`, `MAX_SIZE`, `CORS_ORIGINS`. Use these when running the server from source or via the manual `npx` install.
+
+## Knowledge base shape
+
+The Klever Connect MCP ships with **125 entries** across 8 JSON files:
+
+| Category | Entries |
+|---|---|
+| `api-reference` | 46 |
+| `examples` | 21 |
+| `errors` | 12 |
+| `patterns` | 12 |
+| `best-practices` | 11 |
+| `documentation` | 9 |
+| `types` | 9 |
+| `configuration` | 5 |
+
+Entry types (8): `code_example`, `best_practice`, `security_tip`, `optimization`, `documentation`, `error_pattern`, `deployment_tool`, `runtime_behavior`.
+
+## Source code
+
+The server is implemented in TypeScript and built on `@modelcontextprotocol/sdk`. See [github.com/klever-io/mcp-klever-connect](https://github.com/klever-io/mcp-klever-connect).

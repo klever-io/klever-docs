@@ -1,0 +1,70 @@
+# Setup — Public hosted endpoint
+
+Klever runs a public Klever Connect MCP server at `https://mcp.klever.org/sdk-js`. Point your AI assistant at this URL and you can skip both the marketplace install and the local `npx` boot — the server is always on.
+
+## Endpoint
+
+```
+https://mcp.klever.org/sdk-js
+```
+
+The endpoint speaks Streamable HTTP (the standard MCP HTTP transport). Any client that supports HTTP-transport MCP servers can connect.
+
+## Claude Code
+
+```bash
+claude mcp add klever-connect --transport http https://mcp.klever.org/sdk-js
+```
+
+That single command registers the hosted server. No local install, no config files.
+
+## Claude Desktop / Cursor / VS Code (HTTP transport)
+
+If your client supports `"type": "http"` in its `mcpServers` block, use:
+
+```json
+{
+  "mcpServers": {
+    "klever-connect": {
+      "type": "http",
+      "url": "https://mcp.klever.org/sdk-js"
+    }
+  }
+}
+```
+
+Some older client builds only support stdio transport — in that case use the [Manual install](/mcp/klever-connect/setup/manual) flow instead.
+
+## Trade-offs vs local install
+
+| Aspect | Public hosted | Marketplace / Manual |
+|---|---|---|
+| Install effort | Zero | One command |
+| Always up to date | Yes (we deploy the latest) | You control the version |
+| Works offline | No | Yes |
+| Latency | Round-trip over the internet | Local IPC / loopback |
+| Knowledge base | Latest version on `develop` | Whatever ships in the npm tarball you installed |
+
+For day-to-day development with stable internet, the hosted endpoint is the lowest-friction option. For air-gapped environments, CI agents, or aggressive version pinning, prefer the [Manual install](/mcp/klever-connect/setup/manual).
+
+## Verify the connection
+
+After registering the endpoint, run a smoke-test prompt in your assistant:
+
+```
+Use search_documentation to find "claim KFI rewards" in the Klever Connect knowledge base.
+```
+
+If the assistant returns markdown-formatted entries from the Klever Connect knowledge base, the connection is working.
+
+## Troubleshooting
+
+- **`Connection refused` / `ENOTFOUND`** — confirm DNS / network access to `mcp.klever.org`. Some corporate networks block it.
+- **`401 Unauthorized`** — the public endpoint is read-only and unauthenticated. If you see auth errors, you're hitting the wrong URL — double-check it's `/sdk-js`, not another path.
+- **Stale or missing entries** — file an issue at [github.com/klever-io/mcp-klever-connect](https://github.com/klever-io/mcp-klever-connect/issues).
+
+## Next steps
+
+- [Tool reference →](/mcp/klever-connect/reference/tools)
+- [Knowledge resources →](/mcp/klever-connect/reference/resources)
+- [Marketplace install (Claude Code) →](/mcp/klever-connect/setup/marketplace)

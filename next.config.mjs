@@ -33,6 +33,52 @@ const nextConfig = {
         destination: '/javascript-sdk/web-app',
         permanent: true,
       },
+      // KLC-2330 — VM MCP route restructure: /ai-for-kvm/* -> /mcp/klever-vm/*
+      {
+        source: '/ai-for-kvm',
+        destination: '/mcp/klever-vm',
+        permanent: true,
+      },
+      {
+        source: '/ai-for-kvm/ai-environment-setup',
+        destination: '/mcp/klever-vm/setup',
+        permanent: true,
+      },
+      {
+        source: '/ai-for-kvm/ai-environment-setup/quick-setup',
+        destination: '/mcp/klever-vm/setup/quick-setup',
+        permanent: true,
+      },
+      {
+        source: '/ai-for-kvm/ai-environment-setup/run-locally',
+        destination: '/mcp/klever-vm/setup/run-locally',
+        permanent: true,
+      },
+      {
+        source: '/ai-for-kvm/mcp-reference/functions',
+        destination: '/mcp/klever-vm/reference/functions',
+        permanent: true,
+      },
+      {
+        source: '/ai-for-kvm/mcp-reference/mcp-prompts',
+        destination: '/mcp/klever-vm/reference/prompts',
+        permanent: true,
+      },
+      {
+        source: '/ai-for-kvm/mcp-reference/knowledge-base',
+        destination: '/mcp/klever-vm/reference/knowledge-base',
+        permanent: true,
+      },
+      {
+        source: '/ai-for-kvm/mcp-workflow',
+        destination: '/mcp/klever-vm/workflow',
+        permanent: true,
+      },
+      {
+        source: '/ai-for-kvm/project-structure-for-ai-coding',
+        destination: '/mcp/klever-vm/project-structure',
+        permanent: true,
+      },
     ]
   },
 }

@@ -1,0 +1,40 @@
+# Klever Connect MCP
+
+The **Klever Connect MCP** is a knowledge / retrieval-augmented MCP server for the [Klever Connect](https://github.com/klever-io/klever-connect) JavaScript/TypeScript SDK. It indexes the Klever Connect SDK's API reference, examples, best practices, error patterns, and configuration into a searchable knowledge base, then exposes that knowledge to your AI assistant via the Model Context Protocol.
+
+> **Quick links:** [Setup →](/mcp/klever-connect/setup) · [Tool reference →](/mcp/klever-connect/reference/tools) · [Knowledge resources →](/mcp/klever-connect/reference/resources) · [Live landing page at ai.klever.org](https://ai.klever.org)
+
+## What it does
+
+When connected, your AI assistant can:
+
+- **Search Klever Connect documentation** with BM25-ranked full-text search (`search_documentation`, `query_context`).
+- **Retrieve full API reference entries** by ID (`get_context`).
+- **Find related entries** by tags and type (`find_similar`).
+- **Inject the most relevant context** into a natural-language question (`enhance_with_context`) — useful before you ask the LLM to generate code.
+- **List the knowledge base statistics** (`get_knowledge_stats`) to discover what's indexed.
+
+The server ships **125 entries** across 8 JSON files: `api-reference (46)`, `best-practices (11)`, `configuration (5)`, `documentation (9)`, `errors (12)`, `examples (21)`, `patterns (12)`, `types (9)`.
+
+## Package details
+
+| Field | Value |
+|---|---|
+| npm package | `@klever/klever-connect-mcp` |
+| Latest version | `1.0.2` |
+| License | MIT |
+| Source repo | [github.com/klever-io/mcp-klever-connect](https://github.com/klever-io/mcp-klever-connect) |
+| Hosted endpoint | `https://mcp.klever.org/sdk-js` |
+| Marketplace slug | `sdk-js@klever-marketplace` |
+| Node.js | `>=18.14.0` |
+
+## Get started
+
+| If you want to… | Go to |
+|---|---|
+| Install in Claude Code with one command | [Setup → Marketplace](/mcp/klever-connect/setup/marketplace) |
+| Configure Claude Desktop / Cursor / VS Code manually | [Setup → Manual](/mcp/klever-connect/setup/manual) |
+| Point your client at the hosted server (no local install) | [Setup → Public hosted](/mcp/klever-connect/setup/public-hosted) |
+| Read the tool / function reference | [Reference → Tools](/mcp/klever-connect/reference/tools) |
+| Browse the `knowledge://` resource URIs | [Reference → Resources](/mcp/klever-connect/reference/resources) |
+| Look up environment variables | [Reference → Env Vars](/mcp/klever-connect/reference/env-vars) |

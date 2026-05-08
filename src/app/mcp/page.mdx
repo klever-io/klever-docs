@@ -1,0 +1,32 @@
+# Klever MCPs
+
+The **Model Context Protocol (MCP)** is an open standard that lets AI assistants (Claude Code, Claude Desktop, Cursor, VS Code, Windsurf, ChatGPT, and more) connect to external data and tools. Klever publishes a set of MCP servers so your AI assistant can write, deploy, query, and debug Klever-aware code without leaving your editor.
+
+## Available Klever MCPs
+
+| MCP | Purpose | Docs |
+|---|---|---|
+| **Klever VM MCP** | Smart-contract knowledge, scaffolding, and deployment helpers for the Klever VM (Rust / WASM). | [Klever VM →](/mcp/klever-vm) |
+| **Klever Connect MCP** | Knowledge / RAG MCP for the [Klever Connect SDK](/javascript-sdk) — query and search Klever JavaScript/TypeScript SDK documentation, examples, and best practices. | [Klever Connect →](/mcp/klever-connect) |
+
+> **Looking for a one-page setup overview?** The [`ai.klever.org`](https://ai.klever.org) landing page has copy-paste install snippets for every supported client.
+
+## How to choose
+
+- Building **smart contracts** on the Klever VM (Rust contracts, deploy, debug)? Use **Klever VM MCP**.
+- Building **dApps, wallet integrations, or backend services** with `@klever/connect-*` JS/TS packages? Use **Klever Connect MCP**.
+- Both can be installed side-by-side — the marketplace plugin flow keeps them isolated and you can enable either one per workspace.
+
+## Install paths (all MCPs)
+
+Each MCP supports the same three install paths. See the per-MCP **Setup** page for verbatim snippets.
+
+1. **Klever Plugins Marketplace** (recommended) — `/plugin marketplace add klever-io/klever-marketplace`, then `/plugin install <slug>@klever-marketplace`. Works in Claude Code and any client that speaks the marketplace plugin spec.
+2. **Manual install** — run the published npm package directly via `npx`, or clone + build the source repo, and point your client's MCP config at it.
+3. **Public hosted endpoint** — point your client at the hosted HTTPS MCP URL (e.g. `https://mcp.klever.org/mcp` for VM, `https://mcp.klever.org/sdk-js` for Connect).
+
+## Next steps
+
+- [Klever VM MCP →](/mcp/klever-vm)
+- [Klever Connect MCP →](/mcp/klever-connect)
+- [AI Development on Klever (overview)](/ai)
