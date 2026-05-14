@@ -26,13 +26,36 @@ const languageNames: Record<string, string> = {
   go: 'Go',
 }
 
+type CodePanelMetadata = {
+  tag?: string
+  label?: string
+  code?: string
+  title?: string
+  language?: string
+}
+
+function getPanelMetadata(child: React.ReactNode): CodePanelMetadata {
+  return isValidElement<CodePanelMetadata>(child) ? child.props : {}
+}
+
+function getPanelMetadataFromChildren(
+  children: React.ReactNode,
+): CodePanelMetadata {
+  for (let child of Children.toArray(children)) {
+    let metadata = getPanelMetadata(child)
+
+    if (metadata.code || metadata.label || metadata.tag) {
+      return metadata
+    }
+  }
+
+  return {}
+}
+
 function getPanelTitle({
   title,
   language,
-}: {
-  title?: string
-  language?: string
-}) {
+}: CodePanelMetadata) {
   if (title) {
     return title
   }
@@ -150,13 +173,11 @@ function CodePanel({
   label?: string
   code?: string
 }) {
-  let child = children && Children.only(children)
+  let childMetadata = getPanelMetadataFromChildren(children)
 
-  if (isValidElement(child)) {
-    tag = child.props.tag ?? tag
-    label = child.props.label ?? label
-    code = child.props.code ?? code
-  }
+  tag = childMetadata.tag ?? tag
+  label = childMetadata.label ?? label
+  code = childMetadata.code ?? code
 
   if (children && !code) {
     throw new Error(
@@ -205,6 +226,7 @@ function CodeGroupHeader({
         <Tab.List className="-mb-px flex gap-4 text-xs font-medium">
           {Children.map(children, (child, childIndex) => (
             <Tab
+              key={childIndex}
               className={clsx(
                 'border-b py-3 transition ui-not-focus-visible:outline-none',
                 childIndex === selectedIndex
@@ -212,7 +234,7 @@ function CodeGroupHeader({
                   : 'border-transparent text-zinc-400 hover:text-zinc-300',
               )}
             >
-              {getPanelTitle(isValidElement(child) ? child.props : {})}
+              {getPanelTitle(getPanelMetadata(child))}
             </Tab>
           ))}
         </Tab.List>
@@ -244,7 +266,7 @@ function CodeGroupPanels({
 
 function usePreventLayoutShift() {
   let positionRef = useRef<HTMLElement>(null)
-  let rafRef = useRef<number>()
+  let rafRef = useRef<number>(undefined)
 
   useEffect(() => {
     return () => {
@@ -325,7 +347,7 @@ export function CodeGroup({
 }: React.ComponentPropsWithoutRef<typeof CodeGroupPanels> & { title: string }) {
   let languages =
     Children.map(children, (child) =>
-      getPanelTitle(isValidElement(child) ? child.props : {}),
+      getPanelTitle(getPanelMetadata(child)),
     ) ?? []
   let tabGroupProps = useTabGroupProps(languages)
   let hasTabs = Children.count(children) > 1
