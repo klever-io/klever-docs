@@ -1,0 +1,76 @@
+# Environment Variables
+
+The Klever Connect MCP server is configured entirely through environment variables. These apply to the manual `npx` install and to running from source — the marketplace and public-hosted paths set sensible defaults for you.
+
+## Reference
+
+| Variable | Default | Description |
+|---|---|---|
+| `MODE` | `http` | Transport mode. One of `http`, `public`, `mcp`/`stdio`. Use `mcp` (or `stdio`) for Claude Desktop / Cursor / VS Code. Use `http` for HTTP-transport clients (Claude Code via `claude mcp add ... --transport http`). `public` enables CORS-friendly defaults for public-hosted deployments. |
+| `PORT` | `3000` | TCP port the HTTP server binds to. Ignored in stdio mode. |
+| `HOST` | `0.0.0.0` | Bind address. Use `127.0.0.1` to restrict to loopback. Ignored in stdio mode. |
+| `KNOWLEDGE_DIR` | `./knowledge` | Path to the knowledge JSON files. Relative paths resolve against the server's working directory. The published npm package and the built `dist/` ship with their own bundled `knowledge/` folder — you only need to override this if you've forked the repo or are pointing at a custom knowledge base. |
+| `MAX_SIZE` | `10000` | Max entries to load into memory. The default knowledge base has 125 entries, so this is a soft ceiling. Increase if you've extended the knowledge base. |
+| `CORS_ORIGINS` | `*` | Comma-separated allowed origins for CORS (HTTP mode only). For a self-hosted public deployment, set this to your origin allow-list (e.g. `https://example.com,https://app.example.com`). |
+
+## Common configurations
+
+### Stdio mode for Claude Desktop / Cursor
+
+```bash
+MODE=mcp npx -y @klever/klever-connect-mcp
+```
+
+In a client config:
+
+```json
+{
+  "command": "npx",
+  "args": ["-y", "@klever/klever-connect-mcp"],
+  "env": { "MODE": "mcp" }
+}
+```
+
+### HTTP mode for Claude Code
+
+```bash
+MODE=http PORT=3000 npx -y @klever/klever-connect-mcp
+# -> http://localhost:3000/mcp
+```
+
+Then:
+
+```bash
+claude mcp add klever-connect --transport http http://localhost:3000/mcp
+```
+
+### Restricted bind (loopback only)
+
+```bash
+MODE=http HOST=127.0.0.1 PORT=3001 npx -y @klever/klever-connect-mcp
+```
+
+### Self-hosted public deployment
+
+```bash
+MODE=public \
+HOST=0.0.0.0 \
+PORT=3000 \
+CORS_ORIGINS=https://your-frontend.example.com \
+npx -y @klever/klever-connect-mcp
+```
+
+### Custom knowledge base
+
+```bash
+KNOWLEDGE_DIR=/srv/klever-connect/custom-knowledge \
+MAX_SIZE=50000 \
+MODE=http \
+npx -y @klever/klever-connect-mcp
+```
+
+## Next steps
+
+- [Tool reference →](/mcp/klever-connect/reference/tools)
+- [Resources reference →](/mcp/klever-connect/reference/resources)
+- [Manual install →](/mcp/klever-connect/setup/manual)

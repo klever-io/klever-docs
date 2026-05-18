@@ -1,0 +1,62 @@
+# Resources
+
+In addition to [tools](/mcp/klever-connect/reference/tools), the Klever Connect MCP server exposes the knowledge base as **MCP resources** — read-only URIs your assistant can subscribe to or fetch. Resources are useful when you want to *list* or *browse* the knowledge base instead of *searching* it.
+
+## URI templates
+
+| URI | Description |
+|---|---|
+| `knowledge://index` | Top-level index — categories, entry types, top tags, total counts. |
+| `knowledge://category/{category}` | All entries in a single category (e.g. `category/api-reference`, `category/examples`). |
+| `knowledge://type/{type}` | All entries of a single type (e.g. `type/code_example`, `type/error_pattern`). |
+| `knowledge://entry/{id}` | The full content of a single entry. |
+
+## Examples
+
+### List the index
+
+```
+knowledge://index
+```
+
+Returns the same shape as `get_knowledge_stats` — `total`, `byType`, `byCategory`, `topTags`.
+
+### List all `examples`
+
+```
+knowledge://category/examples
+```
+
+Returns the 21 entries in the `examples` category, each with its ID, title, type, tags, and summary.
+
+### List all error patterns
+
+```
+knowledge://type/error_pattern
+```
+
+Returns the 12 `error_pattern` entries.
+
+### Fetch a single entry
+
+```
+knowledge://entry/api-reference/connect-wallet/signTransaction
+```
+
+Returns the full markdown content of that entry — equivalent to calling `get_context` with the same ID.
+
+## Tools vs resources
+
+| Feature | Tools | Resources |
+|---|---|---|
+| Best for | Search, ranking, filtering | Listing, browsing, deep-linking |
+| Mutation | None (all read-only) | None (all read-only) |
+| Triggered by | Assistant decides to call them | Assistant fetches by URI |
+| Returns | Tool-specific JSON / markdown | Knowledge-entry data |
+
+In practice, your assistant will use **tools** for most queries (because BM25 ranking matches user intent better) and fall back to **resources** when the user asks "show me everything in category X" or "list all error patterns".
+
+## Next steps
+
+- [Tool reference →](/mcp/klever-connect/reference/tools)
+- [Env Vars reference →](/mcp/klever-connect/reference/env-vars)

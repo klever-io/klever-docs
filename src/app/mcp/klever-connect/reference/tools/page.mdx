@@ -1,0 +1,154 @@
+# Tools
+
+The Klever Connect MCP server exposes **6 tools** (in MCP terminology: *functions* the assistant can call). The server is read-only — none of these tools mutate the knowledge base.
+
+## Tool list
+
+| Tool | Description |
+|---|---|
+| [`query_context`](#query_context) | Search the knowledge base with structured filters and BM25-ranked full-text search. |
+| [`get_context`](#get_context) | Retrieve the FULL content of a single knowledge entry by ID. |
+| [`find_similar`](#find_similar) | Find entries related to a known entry by comparing tags and type. |
+| [`get_knowledge_stats`](#get_knowledge_stats) | High-level overview: total entries, breakdown by type, top tags, categories. |
+| [`enhance_with_context`](#enhance_with_context) | Augment a natural-language question with the 5 most relevant entries, formatted as injectable context. |
+| [`search_documentation`](#search_documentation) | Natural-language documentation search with BM25 ranking, returns formatted markdown. |
+
+## `query_context`
+
+Search the knowledge base with structured filters and BM25-ranked full-text search. Filter by entry type, tag, or category.
+
+**Parameters**
+
+| Name | Type | Required | Description |
+|---|---|---|---|
+| `query` | string | yes | Natural-language search query. |
+| `type` | string | no | Filter by entry type (e.g. `code_example`, `best_practice`, `error_pattern`). |
+| `tag` | string | no | Filter by a single tag. |
+| `category` | string | no | Filter by category (e.g. `api-reference`, `examples`). |
+| `limit` | number | no | Max results to return (default 10). |
+
+**Example call**
+
+```json
+{
+  "name": "query_context",
+  "arguments": {
+    "query": "sign transaction with web extension wallet",
+    "type": "code_example",
+    "limit": 5
+  }
+}
+```
+
+## `get_context`
+
+Retrieve the full content of a single knowledge entry by its ID.
+
+**Parameters**
+
+| Name | Type | Required | Description |
+|---|---|---|---|
+| `id` | string | yes | The entry ID (returned by `query_context` or `search_documentation`). |
+
+**Example call**
+
+```json
+{
+  "name": "get_context",
+  "arguments": { "id": "api-reference/connect-wallet/signTransaction" }
+}
+```
+
+## `find_similar`
+
+Find entries related to a known entry by comparing tags and type. Useful for "show me more like this".
+
+**Parameters**
+
+| Name | Type | Required | Description |
+|---|---|---|---|
+| `id` | string | yes | The reference entry ID. |
+| `limit` | number | no | Max results (default 5). |
+
+**Example call**
+
+```json
+{
+  "name": "find_similar",
+  "arguments": { "id": "api-reference/connect-wallet/signTransaction", "limit": 5 }
+}
+```
+
+## `get_knowledge_stats`
+
+High-level overview of what's in the knowledge base. No parameters.
+
+**Returns** an object with:
+
+- `total` — total entries
+- `byType` — counts grouped by entry type
+- `byCategory` — counts grouped by category
+- `topTags` — most-frequent tags
+
+**Example call**
+
+```json
+{
+  "name": "get_knowledge_stats",
+  "arguments": {}
+}
+```
+
+## `enhance_with_context`
+
+Take a natural-language question and return the 5 most relevant knowledge entries, formatted as injectable context. Use this *before* asking the LLM to generate code — the response is meant to be pasted into the LLM's context window.
+
+**Parameters**
+
+| Name | Type | Required | Description |
+|---|---|---|---|
+| `query` | string | yes | The user's natural-language question. |
+
+**Example call**
+
+```json
+{
+  "name": "enhance_with_context",
+  "arguments": { "query": "How do I claim KFI rewards from a staking pool?" }
+}
+```
+
+## `search_documentation`
+
+Natural-language documentation search with BM25 ranking. Returns formatted markdown — the most assistant-friendly tool for "show me how to do X".
+
+**Parameters**
+
+| Name | Type | Required | Description |
+|---|---|---|---|
+| `query` | string | yes | Natural-language documentation query. |
+| `limit` | number | no | Max results to return (default 5). |
+
+**Example call**
+
+```json
+{
+  "name": "search_documentation",
+  "arguments": { "query": "how to send a KLV transfer with the connect SDK", "limit": 5 }
+}
+```
+
+## When to use which tool
+
+- **Looking something up to read** → `search_documentation` (markdown-formatted, optimized for the assistant to summarize).
+- **Filtering by type/tag/category** → `query_context` (structured filters).
+- **Reading one entry in full** → `get_context` (after you have the ID).
+- **Discovering related entries** → `find_similar`.
+- **Pre-loading the LLM's context before code generation** → `enhance_with_context`.
+- **Auditing the knowledge base** → `get_knowledge_stats`.
+
+## Next steps
+
+- [Resources reference →](/mcp/klever-connect/reference/resources)
+- [Env Vars reference →](/mcp/klever-connect/reference/env-vars)
+- [Setup →](/mcp/klever-connect/setup)

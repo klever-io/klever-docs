@@ -1,0 +1,27 @@
+# Setup
+
+Three ways to connect your AI assistant to the Klever Connect MCP server. Pick whichever fits your workflow — the **Klever Plugins Marketplace** path is the recommended primary path for Claude Code; the **Manual** and **Public hosted** paths exist for clients that don't speak the marketplace spec or for offline / self-hosted setups.
+
+## Install paths
+
+| Path | When to use | Page |
+|---|---|---|
+| **Klever Plugins Marketplace** | You use Claude Code and want a one-line install. | [Marketplace →](/mcp/klever-connect/setup/marketplace) |
+| **Manual install** | You're on Claude Desktop / Cursor / VS Code / Windsurf, or you want to pin a specific version. | [Manual →](/mcp/klever-connect/setup/manual) |
+| **Public hosted endpoint** | You want zero local install — point your client at our hosted MCP at `https://mcp.klever.org/sdk-js`. | [Public hosted →](/mcp/klever-connect/setup/public-hosted) |
+
+## Prerequisites
+
+- **Node.js 18.14.0** or higher (only required for the manual `npx` path).
+- A supported MCP client: Claude Code, Claude Desktop, Cursor, VS Code, Windsurf, ChatGPT Desktop, etc.
+- Network access to `https://mcp.klever.org` (for the marketplace and public-hosted paths) or to npm (for the manual `npx` path).
+
+## After install
+
+Once the server is connected, ask your assistant something like:
+
+```
+Search the Klever Connect knowledge base for "sign transaction with extension wallet"
+```
+
+Your assistant will call `search_documentation` (or `query_context`) under the hood and inject the matching entries into its context. See the [Tool reference](/mcp/klever-connect/reference/tools) for the full list of tools.
