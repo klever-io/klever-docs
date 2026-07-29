@@ -10,28 +10,58 @@ export const navigation: Array<NavGroup> = [
     links: [
       { title: 'Overview', href: '/ai' },
       {
-        title: 'Klever MCP Server',
-        href: '/ai-for-kvm',
+        title: 'Klever MCPs',
+        href: '/mcp',
         children: [
           {
-            title: 'Setup',
-            href: '/ai-environment-setup',
+            title: 'Klever VM',
+            href: '/klever-vm',
             children: [
-              { title: 'Quick Setup', href: '/quick-setup' },
-              { title: 'Run Locally', href: '/run-locally' },
+              {
+                title: 'Setup',
+                href: '/setup',
+                children: [
+                  { title: 'Quick Setup', href: '/quick-setup' },
+                  { title: 'Run Locally', href: '/run-locally' },
+                ],
+              },
+              {
+                title: 'Reference',
+                href: '/reference',
+                children: [
+                  { title: 'Functions', href: '/functions' },
+                  { title: 'Prompts', href: '/prompts' },
+                  { title: 'Knowledge Base', href: '/knowledge-base' },
+                ],
+              },
+              { title: 'Workflow Example', href: '/workflow' },
+              { title: 'Project Structure', href: '/project-structure' },
             ],
           },
           {
-            title: 'Reference',
-            href: '/mcp-reference',
+            title: 'Klever Connect',
+            href: '/klever-connect',
             children: [
-              { title: 'Functions', href: '/functions' },
-              { title: 'MCP Prompts', href: '/mcp-prompts' },
-              { title: 'Knowledge Base', href: '/knowledge-base' },
+              {
+                title: 'Setup',
+                href: '/setup',
+                children: [
+                  { title: 'Marketplace', href: '/marketplace' },
+                  { title: 'Manual', href: '/manual' },
+                  { title: 'Public Hosted', href: '/public-hosted' },
+                ],
+              },
+              {
+                title: 'Reference',
+                href: '/reference',
+                children: [
+                  { title: 'Tools', href: '/tools' },
+                  { title: 'Resources', href: '/resources' },
+                  { title: 'Env Vars', href: '/env-vars' },
+                ],
+              },
             ],
           },
-          { title: 'Workflow Example', href: '/mcp-workflow' },
-          { title: 'Project Structure', href: '/project-structure-for-ai-coding' },
         ],
       },
       { title: 'Skills', href: '/skills' },

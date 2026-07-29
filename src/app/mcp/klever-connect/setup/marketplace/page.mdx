@@ -1,0 +1,53 @@
+# Setup — Klever Plugins Marketplace
+
+The fastest way to install the Klever Connect MCP in Claude Code. The Klever Plugins Marketplace follows the standard plugin marketplace spec, so the same `/plugin` commands work in any client that supports it.
+
+## Install (Claude Code)
+
+Run these two slash-commands inside a Claude Code session:
+
+```bash
+/plugin marketplace add klever-io/klever-marketplace
+/plugin install sdk-js@klever-marketplace
+```
+
+That's it. Claude Code will register the plugin, the underlying MCP server (`https://mcp.klever.org/sdk-js`) becomes available, and the six Klever Connect tools (`query_context`, `search_documentation`, `get_context`, `find_similar`, `get_knowledge_stats`, `enhance_with_context`) appear in your assistant's tool list.
+
+## Why the slug is `sdk-js`
+
+The marketplace plugin is registered under the slug **`sdk-js`** for historical reasons — the Klever Connect MCP is the AI-knowledge-server companion to the **`@klever/connect-*`** JavaScript/TypeScript SDK packages, and the marketplace entry was named after the SDK family rather than the MCP itself. The plugin's repository points to [`github.com/klever-io/mcp-klever-connect`](https://github.com/klever-io/mcp-klever-connect), which is the correct source. We keep the slug stable to avoid breaking existing installs.
+
+## Verify the install
+
+In Claude Code, list the active MCP servers:
+
+```bash
+/mcp
+```
+
+You should see `sdk-js` (or `klever-connect`, depending on the client) listed. Try a smoke-test prompt:
+
+```
+Use search_documentation to find "send KLV transfer" in the Klever Connect knowledge base.
+```
+
+If the assistant returns markdown-formatted entries, the install is working.
+
+## Update or remove
+
+```bash
+/plugin update sdk-js@klever-marketplace
+/plugin uninstall sdk-js@klever-marketplace
+```
+
+## Troubleshooting
+
+- **`Plugin not found`** — make sure you ran `/plugin marketplace add klever-io/klever-marketplace` first; the install command is a no-op without the marketplace registration.
+- **Tools don't appear after install** — restart your Claude Code session, then run `/mcp` to confirm the server is connected.
+- **Network errors** — confirm you can reach `https://mcp.klever.org/sdk-js` from your machine. Some corporate networks block raw `mcp.klever.org` paths.
+
+## Next steps
+
+- [Tool reference →](/mcp/klever-connect/reference/tools)
+- [Knowledge resources →](/mcp/klever-connect/reference/resources)
+- [Manual install (other clients) →](/mcp/klever-connect/setup/manual)
