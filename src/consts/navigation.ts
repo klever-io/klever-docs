@@ -204,7 +204,13 @@ export const navigation: Array<NavGroup> = [
       { title: 'Testnet', href: '/testnet' },
       { title: 'Contracts', href: '/contracts' },
       { title: 'Exchange Integration', href: '/exchange-integration' },
-      { title: 'Node Operations', href: '/node-operations' },
+      {
+        title: 'Node Operations',
+        href: '/node-operations',
+        children: [
+          { title: 'Securing the Node API', href: '/securing-the-api' },
+        ],
+      },
       {
         title: 'Bridge',
         href: '/bridge',

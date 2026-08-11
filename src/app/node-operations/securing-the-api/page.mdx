@@ -1,0 +1,157 @@
+# Securing the Node API
+
+The node exposes a REST and WebSocket API. It performs **no origin checking and no access control of
+its own** — whether it is safe depends entirely on how you deploy it. This guide covers what the
+defaults are, what changes when you expose the API, and how to configure it for a public deployment.
+
+## The exposure model
+
+By default the API binds to `localhost:8080`, reachable only from the node host itself. That default
+is safe, and most operators should leave it alone.
+
+Exposing the API beyond localhost is a deliberate choice, and the node does not second-guess it. If
+you expose it, it **must** be fronted by a reverse proxy that:
+
+- terminates TLS,
+- enforces origin / CORS policy,
+- requires authentication.
+
+Firewall the API port so the node is reachable only through that proxy.
+
+<Note>
+The node will not reject a cross-origin request on its own. Origin policy is deliberately left to the
+proxy, which means an exposed node with no proxy in front of it has no origin protection at all.
+</Note>
+
+### Do not run a browser on a validator host
+
+Because the API has no origin control, any web page you visit on that machine can issue cross-origin
+requests to `localhost:8080` and reach your node. Keep validator hosts headless.
+
+## Route configuration
+
+Routes live in `config/node/api.yaml`. Two flags govern each route, and combined they do not behave
+the way the names suggest:
+
+| Flag | Meaning |
+|---|---|
+| `open` | whether the route is **registered at all** |
+| `secured` | attaches Basic Auth to a route that is **already open** |
+
+<Note>
+**`secured: true` together with `open: false` does not give you an authenticated endpoint — it gives
+you no endpoint.** The route is simply not registered. The node logs a warning for `/subscribe` in
+this case, but not for every route, so verify your config rather than relying on a log line.
+</Note>
+
+### `/log`
+
+Ships **enabled and authenticated** (`open: true`, `secured: true`).
+
+It streams node-wide logs, which can include operational detail you would not want public. Keep
+`secured: true` if the API is reachable off-host, or set `open: false` to remove the route entirely.
+
+### `/subscribe`
+
+Ships **enabled and unauthenticated** (`open: true`, no `secured`). It is a public event feed by
+design.
+
+For a public or mainnet deployment, either add `secured: true` to require Basic Auth on the
+handshake, or set `open: false` to disable it. See [WebSocket limits](#websocket-limits) for its
+resource controls.
+
+## Credentials
+
+Authentication is HTTP Basic Auth. The `password` field in `api.yaml` is **not** the password — it is
+the **hex-encoded digest** of the password under the configured hasher (`sha256` by default).
+
+The shipped entries are placeholders and will not work:
+
+```yaml
+credentials:
+  - username: example
+    password: hashed password
+hasher:
+  type: sha256
+```
+
+Generate a real digest:
+
+```bash
+printf '%s' 'your-password' | sha256sum | cut -d' ' -f1
+```
+
+<Note>
+Leaving the `credentials` list **empty** does not disable authentication — it makes every
+authenticated request fail with HTTP 500. Configure real credentials before enabling `secured`
+anywhere.
+</Note>
+
+## Recommended hardened configuration
+
+For a node whose API is reachable off-host, start here and adjust:
+
+```yaml
+# config/node/api.yaml
+  log:
+    routes:
+      - name: /log
+        open: true
+        secured: true       # or open: false to remove the route entirely
+  subscribe:
+    routes:
+      - name: /subscribe
+        open: true
+        secured: true       # public feed by default; require auth when exposed
+
+credentials:
+  - username: <operator>
+    password: <hex sha256 digest of the password>
+hasher:
+  type: sha256
+```
+
+Pair that with either the default `--rest-api-interface=localhost:8080` plus a reverse proxy, or a
+firewall rule restricting the port to the proxy host.
+
+## WebSocket limits
+
+`/subscribe` connection and subscription limits are tunable under `webServer` in
+`config/node/config.yaml`:
+
+| Setting | Default | Purpose |
+|---|---|---|
+| `webSocketConnections` | `4096` | node-wide cap on live connections |
+| `webSocketConnectionsPerIP` | `1024` | per-source-IP cap |
+| `webSocketMaxAddressesPerSubscribe` | `10000` | addresses accepted in one subscribe call |
+| `webSocketMaxAddressesPerClient` | `50000` | total addresses one connection may watch |
+
+Setting any of these to `0` means unlimited.
+
+<Note>
+**Behind a reverse proxy, every client shares the proxy's IP**, so `webSocketConnectionsPerIP` will
+throttle all of them together. Raise it — or set it to `0` and enforce per-client limits at the proxy
+instead.
+</Note>
+
+The general HTTP throttlers (`simultaneousRequests`, `sameSourceRequests`) release their slot at the
+HTTP-to-WebSocket upgrade, so they do not bound live WebSocket connections. The `webSocket*` settings
+are what do.
+
+## Checklist
+
+- [ ] API bound to `localhost` unless deliberately exposed
+- [ ] If exposed: reverse proxy enforcing TLS, origin/CORS, and authentication
+- [ ] API port firewalled to the proxy host
+- [ ] Real credentials configured; placeholders replaced
+- [ ] `/log` secured, or disabled
+- [ ] `/subscribe` secured or disabled if it should not be public
+- [ ] `webSocketConnectionsPerIP` adjusted if behind a proxy
+- [ ] No browser running on validator hosts
+- [ ] Node software kept up to date
+- [ ] Secure key management practices followed
+
+## Related
+
+- [Node Operations](/node-operations) — installing, running, and upgrading a node
+- [Become a Validator](/become-a-validator) — validator setup and staking
