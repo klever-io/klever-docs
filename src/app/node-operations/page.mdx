@@ -329,6 +329,153 @@ When you are done setting up and running your node, you are expected to see info
 *A node running, showing how many blocks were proposed and accepted, current blocks, slots and connected nodes, last generated hash, computational information, epoch and network processes and a basic log info segment.*
 
 
+## Time Synchronization
+
+Consensus runs in fixed time slots, so every validator has to agree on what time it is. A host clock that drifts by a few tens of milliseconds is enough to make your node miss signatures and log `small consensus quorum` warnings. This section explains how the node keeps time and how to set up and monitor the host clock.
+
+### How the node keeps time
+
+The node has its own NTP client. It reads the servers from the `ntp` section of `config.yaml`. The config package ships these values:
+
+```yaml
+ntp:
+  hosts:
+    - time.google.com
+    - time.cloudflare.com
+    - time.windows.com
+    - time.apple.com
+  port: 123
+  timeoutMilliseconds: 100
+  syncPeriodSeconds: 3600
+```
+
+About once per `syncPeriodSeconds` (one hour, plus or minus 20%), the node sends 10 queries to each host. It drops the highest and lowest 30% of the answers and stores the harmonic mean of the rest as a clock offset. Slot and subslot timing then use the host clock plus that offset.
+
+The node does not discipline the host clock. It measures the offset once per sync and adds it until the next sync, so **between syncs the node's time drifts exactly as fast as the host clock drifts**. If the host clock loses 30 ms in an hour, the node's slot timing is up to 30 ms off just before the next sync.
+
+The node also rejects a sync in two cases, and then keeps using the previous offset:
+
+- fewer than about a third of the queries got an answer. The log says `ntp sync FAILED: insufficient responses`. Check that outbound UDP port 123 is open.
+- the measured offset is larger than 1 second. The log says `ntp sync FAILED: offset out of bounds`. The host clock is badly wrong; fix it before anything else.
+
+### Why the host clock still matters
+
+Parts of the node read the host clock directly, without the NTP offset: the P2P layer's message caches and peer timers, and the timestamps in the logs. Even the corrected time is only as stable as the host clock between syncs.
+
+Keep the host clock within **±2 ms of UTC** at all times.
+
+The node container uses the host's clock. Docker containers share the host kernel clock, so time is set up on the host, not inside the container.
+
+### Recommended setup: chrony
+
+Most Debian and Ubuntu installs use `systemd-timesyncd`, a simple client that follows one server and polls it as rarely as every 34 minutes. **chrony** combines several sources, keeps adjusting the clock's frequency continuously, and handles the drifting clocks of cloud VMs much better.
+
+Install it. On Debian and Ubuntu the `chrony` package replaces `systemd-timesyncd`, so apt removes it for you:
+
+```bash
+sudo apt-get update
+sudo apt-get install -y chrony
+sudo systemctl enable --now chrony
+```
+
+In `/etc/chrony/chrony.conf`, use several independent sources:
+
+```
+# Several stratum 1/2 sources for redundancy
+pool 2.debian.pool.ntp.org iburst maxsources 4
+server time.cloudflare.com iburst
+server time.google.com iburst
+
+# Step the clock at start if it is off by more than 1 s, slew it afterwards
+makestep 1.0 3
+
+# Save the measured drift so the clock settles faster after a reboot
+driftfile /var/lib/chrony/chrony.drift
+```
+
+Restart chrony after editing the file:
+
+```bash
+sudo systemctl restart chrony
+```
+
+### Verify the host clock
+
+```bash
+chronyc tracking | grep -E "System time|RMS offset|Frequency"
+chronyc sources -v
+chronyc sourcestats
+```
+
+In `chronyc tracking`, `System time` is the current offset from NTP time and `RMS offset` is its long-term average. Both should stay under 0.002 seconds (2 ms). In `chronyc sources`, the source marked `^*` is the one chrony follows. Several sources should be reachable (`Reach` 377 once they have settled).
+
+If you stay on `systemd-timesyncd`, at least poll more often. In `/etc/systemd/timesyncd.conf`:
+
+```
+[Time]
+PollIntervalMinSec=16
+PollIntervalMaxSec=64
+```
+
+Then run `sudo systemctl restart systemd-timesyncd` and check the result with `timedatectl timesync-status`.
+
+### Monitor clock drift
+
+From v1.7.20, the node publishes two clock metrics. They are on `/node/metrics` in Prometheus text format and on `/node/status` as JSON:
+
+| Metric | Meaning |
+|---|---|
+| `klv_clock_offset_ns` | Offset measured at the last successful sync, in nanoseconds. Negative means the host clock is fast, positive means it is slow. |
+| `klv_clock_last_sync_timestamp` | Unix time, in seconds, of the last successful sync. `0` until the first sync succeeds. |
+
+```bash
+curl -s localhost:8080/node/metrics | grep klv_clock
+```
+
+Alert on two conditions:
+
+- **The host clock is drifting:** `abs(klv_clock_offset_ns)` above your tolerance. A tolerance of 2 ms (`2e6`) matches the target above.
+- **NTP sync has stopped:** `time() - klv_clock_last_sync_timestamp` above twice `syncPeriodSeconds` (7200 s with the default).
+
+For example, as Prometheus alerting rules:
+
+```yaml
+groups:
+  - name: klever-clock
+    rules:
+      - alert: KleverClockOffsetHigh
+        expr: abs(klv_clock_offset_ns) > 2e6
+        for: 5m
+      - alert: KleverNtpSyncStale
+        expr: klv_clock_last_sync_timestamp > 0 and time() - klv_clock_last_sync_timestamp > 7200
+        for: 5m
+```
+
+### Troubleshooting: `small consensus quorum` warnings
+
+The node logs a `worker statistics` warning with `small consensus quorum` when a block carries fewer signatures than the consensus group. To count them:
+
+```bash
+docker logs --since 1h klever-node 2>&1 | grep -c "small consensus quorum"
+```
+
+- **A few per hour** is normal: some validator was slow or offline for a slot.
+- **Dozens per hour** usually means a clock problem, often your own. In one investigation a validator whose host clock drifted 23 to 38 ms between syncs logged about 60 times more warnings than usual. After the host clock was held within ±2 ms, the rate went back to normal.
+
+To check your own clock:
+
+1. Run `chronyc tracking` (or `timedatectl timesync-status`) and look at the current offset.
+2. Check `klv_clock_offset_ns` and `klv_clock_last_sync_timestamp` as described above.
+3. Compare the two timestamps on a `SLOT … BEGINS` log line. The outer one comes from the host clock and the one inside the banner is the node's corrected time. A gap of more than 5 ms means the host clock is not tracking UTC.
+
+### Cloud VM caveats
+
+Cloud VMs, such as Hetzner Cloud and other KVM-based instances, usually run on `kvm-clock`. The hypervisor adjusts it, and long uptimes or noisy neighbours make it less stable. The `Frequency` line of `chronyc tracking` shows how hard chrony is working to correct it.
+
+If the offset will not stay within ±2 ms with chrony:
+
+- reboot the host periodically, for example every 6 to 12 months;
+- or move the validator to a dedicated-CPU or bare-metal instance.
 
 
 ## How To Stop A Node
