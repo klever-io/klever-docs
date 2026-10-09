@@ -75,8 +75,8 @@ Create and handle transactions with multiple signatures accounts:
 
 ### WebSocket
 
-Receive blocks, addresses and transactions from WebSocket:
-[Websocket Reference](https://docs.klever.org/api-and-sdk#websocket-reference)
+Receive blocks, addresses, transactions and smart contract event logs from WebSocket:
+[Websocket Reference](/api-and-sdk#websocket-reference)
 
 ## Checking the status of the transaction
 
@@ -267,21 +267,23 @@ import (
 type EventType string
 
 const (
-	ACCOUNTS    EventType = "accounts"    // receive all accounts changed or created
-	BLOCKS      EventType = "blocks"      // receive all blocks
-	TRANSACTION EventType = "transaction" // receive all transactions
+	ACCOUNTS          EventType = "accounts"          // receive accounts changed or created, for the given addresses
+	BLOCKS            EventType = "blocks"            // receive all blocks
+	TRANSACTIONS      EventType = "transactions"      // receive all transactions
+	USER_TRANSACTIONS EventType = "user_transactions" // receive transactions involving the given addresses
+	LOGS              EventType = "logs"              // receive smart contract event logs for the given addresses
 )
 
 type Data struct {
-	Types     []EventType `json:"subcribed_types"`
+	Types     []EventType `json:"subscribed_types"`
 	Addresses []string    `json:"addresses"`
 }
 
 type Event struct {
-	Type    EventType `json:"type"`
-	Address string    `json:"address"`
-	Hash    string    `json:"hash"`
-	Data    []byte    `json:"data"`
+	Type    EventType       `json:"type"`
+	Address string          `json:"address"`
+	Hash    string          `json:"hash"`
+	Data    json.RawMessage `json:"data"`
 }
 
 func main() {
@@ -318,8 +320,12 @@ func main() {
 				log.Println("Received BLOCKS data:", string(event.Data))
 			case ACCOUNTS:
 				log.Println("Received ACCOUNTS data:", string(event.Data))
-			case TRANSACTION:
-				log.Println("Received TRANSACTION data:", string(event.Data))
+			case TRANSACTIONS:
+				log.Println("Received TRANSACTIONS data:", string(event.Data))
+			case USER_TRANSACTIONS:
+				log.Println("Received USER_TRANSACTIONS data:", string(event.Data))
+			case LOGS:
+				log.Println("Received LOGS data:", string(event.Data))
 			default:
 				log.Println("Unknown data ", string(message))
 			}
@@ -328,7 +334,8 @@ func main() {
 	}()
 
 	subMessage := Data{
-		Types: []EventType{BLOCKS, TRANSACTION, ACCOUNTS},
+		Types:     []EventType{BLOCKS, TRANSACTIONS, ACCOUNTS, LOGS},
+		Addresses: []string{"klv1..."}, // required for ACCOUNTS, USER_TRANSACTIONS and LOGS subscriptions
 	}
 
 	// send the first message to subscribe
@@ -346,18 +353,20 @@ func main() {
 import useWebSocket from 'react-use-websocket'
 
 export enum WSTopics {
-  accounts = 'accounts', // receive all accounts changed or created
+  accounts = 'accounts', // receive accounts changed or created, for the given addresses
   blocks = 'blocks', // receive all blocks
-  transaction = 'transaction', // receive all transactions
+  transactions = 'transactions', // receive all transactions
+  user_transactions = 'user_transactions', // receive transactions involving the given addresses
+  logs = 'logs', // receive smart contract event logs for the given addresses
 }
 
-const socketUrl = "ws://127.0.0.1:8080" // your indexer node
+const socketUrl = "ws://127.0.0.1:8080/subscribe" // your indexer node
 
 const { sendJsonMessage, lastJsonMessage } = useWebSocket(socketUrl, {
     onOpen: () => {
       const payload = {
-        addresses: ["klv1...."], // OPTIONAL field to listen a specific address
-        subcribed_types: [WSTopics.blocks],
+        addresses: ["klv1...."], // not needed for blocks/transactions, REQUIRED for accounts, user_transactions and logs
+        subscribed_types: [WSTopics.blocks],
       }
       sendJsonMessage(payload)
     }
@@ -366,8 +375,53 @@ const { sendJsonMessage, lastJsonMessage } = useWebSocket(socketUrl, {
 
 # Topics
 
-| Topic        | Value        |
-| ------------ | ------------ |
-| BLOCKS       | blocks       |
-| TRANSACTIONS | transactions |
-| ACCOUNTS     | accounts     |
+| Topic        | Value        | Requires Addresses |
+| ------------ | ------------ | ------------------- |
+| BLOCKS       | blocks       | No                   |
+| TRANSACTIONS | transactions | No                   |
+| ACCOUNTS     | accounts     | Yes                  |
+| USER_TRANSACTIONS | user_transactions | Yes             |
+| LOGS         | logs         | Yes                  |
+
+## Smart Contract Event Logs (`logs`)
+
+The `logs` topic streams smart-contract execution logs/events for the contract addresses you subscribe to. You must run a node with the indexer option enabled (see [How to Set Up Your Own Indexer](/node-operations#how-to-set-up-your-own-indexer)) — the same requirement as the other WebSocket subscriptions.
+
+A `logs` event's `data` field contains a single log entry:
+
+```json
+{
+  "address": "klv1contract...",
+  "caller": "klv1caller...",
+  "contractId": 0,
+  "status": "success",
+  "resultCode": "Ok",
+  "timestamp": 1234567890,
+  "events": [
+    {
+      "address": "klv1contract...",
+      "identifier": "transfer",
+      "topics": ["746f706963", "..."],
+      "data": ["646174", "..."],
+      "order": 0
+    }
+  ]
+}
+```
+
+| Field | Description |
+| --- | --- |
+| `contractId` | Index of the log-producing contract within the transaction's `Contracts` list. Almost always `0`, since most transactions carry exactly one contract — it is not a contract identifier. |
+| `address` / `caller` | Bech32-encoded contract and caller addresses. `caller` mirrors the producing transaction's sender and is omitted when the transaction can't be matched to the block. |
+| `status` / `resultCode` | Mirror the producing transaction's status/result code, so you can tell a log emitted by a reverted or failed transaction apart from one whose effects actually committed — a transaction can still emit logs on its error path. |
+| `events` | The individual event entries for this log, each with `identifier` and hex-encoded `topics`/`data`, matching the shape used by the Elasticsearch `logs` index. |
+| `isSystemLog` | `true` for events generated internally by the node (e.g. an internal VM error) rather than by contract code, so you can filter node-internal noise out of a live feed. Defaults to `false`/omitted for ordinary contract-emitted events. |
+
+An entry is delivered to every address it is relevant to: the invoked contract (or the deployer, for a deploy) plus each event's own address. So a subscriber to a nested call's inner contract, or to a just-deployed contract, receives those events too. For node-generated system logs the event address can also be a wallet (for example the caller of a failed call or deploy), so a wallet subscribed to `logs` receives its own failed calls and deploys.
+
+The push envelope's `hash` is the hash of the transaction that produced the log, and its `address` is the address your subscription matched — which is not necessarily the `address` inside `data`.
+
+**Known limitations:**
+
+- Filtering is by address only — there's no per-event-identifier or per-topic filtering yet. A subscriber receives every log entry for a watched address.
+- No historical replay/backfill — like every other subscription type, `logs` only delivers events produced after you subscribe.
