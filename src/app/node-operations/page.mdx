@@ -179,6 +179,26 @@ curl -k https://backup.testnet.klever.org/config.testnet.109.tar.gz \
     | tar -xz -C ./node
 ```
 
+### Set the `/log` credentials
+
+The config package ships the `/log` route secured with Basic Auth (`secured: true` in `config/api.yaml`), and its `credentials` entries are placeholders. Until you replace them, every request to `/log` is refused. The rest of the node runs normally.
+
+If you want to read the live log stream over the API, set your own credentials. The `password` field holds the hex sha256 digest of the password, not the password itself:
+
+```bash
+printf '%s' 'your-password' | sha256sum | cut -d' ' -f1
+```
+
+Then edit `./node/config/api.yaml`:
+
+```yaml
+credentials:
+  - username: <operator>
+    password: <hex sha256 digest from the command above>
+```
+
+If you don't need `/log`, leave the placeholders as they are, or set `open: false` on the route to remove it. See [Securing the Node API](/node-operations/securing-the-api#credentials) for details.
+
 ### Create your validator BLS Key
 
 Execute a command inside the docker container to create wallets for validators. The data is then forwarded to the directory created previously.
@@ -203,7 +223,7 @@ docker run -it --rm \
     --network=host \
     --entrypoint=/usr/local/bin/validator \
     kleverapp/klever-go:latest \
-    '--log-save' '--rest-api-interface=0.0.0.0:8080'
+    '--log-save'
 ```
 
 The table below shows what each part of the command is supposed to do.
@@ -227,6 +247,18 @@ When you are done setting up and running your node, you are expected to see info
 ![](/img3.png)
 *A node running, showing how many blocks were proposed and accepted, current blocks, slots and connected nodes, last generated hash, computational information, epoch and network processes and a basic log info segment.*
 
+### Keep the node API private
+
+With the commands on this page, the REST and WebSocket API binds to its default, `localhost:8080`. Because the container uses `--network=host`, that is the host's loopback interface: tools on the same machine (`curl localhost:8080/node/status`, the operator CLI) work, and the API is not reachable from the internet.
+
+The node performs no access control of its own. Do not add `--rest-api-interface=0.0.0.0:8080` (or `:8080`) to make the API public: that publishes `/subscribe` and every other open route to anyone who can reach the port. If you need the API off-host, for example for an indexer's WebSocket feed:
+
+- keep the node bound to `localhost:8080`;
+- put a reverse proxy in front that terminates TLS and requires authentication;
+- firewall port `8080` so only the proxy can reach it.
+
+[Securing the Node API](/node-operations/securing-the-api) has the full configuration and a checklist.
+
 ### Run node in the background the first time
 
 When running in the background, add parameter `--use-log-view` and replace `--rm` for `-d`
@@ -240,7 +272,7 @@ docker run -it -d --restart unless-stopped \
     --network=host \
     --entrypoint=/usr/local/bin/validator \
     kleverapp/klever-go:latest \
-    '--log-save' '--use-log-view' '--rest-api-interface=0.0.0.0:8080'
+    '--log-save' '--use-log-view'
 ```
 
 If you are running your node in the background, you can either verify logs in `./node/logs` folder or use the docker command:
@@ -315,13 +347,13 @@ The command for running a node comes with a few settings: it includes mappings f
 ```bash
 docker run -it --rm \
     --name klever-node \
-    -v $(pwd)/node/confgi:/opt/klever-blockchain/config/node \
+    -v $(pwd)/node/config:/opt/klever-blockchain/config/node \
     -v $(pwd)/node/db:/opt/klever-blockchain/db \
     -v $(pwd)/node/logs:/opt/klever-blockchain/logs \
     --network=host \
     --entrypoint=/usr/local/bin/validator \
     kleverapp/klever-go-testnet:latest \
-    '--log-save' '--rest-api-interface=0.0.0.0:8080'
+    '--log-save'
 ```
 When you are done setting up and running your node, you are expected to see information about your node, the blockchain itself, as well as data from your own computer, just like the example below:
 
@@ -531,6 +563,8 @@ Then you can recreate the node with a new image. Don't forget to delete  the con
 docker rm klever-node
 ```
 
+When the release notes say the config package changed, download the new package as in "Network genesis config" under [How To Run A Node](/node-operations#how-to-run-a-node) before you recreate the container. A new image with an old config package can leave security settings behind, such as authentication on `/log`. Re-apply your own changes to `api.yaml` (credentials) and `config.yaml` (for example `redundancyLevel`) after extracting it.
+
 ## How to Set Up Your Own Indexer
 
 A Indexer is a specialized node that connects to Elasticsearch to store and organize blockchain data in a searchable format. This allows for efficient querying and retrieval of blockchain information such as transactions, blocks, accounts, and other network data. Additionally, once you have an indexer running, you can enable WebSocket subscriptions for real-time blockchain data monitoring.
@@ -671,8 +705,11 @@ This confirms that your node is now acting as an indexer.
 #### 5. WebSocket Endpoint
 Once the indexer is running, your node will expose a WebSocket endpoint for real-time data:
 ```
-ws://your-node-ip:8080/subscribe
+ws://localhost:8080/subscribe
 ```
+
+The API binds to `localhost` by default, so this endpoint is reachable only from the node host. To serve it to other machines, put a reverse proxy with TLS and authentication in front of it rather than binding the node to all interfaces; see "Keep the node API private" under [How To Run A Node](/node-operations#how-to-run-a-node).
+
 ### Important Notes
 
 **Production Considerations:**
@@ -744,7 +781,7 @@ docker run -it --rm \
     --network=host \
     --entrypoint=/usr/local/bin/validator \
     kleverapp/klever-go:latest \
-    '--log-save' '--rest-api-interface=0.0.0.0:8080'
+    '--log-save'
 ```
 
 ### Monitoring Redundancy Status
