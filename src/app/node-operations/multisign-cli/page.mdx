@@ -1,0 +1,364 @@
+export const metadata = {title: 'Signing Multisig Transactions from the CLI', description: 'Create, sign, and broadcast multisignature transactions with the operator ms commands and the Klever Multisign API.'}
+
+# Signing Multisig Transactions from the CLI
+
+A multisig account needs signatures from several keys before a transaction is valid. The
+`operator ms` commands let each cosigner do their part from the command line:
+
+- one cosigner creates the transaction and posts it to the **Klever Multisign API**, a service that
+  holds it while signatures are collected;
+- each remaining cosigner signs it from their own machine with `operator ms sign`;
+- once the threshold is reached, anyone broadcasts it to the network.
+
+No private key ever leaves the cosigner's machine. The API only receives the transaction and the
+signatures.
+
+To set up the multisig account itself, see [Account Permissions](/account-permissions) and
+[`operator account permission`](/node-operations#operator-account-permission). To sign from a
+browser instead, see [Multisignature](/multisignature).
+
+## Before you start
+
+- **Operator version.** `operator ms sign` ships in **v1.7.20** and later. Check yours with
+  `operator --version`. The other `ms` commands are older.
+- **One key per cosigner.** Each cosigner runs the commands with their own PEM file
+  (`--key-file`, default `./walletKey.pem`). See [How To Run A Node](/node-operations#how-to-run-a-node)
+  for creating a wallet.
+- **A permission that lists the cosigners.** The transaction must use a permission whose signers and
+  threshold match the cosigners you expect. You pass its ID with `--permID` when you create the
+  transaction.
+- **The right network.** The commands default to mainnet. For testnet, pass both flags below on
+  every command:
+
+| Network | `--node` | `--multisign-api` |
+|---|---|---|
+| Mainnet | `https://node.mainnet.klever.org` | `https://multisign.mainnet.klever.org` (default) |
+| Testnet | `https://node.testnet.klever.org` | `https://multisign.testnet.klever.org` |
+
+<Note>
+**Operator v1.7.21 and earlier: `ms sign` only works for the sender's own key.** These versions post
+the signature under the address of the account that sends the transaction instead of the cosigner
+who signed it, so for any other cosigner the API answers
+`address has already signed this transaction` and the signature is not recorded. This is fixed for
+releases after v1.7.21. Until you run one, a workaround that stays in the CLI is to let another
+cosigner create and append the transaction (steps 1 and 2 below), and have the **sending account's
+own key** sign last with `ms sign`. This needs that key to be one of the permission's signers.
+</Note>
+
+### Running the operator from Docker
+
+The examples call `operator` directly. With the Docker image, define an alias once per shell and the
+examples work unchanged:
+
+```bash
+alias operator='docker run --rm -i -v "$(pwd)/wallet:/opt/klever-blockchain" --network=host --entrypoint=/usr/local/bin/operator kleverapp/klever-go:latest'
+```
+
+Use `-i` and **not** `-it`. With a TTY attached, the log lines and terminal colors are mixed into
+the output, and the transaction JSON you redirect to a file in step 1 is no longer valid JSON. The
+confirmation prompts still work with `-i`.
+
+## The workflow at a glance
+
+| Step | Who | Command |
+|---|---|---|
+| 1. Create and sign the transaction, without broadcasting it | Any cosigner | `operator account send ... -c --permID=N` (or any other transaction command with `-c`) |
+| 2. Post it to the Multisign API | The same cosigner | `operator ms append` |
+| 3. Find it | Other cosigners | `operator ms sign` (interactive), `ms by-address`, or `ms by-hash` |
+| 4. Sign it | Each other cosigner | `operator ms sign <txHash>` |
+| 5. Broadcast it | Anyone, once the threshold is reached | `operator ms broadcast <txHash>` |
+
+## Walkthrough: a 2-of-2 transfer on testnet
+
+This walkthrough was run end to end on testnet. Two cosigners, Alice and Bob, control a multisig
+account. Alice's key is the account's own key; Bob is the second signer. The account has a
+permission with ID `1` that allows transfers and needs both signatures (threshold 2, weight 1
+each).
+
+Set the testnet endpoints once in each cosigner's shell:
+
+```bash
+NODE=https://node.testnet.klever.org
+MS_API=https://multisign.testnet.klever.org
+```
+
+### 0. Create the permission (once)
+
+Alice, as the account owner, adds permission `1`. This example keeps Alice as the single signer of
+the Owner permission and adds a 2-of-2 User permission for transfers (operations `01`, bit 0 =
+Transfer):
+
+```bash
+operator account permission --node=$NODE \
+  --perm='{"type":0,"permissionName":"owner","threshold":1,"signers":[{"address":"<ALICE_ADDRESS>","weight":1}]}' \
+  --perm='{"type":1,"permissionName":"2of2 transfers","threshold":2,"operations":"01","signers":[{"address":"<ALICE_ADDRESS>","weight":1},{"address":"<BOB_ADDRESS>","weight":1}]}'
+```
+
+Updating permissions is itself a transaction with a fee, so the account needs a balance first. On
+testnet, request KLV from the faucet in the [Testnet Explorer](https://testnet.kleverscan.org/).
+
+### 1. Alice creates the transaction
+
+`-c` (`--create-only`) builds and signs the transaction with Alice's key and prints it as JSON
+instead of broadcasting it. `--permID=1` makes it use the 2-of-2 permission. The amount is in KLV:
+
+```bash
+operator account send <BOB_ADDRESS> 1 -c -s --permID=1 --node=$NODE > tx.json
+```
+
+`-s` skips the confirmation prompt. It is needed here because the prompt is printed to the same
+output you redirect to `tx.json`. To review the transaction first, run the command once without `-s`
+and without the redirect, answer `no`, then run it again as above.
+
+`tx.json` holds the raw transaction with Alice's signature:
+
+```json
+{
+    "RawData": {
+        "Nonce": 1,
+        "Sender": "Xkqo77NSTBBQuZuLYOf53upxfcDvwt3iqpcmLcvoaLU=",
+        "Contract": [ ... ],
+        "PermissionID": 1,
+        ...
+    },
+    "Signature": [
+         "D+QyL8dHB1csoRv1uQEMuNTuQ39oQv/L0VbmxMTrsBpSWC1Jdf+wMfTrrwzHR7syZ/W2Rn/fsJS52+/eznHHCw=="
+    ]
+}
+```
+
+### 2. Alice posts it to the Multisign API
+
+```bash
+operator ms append "$(cat tx.json)" --multisign-api=$MS_API
+```
+
+```
+INFO   posting signature...
+INFO   successful posted signature   txHash = 55018659e6854b8ab50b543e6d5b3d9974cadfae6b37d098fd8da87ee0f14df4 address = klv1te92...
+```
+
+Alice sends the `txHash` to Bob. The API now shows the transaction with 1 of 2 signatures.
+
+### 3. Bob finds the transaction
+
+With no argument, `ms sign` lists the pending transactions where Bob's address is a signer:
+
+```bash
+operator ms sign --multisign-api=$MS_API --node=$NODE
+```
+
+```
++---+------------------------------------------------------------------+-------------------+------------------+---------+--------+--------+
+| # | hash                                                             | address           | type             | signers | weight | signed |
++---+------------------------------------------------------------------+-------------------+------------------+---------+--------+--------+
+| 0 | 55018659e6854b8ab50b543e6d5b3d9974cadfae6b37d098fd8da87ee0f14df4 | klv1te92...       | TransferContract | 1/2     | 1/2    | false  |
++---+------------------------------------------------------------------+-------------------+------------------+---------+--------+--------+
+
+ Page 1/1 [0-0]: Select Transaction, [q]uit
+ Input:
+```
+
+The columns are the transaction hash, the sending account, the contract type, how many listed
+signers have signed, the signed weight against the threshold, and whether **you** have signed. The
+list shows three transactions per page; type `n` and `p` to move between pages and `q` to quit
+without signing.
+
+### 4. Bob signs
+
+Bob types the row number, or signs by hash directly:
+
+```bash
+operator ms sign 55018659e6854b8ab50b543e6d5b3d9974cadfae6b37d098fd8da87ee0f14df4 --multisign-api=$MS_API --node=$NODE
+```
+
+Either way, the operator prints the decoded transaction and asks for confirmation:
+
+```
+Requested Transaction Details:
+{
+    "hash": "55018659e6854b8ab50b543e6d5b3d9974cadfae6b37d098fd8da87ee0f14df4",
+    "sender": "klv1te92...",
+    "permissionID": 1,
+    "contract": [
+        {
+            "typeString": "TransferContractType",
+            "parameter": {
+                "assetId": "KLV",
+                "toAddress": "klv10ktp...",
+                "amount": 1000000
+            }
+        }
+    ],
+    ...
+}
+Please carefully review the transaction above.
+Would you like to sign this transaction? (yes/no)
+```
+
+Check the sender, the receiver, the asset, and the amount (in the asset's smallest unit: `1000000`
+is 1 KLV) before answering `yes`. The operator signs locally, posts the signature, and logs
+`successful posted signature` with Bob's address.
+
+Bob is not the sending account, so on operator v1.7.21 and earlier this step fails; see the note in
+[Before you start](#before-you-start).
+
+### 5. Anyone broadcasts
+
+When the signed weight reaches the threshold, any cosigner can ask the API to broadcast:
+
+```bash
+operator ms broadcast 55018659e6854b8ab50b543e6d5b3d9974cadfae6b37d098fd8da87ee0f14df4 --multisign-api=$MS_API
+```
+
+```
+INFO   successful added   txHash = 55018659e6854b8ab50b543e6d5b3d9974cadfae6b37d098fd8da87ee0f14df4
+```
+
+Confirm it landed with [`operator tx-by-id`](/node-operations#operator-tx-by-id) or on the
+[Testnet Explorer](https://testnet.kleverscan.org/). Broadcasting before the threshold is reached
+fails with `transaction is not fully signed yet`.
+
+## operator ms sign
+
+Signs a pending transaction from the Multisign API with your key and posts the signature back.
+
+```
+operator ms sign [txHash] [flags]
+```
+
+It has two modes:
+
+| Mode | Invocation | What it does |
+|---|---|---|
+| By hash | `operator ms sign <txHash>` | Fetches that transaction from the API, checks its hash, asks for confirmation, signs, and posts the signature. |
+| Interactive | `operator ms sign` | Lists the pending transactions for your address, lets you pick one, asks for confirmation, signs, and posts the signature. |
+
+The hash can be given with or without the `0x` prefix.
+
+**The hash check.** In by-hash mode the operator recomputes the hash of the transaction the API
+returned and refuses to sign if it differs from the hash you typed
+(`transaction hash mismatch: expected …, got …`). A tampered or wrong API response cannot get you
+to sign a different transaction than the one you were told about. Interactive mode has no hash to
+compare against, which is one more reason to read the decoded transaction before you answer `yes`.
+
+**Skipping the confirmation.** The global `-s` / `--sign` flag skips the prompt in by-hash mode, for
+scripted cosigners:
+
+```bash
+operator ms sign <txHash> -s --multisign-api=$MS_API
+```
+
+Interactive mode ignores `-s` and always asks. There is no `--yes` / `-y` flag.
+
+**What it checks before signing:**
+
+- your address is one of the transaction's listed signers, otherwise it stops with
+  `signer … is not required to sign transaction …`;
+- you have not signed yet, otherwise it prints
+  `Transaction … has already been signed by …` and exits without error.
+
+## Other ms commands
+
+All `ms` commands share the `--multisign-api` flag and the [global operator flags](/node-operations#operator).
+
+### operator ms append
+
+```
+operator ms append [Transaction JSON]
+```
+
+Posts a transaction to the Multisign API so cosigners can find it. Pass the JSON printed by a
+transaction command run with `-c`. The API records the signatures already on it, so the creator
+counts as the first signer.
+
+### operator ms broadcast
+
+```
+operator ms broadcast [txHash]
+```
+
+Asks the API to broadcast a fully signed transaction to the network.
+
+### operator ms by-hash
+
+```
+operator ms by-hash [txHash]
+```
+
+Prints one transaction from the API as JSON: its hash, sending account, signers (address, weight,
+whether they signed), threshold, and the raw transaction.
+
+### operator ms by-address
+
+```
+operator ms by-address [Address]
+```
+
+Prints, as JSON, the pending transactions the API holds where that address is the sender or a
+signer. Transactions leave the list after they are broadcast.
+
+### operator ms decode
+
+```
+operator ms decode [Transaction JSON]
+```
+
+Prints a raw transaction in readable form (sender, contracts and their parameters, permission,
+fees), the same view the confirmation prompt shows. Useful to review a transaction someone sent you
+as JSON.
+
+### operator ms encode
+
+```
+operator ms encode [Transaction JSON]
+```
+
+Prints the payload `ms append` would post: the transaction hash, the sending account, and the raw
+transaction. Use it to get the hash before posting.
+
+## Flags
+
+| Flag | Default | Applies to | Meaning |
+|---|---|---|---|
+| `--multisign-api` | `https://multisign.mainnet.klever.org` | all `ms` commands | Multisign API to use. Set it to the testnet URL on testnet. |
+| `-k`, `--key-file` | `./walletKey.pem` | all | Your PEM key. Its address is the signer. |
+| `-n`, `--node` | `http://localhost:8080` | creating transactions | Node API used to build the transaction and read the account nonce. |
+| `-s`, `--sign` | off | `ms sign` by hash, `-c` creation | Sign without the confirmation prompt. Ignored by interactive `ms sign`. |
+| `-c`, `--create-only` | off | transaction commands | Build and sign the transaction, print it as JSON, and do not broadcast it. |
+| `--permID` | `0` | transaction commands | Permission the transaction uses. Must be the multisig permission. |
+| `-p`, `--password` / `--password-file` | none | all | Password of an encrypted PEM file. |
+
+## Troubleshooting
+
+| Message | Cause | What to do |
+|---|---|---|
+| `Transaction … has already been signed by …` | Your key already signed it. | Nothing. Wait for the other cosigners or broadcast once the threshold is met. |
+| `signer … is not required to sign transaction …` | Your address is not a signer of the transaction's permission. | Check `--key-file` and that the transaction uses the right `--permID`. |
+| `invalid TX hash length: N` / `invalid TX hash …` | The hash is not 64 hexadecimal characters. | Copy the full hash; a `0x` prefix is fine. |
+| `transaction hash mismatch: expected …, got …` | The API returned a transaction whose hash differs from the one you gave. | Do not sign. Confirm the hash with whoever created the transaction and check `--multisign-api`. |
+| `unexpected HTTP status 404 Not Found` on `GET …/transaction/<hash>` | The API does not know this hash. | Check the hash and that `--multisign-api` points to the network the transaction was posted on. |
+| `no transactions found for signing` | Interactive mode found nothing pending for your address. | Check `--key-file`, `--multisign-api`, and that the transaction was appended. |
+| `address has already signed this transaction` (HTTP 400 on `POST /transaction`) | On v1.7.21 and earlier, a cosigner other than the sender used `ms sign`. See the note in [Before you start](#before-you-start). | Upgrade the operator, or use the workaround in that note. |
+| `transaction is not fully signed yet` | `ms broadcast` ran before the threshold was reached. | Wait for more signatures; `ms by-hash` shows who has signed. |
+| `transaction signing has been canceled by the user` | You answered anything other than yes at the prompt. | Run the command again if you meant to sign. |
+| `connection refused` / `no such host` | The Multisign API or node is unreachable. | Check the URL, your network, and that you are not mixing mainnet and testnet endpoints. |
+
+## Security notes
+
+- **Read before you sign.** The confirmation prompt is your last check. Verify the sender, the
+  receiver, the asset, the amount, and the permission ID. Only use `-s` for cosigners whose
+  transactions come from a source you control.
+- **Prefer signing by hash.** Get the hash from the creator through a channel other than the
+  Multisign API; the by-hash check then guarantees you sign that exact transaction.
+- **Protect your key file.** The PEM file is the signing key. Keep it encrypted (`--password` or
+  `--password-file`), readable only by you, and off shared machines. Only signatures are sent to the
+  API, never the key.
+- **Try it on testnet first.** Run the walkthrough on testnet with throwaway keys before using a
+  mainnet multisig account.
+
+## Related
+
+- [Multisignature](/multisignature) — how multisig works and how to sign from KleverScan
+- [Account Permissions](/account-permissions) — permissions, thresholds, and weights
+- [Node Operations](/node-operations) — the full operator CLI reference
