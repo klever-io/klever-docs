@@ -17,10 +17,9 @@ To address these concerns, Klever implemented the following changes:
 1. **Configurable Allocators**: Developers can now configure allocators from the `multicontract.toml` file, which serves as the main source of contract build specifications. This provides flexibility and choice to developers.
 
 2. **New Allocators**: Klever introduced new allocators in the framework, offering alternatives to `wee_alloc`. These allocators are:
-
    - `FailAllocator` (Default): This allocator simply crashes whenever any memory allocation or deallocation is attempted. It effectively prevents accidental memory allocation and enforces strict memory management.
 
-   - `StaticAllocator64k`: This allocator pre-allocates a static 2-page buffer where all memory is allocated. It never calls memory.grow and crashes when the buffer is full. This allocator may be suitable for small contracts with limited data processing needs, aiming to avoid the complexities of memory growth.
+   - `StaticAllocator64k`: This allocator pre-allocates a static 64 KiB buffer where all memory is allocated. It never calls memory.grow and crashes when the buffer is full. This allocator may be suitable for small contracts with limited data processing needs, aiming to avoid the complexities of memory growth.
 
    - `LeakingAllocator`: This allocator uses memory.grow to obtain memory pages and, like the others, never deallocates memory. This is because contracts typically do not consume excessive memory, and all memory is cleared at the end of execution. It is suitable for contracts with slightly larger data requirements.
 
@@ -29,3 +28,41 @@ To address these concerns, Klever implemented the following changes:
 |                                                                                                                                                                                                                                         |
 | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 🚨 While these allocators are functional, they should be avoided in most contract scenarios. Consider using them only when absolutely necessary, in highly specialized situations, or when dealing with older code that relies on them. |
+
+## VM Memory Limits
+
+The Klever VM limits how much linear memory a contract can declare and how often it can grow it. Wasm memory is counted in pages of 64 KiB. Three separate limits apply:
+
+| Limit                                  | Current value       | Where it comes from                                      | What happens when it is exceeded                                                                |
+| -------------------------------------- | ------------------- | -------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| `memory.grow` calls in one call        | 10                  | Gas schedule, `WASMOpcodeCost.MaxMemoryGrow`             | The call fails with `VMExecutionFailed` ("memory limit reached") and **keeps its full gas fee** |
+| Pages requested by one `memory.grow`   | 1                   | Gas schedule, `WASMOpcodeCost.MaxMemoryGrowDelta`        | The call fails with `VMExecutionFailed` ("memory limit reached") and **keeps its full gas fee** |
+| Memory declared by the contract module | 20 pages (1.25 MiB) | Constant in the VM executor (`MAX_MEMORY_PAGES_ALLOWED`) | The deploy fails: the VM rejects the code as invalid contract code                              |
+
+Each successful `memory.grow` also costs gas: currently 1,000,000 (`WASMOpcodeCost.MemoryGrow`).
+
+### Exceeding the grow limits fails the call
+
+The Wasm specification says that `memory.grow` returns `-1` when it cannot grow memory. On Klever this is **not** what happens when a contract exceeds `MaxMemoryGrow` or `MaxMemoryGrowDelta`. The VM stops the contract with a memory-limit breakpoint, and the transaction fails with result code `VMExecutionFailed` and the internal VM error `memory limit reached`. The fee paid for the call's gas limit is not returned, and the contract cannot catch the failure and recover. The 11th grow fails even if the first ten succeeded, and so does a single `memory.grow(2)`.
+
+The fee estimator (`/transaction/estimate-fee`, used by wallets and `operator` before sending) runs the call first and rejects it with `VMExecutionFailed`, so an over-limit call normally fails before it is broadcast. If it is broadcast anyway, it fails on-chain as described above.
+
+`memory.grow` still returns `-1` in one case: when the grow stays within the Klever limits but goes past the maximum that the module itself declares. The call does not fail; what the contract does next depends on its allocator.
+
+### What the 20-page limit covers
+
+The 20-page limit is checked against the memory section of the compiled `.wasm`: the declared maximum, or the declared initial size when the module declares no maximum. A module over the limit cannot be deployed: the fee estimator rejects it as `ContractInvalid` (invalid contract code), and a deploy broadcast anyway fails on-chain with the same internal error.
+
+The limit does not cap memory after later `memory.grow` calls. A module that declares 20 pages and no maximum can grow 10 times and reach 30 pages (1.875 MiB) in one call.
+
+To see what your contract declares, inspect the memory section of the build output, for example with [wabt](https://github.com/WebAssembly/wabt):
+
+```bash
+wasm-objdump -x output/<contract>.wasm | grep -A1 "Memory\["
+```
+
+### Read the live values, do not hard-code them
+
+`MaxMemoryGrow`, `MaxMemoryGrowDelta` and `MemoryGrow` are gas schedule values. The gas schedule is selected per epoch by the `gasScheduleByEpochs` entry in the node's `enableEpochs.yaml`, which ships with each release, so a release can change them; mainnet currently uses [`gasScheduleV1.yaml`](https://github.com/klever-io/klever-go/blob/develop/config/node/gasScheduleV1.yaml). The 20-page limit is fixed in the VM executor and changes only with a new executor version. None of these limits can be changed by a governance proposal.
+
+Do not build contract logic around the numbers above. Check the gas schedule for the release you deploy on, and design contracts to stay well under the limits, ideally with managed types and no heap allocation at all (see [Dynamic Allocation](/smart-contracts/best-practices/dynamic-allocation)).

@@ -4,9 +4,9 @@
 | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 🚨 If you need to transition existing code to leverage managed types, it's crucial to understand the necessary changes. This update is essential and cannot be automated. |
 
-|                                                                                                                                                                                                                 |
-| --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 🚨**Smart contracts must avoid dynamic allocation**. Dynamic allocation incurs a performance penalty, and the Klever Virtual Machine imposes hard limits, stopping contracts that attempt excessive allocation. |
+|                                                                                                                                                                                                                                                                                                                 |
+| --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 🚨**Smart contracts must avoid dynamic allocation**. Dynamic allocation incurs a performance penalty, and the Klever Virtual Machine imposes hard limits, stopping contracts that attempt excessive allocation. See [VM Memory Limits](/smart-contracts/config-and-tooling/memory-allocation#vm-memory-limits). |
 
 To ensure the efficiency of your contract, consider these guidelines. By adhering to them, you can significantly reduce gas consumption when your contract is called. Additionally, the resulting WASM binary from compilation may become smaller, resulting in faster and cheaper overall execution.
 
@@ -43,6 +43,7 @@ Below is a comparison table of unmanaged types (basic Rust types) and their mana
 |            -            |                 -                 |              `KdaTokenPayment`               |
 
 [^1]: `ArrayVec` allocates on the stack, so it has a fixed capacity and cannot grow indefinitely. Be cautious when setting its size to avoid panics; use `try_push` for error handling.
+
 [^2]: Be mindful when passing arrays, as they are copied when returned from functions, potentially leading to expensive memory copies in your contract.
 
 In most cases, managed types can replace their unmanaged counterparts seamlessly. Refer to the [BigUint Operations](#biguint-operations) example for a simple illustration.
