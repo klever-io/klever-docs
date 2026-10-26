@@ -27,8 +27,10 @@ browser instead, see [Multisignature](/multisignature).
 - **A permission that lists the cosigners.** The transaction must use a permission whose signers and
   threshold match the cosigners you expect. You pass its ID with `--permID` when you create the
   transaction.
-- **The right network.** The commands default to mainnet. For testnet, pass both flags below on
-  every command:
+- **The right network.** The `ms` commands use the mainnet Multisign API unless you pass
+  `--multisign-api`. `--node` has no network default (it points to `http://localhost:8080`), so
+  every command that builds a transaction, such as `account permission` or `account send`, must
+  pass it. Use the pair for your network:
 
 | Network | `--node` | `--multisign-api` |
 |---|---|---|
@@ -36,13 +38,15 @@ browser instead, see [Multisignature](/multisignature).
 | Testnet | `https://node.testnet.klever.org` | `https://multisign.testnet.klever.org` |
 
 <Note>
-**Operator v1.7.21 and earlier: `ms sign` only works for the sender's own key.** These versions post
-the signature under the address of the account that sends the transaction instead of the cosigner
-who signed it, so for any other cosigner the API answers
-`address has already signed this transaction` and the signature is not recorded. This is fixed for
-releases after v1.7.21. Until you run one, a workaround that stays in the CLI is to let another
-cosigner create and append the transaction (steps 1 and 2 below), and have the **sending account's
-own key** sign last with `ms sign`. This needs that key to be one of the permission's signers.
+**Today `ms sign` only works for the sender's own key.** The operator (through at least v1.7.22)
+posts each signature with the address of the account that sends the transaction, and the
+Multisign API currently uses that address to decide who signed. Once the sender's key has signed,
+any other cosigner gets `address has already signed this transaction` and the signature is not
+recorded. Upgrading the operator does not change this; it goes away when the Multisign API is
+updated to identify signers from the signatures themselves. Until then, a workaround that stays in
+the CLI is to let another cosigner create and append the transaction (steps 1 and 2 below), and
+have the **sending account's own key** sign last with `ms sign`. This needs that key to be one of
+the permission's signers.
 </Note>
 
 ### Running the operator from Docker
@@ -200,8 +204,8 @@ Check the sender, the receiver, the asset, and the amount (in the asset's smalle
 is 1 KLV) before answering `yes`. The operator signs locally, posts the signature, and logs
 `successful posted signature` with Bob's address.
 
-Bob is not the sending account, so on operator v1.7.21 and earlier this step fails; see the note in
-[Before you start](#before-you-start).
+Bob is not the sending account, so this step fails until the Multisign API update described in the
+note in [Before you start](#before-you-start) is deployed.
 
 ### 5. Anyone broadcasts
 
@@ -234,7 +238,9 @@ It has two modes:
 | By hash | `operator ms sign <txHash>` | Fetches that transaction from the API, checks its hash, asks for confirmation, signs, and posts the signature. |
 | Interactive | `operator ms sign` | Lists the pending transactions for your address, lets you pick one, asks for confirmation, signs, and posts the signature. |
 
-The hash can be given with or without the `0x` prefix.
+The hash can be given with or without the `0x` prefix, but the hex must be lower-case: the
+operator compares it with the lower-case hash it computes, so an upper-case hash fails the check
+below.
 
 **The hash check.** In by-hash mode the operator recomputes the hash of the transaction the API
 returned and refuses to sign if it differs from the hash you typed
@@ -295,8 +301,10 @@ whether they signed), threshold, and the raw transaction.
 operator ms by-address [Address]
 ```
 
-Prints, as JSON, the pending transactions the API holds where that address is the sender or a
-signer. Transactions leave the list after they are broadcast.
+Prints, as JSON, the pending transactions the API holds where that address is one of the
+permission's signers. A sending account that is not itself a signer does not find its transactions
+this way; use `ms by-hash`. A broadcast transaction stays in the list until it is confirmed and the
+account nonce moves past it.
 
 ### operator ms decode
 
@@ -335,11 +343,11 @@ transaction. Use it to get the hash before posting.
 |---|---|---|
 | `Transaction … has already been signed by …` | Your key already signed it. | Nothing. Wait for the other cosigners or broadcast once the threshold is met. |
 | `signer … is not required to sign transaction …` | Your address is not a signer of the transaction's permission. | Check `--key-file` and that the transaction uses the right `--permID`. |
-| `invalid TX hash length: N` / `invalid TX hash …` | The hash is not 64 hexadecimal characters. | Copy the full hash; a `0x` prefix is fine. |
+| `invalid TX hash length: N` / `invalid TX hash …` | The hash is not 64 hexadecimal characters. | Copy the full hash in lower-case hex; a `0x` prefix is fine. |
 | `transaction hash mismatch: expected …, got …` | The API returned a transaction whose hash differs from the one you gave. | Do not sign. Confirm the hash with whoever created the transaction and check `--multisign-api`. |
 | `unexpected HTTP status 404 Not Found` on `GET …/transaction/<hash>` | The API does not know this hash. | Check the hash and that `--multisign-api` points to the network the transaction was posted on. |
 | `no transactions found for signing` | Interactive mode found nothing pending for your address. | Check `--key-file`, `--multisign-api`, and that the transaction was appended. |
-| `address has already signed this transaction` (HTTP 400 on `POST /transaction`) | On v1.7.21 and earlier, a cosigner other than the sender used `ms sign`. See the note in [Before you start](#before-you-start). | Upgrade the operator, or use the workaround in that note. |
+| `address has already signed this transaction` (HTTP 400 on `POST /transaction`) | A cosigner other than the sender used `ms sign` after the sender's key signed. See the note in [Before you start](#before-you-start). | Use the workaround in that note: the sending account's key signs last. Upgrading the operator does not help. |
 | `transaction is not fully signed yet` | `ms broadcast` ran before the threshold was reached. | Wait for more signatures; `ms by-hash` shows who has signed. |
 | `transaction signing has been canceled by the user` | You answered anything other than yes at the prompt. | Run the command again if you meant to sign. |
 | `connection refused` / `no such host` | The Multisign API or node is unreachable. | Check the URL, your network, and that you are not mixing mainnet and testnet endpoints. |
