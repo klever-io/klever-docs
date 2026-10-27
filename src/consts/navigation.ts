@@ -209,6 +209,7 @@ export const navigation: Array<NavGroup> = [
         href: '/node-operations',
         children: [
           { title: 'Securing the Node API', href: '/securing-the-api' },
+          { title: 'Multisig Signing from the CLI', href: '/multisign-cli' },
         ],
       },
       {
