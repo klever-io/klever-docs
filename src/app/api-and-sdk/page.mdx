@@ -184,12 +184,12 @@ The Multisig API stores a transaction while its cosigners collect signatures. It
     **Do not sign the transaction hash itself.** The cosignatures stored on a pending transaction are signatures over its hash, and anyone can read them with `GET /transaction/{hash}`. The API accepts only a signature over the delete message above, so a cosignature can never be used to delete a transaction.
 </Note>
 
-Example in Go. A Klever private key is the 32-byte ed25519 seed (what a PEM file holds and what the Go SDK's `PrivateKey()` returns); `ed25519.Sign` needs the expanded key, so derive it with `ed25519.NewKeyFromSeed` first:
+Example in Go. A Klever private key is the 32-byte ed25519 seed. A Klever PEM file holds 64 bytes, the seed followed by the public key, so the seed is its first 32 bytes; the Go SDK's `PrivateKey()` already returns the seed. `ed25519.Sign` needs the expanded key, so derive it with `ed25519.NewKeyFromSeed` first:
 
 ```go
 txHash, _ := hex.DecodeString(hashHex) // 32 bytes
 msg := blake2b.Sum256(append([]byte("klever-multisign:delete:"), txHash...))
-key := ed25519.NewKeyFromSeed(seed) // seed: the 32-byte Klever private key
+key := ed25519.NewKeyFromSeed(seed) // seed: 32 bytes (the first 32 of a PEM key)
 signature := hex.EncodeToString(ed25519.Sign(key, msg[:]))
 // DELETE /transaction/{hashHex} with body {"signature": signature}
 ```
