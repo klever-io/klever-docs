@@ -8,7 +8,8 @@
     "build": "pnpm run build:circular && next build",
     "start": "next start",
     "lint": "eslint .",
-    "build:circular": "tsx ./src/scripts/detect-circular-dependency.ts"
+    "build:circular": "tsx ./src/scripts/detect-circular-dependency.ts",
+    "gen:gas-tables": "tsx ./src/scripts/generate-gas-tables.ts"
   },
   "browserslist": "defaults, not ie <= 11",
   "dependencies": {

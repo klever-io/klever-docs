@@ -1,0 +1,1142 @@
+# Gas and Fees
+
+Every call to a smart contract runs on a gas budget. The Klever VM (KVM) charges gas for the code it loads, every WebAssembly instruction it executes, every host function the contract calls and the bytes it reads, copies and stores. This page explains how those charges add up, how gas turns into the KLV fee you pay, and lists the current cost of every operation.
+
+The costs come from the network's **gas schedule**, a configuration file (`gasScheduleV1.yaml`) that ships with each node release. The tables at the end of this page are generated from it.
+
+## How a call is charged
+
+When a transaction calls a contract, the VM charges gas in this order:
+
+1. **Loading the code.** A flat `GetCode` cost plus `AoTPreparePerByte` for every byte of the contract's `.wasm`. This is paid on **every call**, not only on deploy, so a larger contract costs more to call even if the function you call is tiny.
+2. **Executing instructions.** Each WebAssembly instruction that runs pays its cost from `WASMOpcodeCost`.
+3. **Host functions.** Each call into the VM API (reading arguments, storage, big integers, managed buffers, hashing, transfers) pays its own cost, plus per-byte costs for the data it moves.
+4. **Storage.** Reads and writes to the contract's storage pay host function costs that depend on how many bytes are involved.
+
+If the gas runs out at any point, the call stops. See [Running out of gas](#running-out-of-gas).
+
+Deploying or upgrading a contract is charged differently from a call: `CreateContract` plus `CompilePerByte` for every byte of code, instead of `GetCode` and `AoTPreparePerByte`.
+
+### Instructions: linear in what you execute
+
+Gas metering is injected into the contract's WebAssembly when the VM compiles it. Every instruction that executes pays its cost from the `WASMOpcodeCost` section, so pure computation costs gas in proportion to the number of instructions executed, weighted per instruction:
+
+| Kind of instruction                                                            | Typical cost |
+| ------------------------------------------------------------------------------ | ------------ |
+| Control flow, locals, globals, loads, stores, integer add/sub/mul, comparisons | 5            |
+| Integer division and remainder (`i32.div_s`, `i64.rem_u`, …)                   | 18           |
+| Bit counting (`clz`, `ctz`, `popcnt`)                                          | 100          |
+| `memory.grow`                                                                  | 1,000,000    |
+
+A loop that runs 1,000 times costs about 1,000 times the gas of its body. There is no discount for repeated code and no surcharge that grows with the number of iterations.
+
+The schedule lists a cost for every opcode the WebAssembly engine knows, including families a contract cannot use: the VM forbids floating-point operations (see [The Klever VM](/klever-vm#fast-execution-engine)), so those entries are never charged in practice.
+
+### What is not per-instruction
+
+Most of the gas in a real call is not spent on instructions. These charges follow other rules:
+
+- **Code loading.** `GetCode` (1,000,000) plus `AoTPreparePerByte` (100) per byte of code, on every call. A 50 KB contract pays about 6,000,000 gas before its first instruction runs. Code size is a cost on every call: keep `wasm-opt` on (it is by default, see [Build Reference](/smart-contracts/config-and-tooling/build-reference)) and avoid pulling in code the contract does not need.
+- **`memory.grow`.** A flat 1,000,000 per call, whatever the number of pages. The VM also limits how often and how much memory can grow; see [VM Memory Limits](/smart-contracts/config-and-tooling/memory-allocation#vm-memory-limits).
+- **Host functions.** Each one has a fixed cost per call from its API group: `BaseOpsAPICost`, `ManagedBufferAPICost`, `BigIntAPICost`, `BigFloatAPICost`, `ManagedMapAPICost`, `CryptoAPICost`, `EthAPICost`. When the function moves data between the VM and the contract, it also pays `DataCopyPerByte` (50) for each byte.
+- **Storage reads.** Priced by a curve; see the next section.
+- **Storage writes.** The host function cost (`StorageStore`, `MBufferStorageStore`: 75,000) plus a per-byte cost that depends on what the write does:
+  - a new value, or the bytes a value grows by: `StorePerByte` (10,000) per byte;
+  - the bytes of the existing value being overwritten: `PersistPerByte` (1,000) per byte;
+  - writing exactly the value already stored: `DataCopyPerByte` (50) per byte;
+  - storage keys longer than 32 bytes pay `DataCopyPerByte` for each extra byte.
+
+  `ReleasePerByte` is in the schedule but is not charged or refunded today: shrinking or deleting a value does not give gas back.
+
+- **Logs and return data.** `PersistPerByte` per byte of event data and of data a contract returns, on top of the host function cost.
+- **Big integers longer than 32 bytes.** `CopyPerByteForTooBig` (1,000) per byte, when the value is copied or operated on.
+- **Built-in functions.** Protocol operations a contract triggers, such as a transfer or a freeze, cost what `BuiltInCost` lists (`Transfer`: 200,000).
+
+### Storage reads
+
+A storage read that is not served from the VM's cache is priced by a curve on the depth `d` of the key in the state trie:
+
+```
+cost(d) = a·d² + b·d + c
+```
+
+with `a` = 688, `b` = 31,858 and `c` = 15,287 in the current schedule. If the curve gives less than `MinimumGasCost` (1,000), the read is charged the host function's fixed storage-load cost instead. The node checks the coefficients when it loads the schedule: `a` must be positive, `c` must not be negative, and the curve must not decrease for positive depths.
+
+The node currently reports a depth of 0 for every read, so **every uncached storage read costs `c` = 15,287 gas** plus `DataCopyPerByte` for the bytes read. A read served from the VM's storage cache costs `CachedStorageLoad` (1,000) instead.
+
+The fixed `StorageLoad` costs in `BaseOpsAPICost` (50,000) are not added to this: the curve replaces them.
+
+### Per-transaction limits
+
+Some limits are counts, not gas. One transaction, including every contract it calls, may make at most:
+
+| Limit                       | Current value |
+| --------------------------- | ------------- |
+| Built-in function calls     | 100           |
+| Token transfers             | 250           |
+| Storage reads from the trie | 1,500         |
+
+Going over any of them fails the call with `max calls reached` (`too many built-in functions calls`, `too many KDA transfers` or `too many reads from trie`), with the same consequences as running out of gas.
+
+## Running out of gas
+
+If a call needs more gas than its limit, at any point, it fails with result code `VMOutOfGas`. The same happens before execution starts if the gas limit cannot even pay for loading the code.
+
+A failed call, out of gas or for any other reason:
+
+- **changes nothing.** The VM keeps its changes to storage and balances in memory and only applies them when the call succeeds, so a failed call leaves no partial state.
+- **consumes its whole gas limit,** not only the gas spent before it failed.
+- **keeps the fee.** The transaction is included in a block and its fee is paid.
+
+The fee estimator (`/transaction/estimate-fee`) runs the call before you send it, so a call that would run out of gas or fail is normally rejected before it is broadcast.
+
+## How gas becomes the fee
+
+Klever has no gas price. A transaction pays two fees in KLV, both set when the transaction is built and both charged in full:
+
+| Fee            | What it pays for                                  | How it is computed                                                      |
+| -------------- | ------------------------------------------------- | ----------------------------------------------------------------------- |
+| `kAppFee`      | The operation itself                              | The network parameter `KAppFeeSmartContract`                            |
+| `bandwidthFee` | The transaction's size **and** the contract's gas | (data bytes + 250) × `FeePerDataByte`, **plus** what you add to buy gas |
+
+The gas limit of a contract call is whatever the bandwidth fee pays for beyond the size of the transaction:
+
+```
+minimum bandwidth fee = (data bytes + 250) × FeePerDataByte
+gas limit             = (bandwidthFee − minimum bandwidth fee) × GasMultiplier
+```
+
+The fees are in KLV's smallest unit (1 KLV = 1,000,000 units). `GasMultiplier`, `FeePerDataByte` and `KAppFeeSmartContract` are network parameters, changed by governance proposal; read the current values from the API (`/v1.0/network/network-parameters`):
+
+| Parameter              | Mainnet     | Testnet     |
+| ---------------------- | ----------- | ----------- |
+| `GasMultiplier`        | 1           | 1           |
+| `FeePerDataByte`       | 8,000       | 1           |
+| `KAppFeeSmartContract` | 2,000,000   | 2,000,000   |
+| `MaxGasPerTX`          | 400,000,000 | 400,000,000 |
+
+With `GasMultiplier` at 1, each unit of bandwidth fee above the minimum buys one unit of gas, so **1 gas costs 0.000001 KLV**. A gas limit above `MaxGasPerTX` is rejected.
+
+**Unused gas is not refunded.** The whole bandwidth fee is charged whatever the call actually used. Set the gas limit close to what the call needs: the fee estimator returns `gasEstimated` (the gas the simulated call used, plus `GasMultiplier`) and a `safetyMargin` of 10% of it, to size the bandwidth fee from.
+
+## Worked example
+
+Testnet transaction [`b07188cf…3f3242`](https://testnet.kleverscan.org/transaction/b07188cf445bfa2112188112445d1889a35c1aa399ce28e43a09e346ba3f3242) calls `commitDrawSecret` on contract `klv1qqqqqqqqqqqqqpgqgrwndcmtwhl9hjldaa6tcyk6qxvl8w23770s9mx5vs`. You can read it from a node with `GET /transaction/b07188cf445bfa2112188112445d1889a35c1aa399ce28e43a09e346ba3f3242?withResults=true`.
+
+**What the sender paid.** The data field is 89 bytes and the transaction has one contract, so on testnet (`FeePerDataByte` = 1):
+
+| Item                  | Value                                                                           |
+| --------------------- | ------------------------------------------------------------------------------- |
+| `kAppFee`             | 2,000,000 (2 KLV)                                                               |
+| `bandwidthFee`        | 12,849,346 (12.849346 KLV)                                                      |
+| Minimum bandwidth fee | (89 + 250) × 1 = 339                                                            |
+| Gas limit             | (12,849,346 − 339) × 1 = **12,849,007** (the node reports `GasLimit: 12849007`) |
+
+**What the call used.** The transaction's `totalConsumedGas` log event carries the gas used, hex `6f6568` = **7,300,456**. It splits into:
+
+| Part                                                                       | Gas           |
+| -------------------------------------------------------------------------- | ------------- |
+| Code loading: `GetCode` 1,000,000 + 57,958 bytes × `AoTPreparePerByte` 100 | 6,795,800     |
+| Execution: instructions, host functions, storage reads and writes, logs    | 504,656       |
+| **Total (`totalConsumedGas`)**                                             | **7,300,456** |
+
+The contract's code is 57,958 bytes: the code of its last upgrade before this call, whose hash matches the account's `CodeHash`. Loading it costs 93% of the gas used. The function itself, which reads and writes a few storage values (an uncached read alone is 15,287 gas and a host call to store a value 75,000 plus per-byte costs), costs the remaining 504,656.
+
+**What it cost.** The sender paid 2 + 12.849346 = **14.849346 KLV**. The call used 7,300,456 gas, about 7.3 KLV of the bandwidth fee; the other 5,548,551 units of gas limit were paid for and not refunded. A bandwidth fee built from the estimator (gas used plus 10%) would have been about 8.03 KLV.
+
+## Current costs
+
+{/* BEGIN GAS-TABLES: generated by src/scripts/generate-gas-tables.ts, do not edit by hand */}
+
+<Note>
+  Values from `gasScheduleV1.yaml` in mainnet configuration package 108, read on
+  2026-11-06. Testnet runs the same file. They are set by the network
+  configuration, not by the VM code, and a gas schedule update can change them.
+</Note>
+
+### Base operations
+
+`BaseOperationCost`: per-byte charges and code loading.
+
+| Name                | Cost      | Meaning                                                                                         |
+| ------------------- | --------- | ----------------------------------------------------------------------------------------------- |
+| `StorePerByte`      | 10,000    | Per byte added to contract storage: a new value, or the bytes a value grows by                  |
+| `ReleasePerByte`    | 1,000     | Per byte a storage value shrinks by. Not charged today                                          |
+| `DataCopyPerByte`   | 50        | Per byte copied between the VM and contract memory: arguments, storage keys and values, buffers |
+| `PersistPerByte`    | 1,000     | Per byte of a storage value that is overwritten, and of log and return data                     |
+| `CompilePerByte`    | 300       | Per byte of contract code, on deploy and upgrade                                                |
+| `AoTPreparePerByte` | 100       | Per byte of contract code, on every call to the contract                                        |
+| `GetCode`           | 1,000,000 | Flat cost of loading the contract code, on every call to the contract                           |
+
+### Storage reads by trie depth
+
+`DynamicStorageLoad`: the coefficients of the storage read curve.
+
+| Name                   | Cost   | Meaning                                                                                                    |
+| ---------------------- | ------ | ---------------------------------------------------------------------------------------------------------- |
+| `QuadraticCoefficient` | 688    | `a` in `a·d² + b·d + c`                                                                                    |
+| `SignOfQuadratic`      | 0      | Sign of `a`: 0 positive, 1 negative                                                                        |
+| `LinearCoefficient`    | 31,858 | `b` in `a·d² + b·d + c`                                                                                    |
+| `SignOfLinear`         | 0      | Sign of `b`: 0 positive, 1 negative                                                                        |
+| `ConstantCoefficient`  | 15,287 | `c` in `a·d² + b·d + c`                                                                                    |
+| `SignOfConstant`       | 0      | Sign of `c`: 0 positive, 1 negative                                                                        |
+| `MinimumGasCost`       | 1,000  | If the curve gives less than this, the read is charged the host function's fixed storage-load cost instead |
+
+### Per-transaction limits
+
+`MaxPerTransaction`: these are counts, not gas.
+
+| Name                        | Limit | Meaning                                                    |
+| --------------------------- | ----- | ---------------------------------------------------------- |
+| `MaxBuiltInCallsPerTx`      | 100   | Built-in function calls one transaction may make           |
+| `MaxNumberOfTransfersPerTx` | 250   | Token transfers one transaction may make                   |
+| `MaxNumberOfTrieReadsPerTx` | 1,500 | Storage reads from the state trie one transaction may make |
+
+### Host functions: base operations
+
+Arguments, caller, call value, storage, block data, logs, and calls to other contracts.
+
+<details>
+<summary>`BaseOpsAPICost` (46 entries)</summary>
+
+| Name                   | Cost    |
+| ---------------------- | ------- |
+| `GetSCAddress`         | 100     |
+| `GetOwnerAddress`      | 5,000   |
+| `GetCurrentTxHash`     | 100     |
+| `IsSmartContract`      | 5,000   |
+| `GetExternalBalance`   | 7,000   |
+| `GetBlockHash`         | 10,000  |
+| `TransferValue`        | 100,000 |
+| `GetArgument`          | 100     |
+| `GetFunction`          | 100     |
+| `GetNumArguments`      | 100     |
+| `StorageStore`         | 75,000  |
+| `StorageLoad`          | 50,000  |
+| `CachedStorageLoad`    | 1,000   |
+| `GetCaller`            | 100     |
+| `GetCallValue`         | 100     |
+| `Log`                  | 3,750   |
+| `Finish`               | 1       |
+| `SignalError`          | 1       |
+| `GetBlockTimeStamp`    | 10,000  |
+| `GetGasLeft`           | 100     |
+| `Int64GetArgument`     | 100     |
+| `Int64StorageStore`    | 75,000  |
+| `Int64StorageLoad`     | 50,000  |
+| `Int64Finish`          | 1,000   |
+| `GetStateRootHash`     | 10,000  |
+| `GetBlockNonce`        | 10,000  |
+| `GetBlockEpoch`        | 10,000  |
+| `GetBlockRound`        | 10,000  |
+| `GetBlockRandomSeed`   | 10,000  |
+| `ExecuteOnSameContext` | 100,000 |
+| `ExecuteOnDestContext` | 100,000 |
+| `DelegateExecution`    | 100,000 |
+| `ExecuteReadOnly`      | 160,000 |
+| `CreateContract`       | 300,000 |
+| `GetReturnData`        | 100     |
+| `GetNumReturnData`     | 100     |
+| `GetReturnDataSize`    | 100     |
+| `GetOriginalTxHash`    | 10,000  |
+| `CleanReturnData`      | 100     |
+| `DeleteFromReturnData` | 100     |
+| `GetCodeMetadata`      | 10      |
+| `IsBuiltinFunction`    | 10      |
+| `GetKDATokenData`      | 15,000  |
+| `GetUserKDA`           | 9,000   |
+| `GetSFTMetadata`       | 5,000   |
+| `GetKDARoles`          | 4,000   |
+
+</details>
+
+### Host functions: managed buffers
+
+The managed buffer API that the Rust framework uses for most data.
+
+<details>
+<summary>`ManagedBufferAPICost` (20 entries)</summary>
+
+| Name                        | Cost   |
+| --------------------------- | ------ |
+| `MBufferNew`                | 2,000  |
+| `MBufferNewFromBytes`       | 2,000  |
+| `MBufferGetLength`          | 2,000  |
+| `MBufferGetBytes`           | 2,000  |
+| `MBufferGetByteSlice`       | 2,000  |
+| `MBufferCopyByteSlice`      | 2,000  |
+| `MBufferSetBytes`           | 2,000  |
+| `MBufferAppend`             | 2,000  |
+| `MBufferAppendBytes`        | 2,000  |
+| `MBufferToBigIntUnsigned`   | 2,000  |
+| `MBufferToBigIntSigned`     | 5,000  |
+| `MBufferFromBigIntUnsigned` | 2,000  |
+| `MBufferFromBigIntSigned`   | 5,000  |
+| `MBufferStorageStore`       | 75,000 |
+| `MBufferStorageLoad`        | 50,000 |
+| `MBufferGetArgument`        | 1,000  |
+| `MBufferFinish`             | 1,000  |
+| `MBufferSetRandom`          | 6,000  |
+| `MBufferToBigFloat`         | 2,000  |
+| `MBufferFromBigFloat`       | 2,000  |
+
+</details>
+
+### Host functions: big integers
+
+Arbitrary-precision integers (`BigUint`, `BigInt`).
+
+<details>
+<summary>`BigIntAPICost` (43 entries)</summary>
+
+| Name                         | Cost   |
+| ---------------------------- | ------ |
+| `BigIntNew`                  | 2,000  |
+| `BigIntByteLength`           | 2,000  |
+| `BigIntUnsignedByteLength`   | 2,000  |
+| `BigIntSignedByteLength`     | 2,000  |
+| `BigIntGetBytes`             | 2,000  |
+| `BigIntGetUnsignedBytes`     | 2,000  |
+| `BigIntGetSignedBytes`       | 2,000  |
+| `BigIntSetBytes`             | 2,000  |
+| `BigIntSetUnsignedBytes`     | 2,000  |
+| `BigIntSetSignedBytes`       | 2,000  |
+| `BigIntIsInt64`              | 2,000  |
+| `BigIntGetInt64`             | 2,000  |
+| `BigIntSetInt64`             | 2,000  |
+| `BigIntAdd`                  | 2,000  |
+| `BigIntSub`                  | 2,000  |
+| `BigIntMul`                  | 6,000  |
+| `BigIntSqrt`                 | 6,000  |
+| `BigIntPow`                  | 6,000  |
+| `BigIntLog`                  | 6,000  |
+| `BigIntTDiv`                 | 6,000  |
+| `BigIntTMod`                 | 6,000  |
+| `BigIntEDiv`                 | 6,000  |
+| `BigIntEMod`                 | 6,000  |
+| `BigIntAbs`                  | 2,000  |
+| `BigIntNeg`                  | 2,000  |
+| `BigIntSign`                 | 2,000  |
+| `BigIntCmp`                  | 2,000  |
+| `BigIntNot`                  | 2,000  |
+| `BigIntAnd`                  | 2,000  |
+| `BigIntOr`                   | 2,000  |
+| `BigIntXor`                  | 2,000  |
+| `BigIntShr`                  | 2,000  |
+| `BigIntShl`                  | 2,000  |
+| `BigIntFinishUnsigned`       | 1,000  |
+| `BigIntFinishSigned`         | 1,000  |
+| `BigIntStorageLoadUnsigned`  | 50,000 |
+| `BigIntStorageStoreUnsigned` | 75,000 |
+| `BigIntGetArgument`          | 1,000  |
+| `BigIntGetUnsignedArgument`  | 1,000  |
+| `BigIntGetSignedArgument`    | 1,000  |
+| `BigIntGetCallValue`         | 1,000  |
+| `BigIntGetExternalBalance`   | 10,000 |
+| `CopyPerByteForTooBig`       | 1,000  |
+
+</details>
+
+### Host functions: big floats
+
+Arbitrary-precision decimals (`BigFloat`).
+
+<details>
+<summary>`BigFloatAPICost` (18 entries)</summary>
+
+| Name                   | Cost   |
+| ---------------------- | ------ |
+| `BigFloatNewFromParts` | 3,000  |
+| `BigFloatAdd`          | 7,000  |
+| `BigFloatSub`          | 7,000  |
+| `BigFloatMul`          | 7,000  |
+| `BigFloatDiv`          | 7,000  |
+| `BigFloatTruncate`     | 5,000  |
+| `BigFloatNeg`          | 5,000  |
+| `BigFloatClone`        | 5,000  |
+| `BigFloatCmp`          | 4,000  |
+| `BigFloatAbs`          | 5,000  |
+| `BigFloatSqrt`         | 7,000  |
+| `BigFloatPow`          | 10,000 |
+| `BigFloatFloor`        | 5,000  |
+| `BigFloatCeil`         | 5,000  |
+| `BigFloatIsInt`        | 3,000  |
+| `BigFloatSetBigInt`    | 3,000  |
+| `BigFloatSetInt64`     | 1,000  |
+| `BigFloatGetConst`     | 1,000  |
+
+</details>
+
+### Host functions: managed maps
+
+Key-value maps held by the VM.
+
+<details>
+<summary>`ManagedMapAPICost` (5 entries)</summary>
+
+| Name                 | Cost   |
+| -------------------- | ------ |
+| `ManagedMapNew`      | 10,000 |
+| `ManagedMapPut`      | 10,000 |
+| `ManagedMapGet`      | 10,000 |
+| `ManagedMapRemove`   | 10,000 |
+| `ManagedMapContains` | 10,000 |
+
+</details>
+
+### Host functions: cryptography
+
+Hashes and signature checks.
+
+<details>
+<summary>`CryptoAPICost` (17 entries)</summary>
+
+| Name                     | Cost       |
+| ------------------------ | ---------- |
+| `SHA256`                 | 1,000,000  |
+| `Keccak256`              | 1,000,000  |
+| `Ripemd160`              | 1,000,000  |
+| `VerifyBLS`              | 5,000,000  |
+| `VerifyEd25519`          | 2,000,000  |
+| `VerifySecp256k1`        | 2,000,000  |
+| `EllipticCurveNew`       | 10,000     |
+| `AddECC`                 | 75,000     |
+| `DoubleECC`              | 65,000     |
+| `IsOnCurveECC`           | 10,000     |
+| `ScalarMultECC`          | 400,000    |
+| `MarshalECC`             | 13,000     |
+| `MarshalCompressedECC`   | 15,000     |
+| `UnmarshalECC`           | 20,000     |
+| `UnmarshalCompressedECC` | 270,000    |
+| `GenerateKeyECC`         | 7,000,000  |
+| `EncodeDERSig`           | 10,000,000 |
+
+</details>
+
+### Host functions: Ethereum-compatible API
+
+The EEI-style API kept for compatibility.
+
+<details>
+<summary>`EthAPICost` (32 entries)</summary>
+
+| Name                  | Cost      |
+| --------------------- | --------- |
+| `UseGas`              | 100       |
+| `GetAddress`          | 100,000   |
+| `GetExternalBalance`  | 70,000    |
+| `GetBlockHash`        | 100,000   |
+| `Call`                | 160,000   |
+| `CallDataCopy`        | 200       |
+| `GetCallDataSize`     | 100       |
+| `CallCode`            | 160,000   |
+| `CallDelegate`        | 160,000   |
+| `CallStatic`          | 160,000   |
+| `StorageStore`        | 250,000   |
+| `StorageLoad`         | 100,000   |
+| `GetCaller`           | 100       |
+| `GetCallValue`        | 100       |
+| `CodeCopy`            | 1,000     |
+| `GetCodeSize`         | 100       |
+| `GetBlockCoinbase`    | 100       |
+| `Create`              | 320,000   |
+| `GetBlockDifficulty`  | 100       |
+| `ExternalCodeCopy`    | 3,000     |
+| `GetExternalCodeSize` | 2,500     |
+| `GetGasLeft`          | 100       |
+| `GetBlockGasLimit`    | 100,000   |
+| `Log`                 | 3,750     |
+| `GetBlockNumber`      | 100,000   |
+| `GetTxOrigin`         | 100,000   |
+| `Finish`              | 1         |
+| `Revert`              | 1         |
+| `GetReturnDataSize`   | 200       |
+| `ReturnDataCopy`      | 500       |
+| `SelfDestruct`        | 5,000,000 |
+| `GetBlockTimeStamp`   | 100,000   |
+
+</details>
+
+### Built-in functions
+
+Protocol operations that a contract triggers, such as transfers, freezes and asset creation.
+
+<details>
+<summary>`BuiltInCost` (25 entries)</summary>
+
+| Name                      | Cost            |
+| ------------------------- | --------------- |
+| `Transfer`                | 200,000         |
+| `CreateAsset`             | 300,000,000     |
+| `CreateValidator`         | 100,000,000,000 |
+| `ValidatorConfig`         | 100,000,000,000 |
+| `Freeze`                  | 200,000         |
+| `Unfreeze`                | 200,000         |
+| `Delegate`                | 200,000         |
+| `Undelegate`              | 200,000         |
+| `Withdraw`                | 200,000         |
+| `Claim`                   | 200,000         |
+| `Unjail`                  | 100,000,000,000 |
+| `AssetTrigger`            | 200,000         |
+| `SetAccountName`          | 1,000,000       |
+| `Proposal`                | 300,000,000     |
+| `Vote`                    | 200,000         |
+| `ConfigITO`               | 300,000,000     |
+| `Buy`                     | 200,000         |
+| `Sell`                    | 300,000         |
+| `CancelMarketOrder`       | 1,000,000       |
+| `CreateMarketplace`       | 300,000,000     |
+| `ConfigMarketplace`       | 6,000,000       |
+| `UpdateAccountPermission` | 10,000,000      |
+| `Deposit`                 | 500,000         |
+| `ITOTrigger`              | 200,000         |
+| `ChangeOwnerAddress`      | 1,000,000       |
+
+</details>
+
+### WebAssembly opcodes
+
+`WASMOpcodeCost`: 559 entries, grouped by kind. A few entries in this section are limits or settings rather than opcode costs; they are listed first.
+
+<details>
+<summary>Limits and settings (5)</summary>
+
+| Name                   | Value | Meaning                                                         |
+| ---------------------- | ----- | --------------------------------------------------------------- |
+| `LocalAllocate`        | 5     | Per local variable a function declares beyond `LocalsUnmetered` |
+| `LocalsUnmetered`      | 100   | Setting, not a cost: locals per function that are not charged   |
+| `MaxMemoryGrowDelta`   | 1     | Limit, not a cost: pages one `memory.grow` may request          |
+| `MaxMemoryGrow`        | 10    | Limit, not a cost: `memory.grow` calls allowed in one call      |
+| `MaxDeclaredTableSize` | 1,000 | Limit, not a cost: largest table a module may declare           |
+
+</details>
+
+<details>
+<summary>Control flow (25)</summary>
+
+| Opcode               | Cost |
+| -------------------- | ---- |
+| `Unreachable`        | 5    |
+| `Nop`                | 5    |
+| `Block`              | 5    |
+| `Loop`               | 5    |
+| `If`                 | 5    |
+| `Else`               | 5    |
+| `End`                | 5    |
+| `Br`                 | 5    |
+| `BrIf`               | 5    |
+| `BrTable`            | 5    |
+| `Return`             | 5    |
+| `Call`               | 5    |
+| `CallIndirect`       | 5    |
+| `Drop`               | 5    |
+| `Select`             | 5    |
+| `TypedSelect`        | 5    |
+| `Catch`              | 1    |
+| `CatchAll`           | 1    |
+| `Delegate`           | 1    |
+| `Rethrow`            | 1    |
+| `ReturnCall`         | 1    |
+| `ReturnCallIndirect` | 1    |
+| `Throw`              | 1    |
+| `Try`                | 1    |
+| `Unwind`             | 1    |
+
+</details>
+
+<details>
+<summary>Locals and globals (5)</summary>
+
+| Opcode      | Cost |
+| ----------- | ---- |
+| `LocalGet`  | 5    |
+| `LocalSet`  | 5    |
+| `LocalTee`  | 5    |
+| `GlobalGet` | 5    |
+| `GlobalSet` | 5    |
+
+</details>
+
+<details>
+<summary>Memory (29)</summary>
+
+| Opcode       | Cost      |
+| ------------ | --------- |
+| `I32Load`    | 5         |
+| `I64Load`    | 5         |
+| `F32Load`    | 6         |
+| `F64Load`    | 6         |
+| `I32Load8S`  | 5         |
+| `I32Load8U`  | 5         |
+| `I32Load16S` | 5         |
+| `I32Load16U` | 5         |
+| `I64Load8S`  | 5         |
+| `I64Load8U`  | 5         |
+| `I64Load16S` | 5         |
+| `I64Load16U` | 5         |
+| `I64Load32S` | 5         |
+| `I64Load32U` | 5         |
+| `I32Store`   | 5         |
+| `I64Store`   | 5         |
+| `F32Store`   | 12        |
+| `F64Store`   | 12        |
+| `I32Store8`  | 5         |
+| `I32Store16` | 5         |
+| `I64Store8`  | 5         |
+| `I64Store16` | 5         |
+| `I64Store32` | 5         |
+| `MemorySize` | 5         |
+| `MemoryGrow` | 1,000,000 |
+| `MemoryInit` | 5         |
+| `DataDrop`   | 5         |
+| `MemoryCopy` | 5         |
+| `MemoryFill` | 5         |
+
+</details>
+
+<details>
+<summary>Tables and references (12)</summary>
+
+| Opcode                | Cost |
+| --------------------- | ---- |
+| `RefNull`             | 5    |
+| `RefIsNull`           | 5    |
+| `RefFunc`             | 5    |
+| `TableInit`           | 10   |
+| `TableInitPerElement` | 10   |
+| `ElemDrop`            | 10   |
+| `TableCopy`           | 10   |
+| `TableFill`           | 10   |
+| `TableGet`            | 10   |
+| `TableSet`            | 10   |
+| `TableGrow`           | 10   |
+| `TableSize`           | 10   |
+
+</details>
+
+<details>
+<summary>Atomics (threads) (70)</summary>
+
+| Opcode                   | Cost      |
+| ------------------------ | --------- |
+| `AtomicNotify`           | 1,000,000 |
+| `I32AtomicWait`          | 1,000,000 |
+| `I64AtomicWait`          | 1,000,000 |
+| `AtomicFence`            | 1,000,000 |
+| `I32AtomicLoad`          | 1,000,000 |
+| `I64AtomicLoad`          | 1,000,000 |
+| `I32AtomicLoad8U`        | 1,000,000 |
+| `I32AtomicLoad16U`       | 1,000,000 |
+| `I64AtomicLoad8U`        | 1,000,000 |
+| `I64AtomicLoad16U`       | 1,000,000 |
+| `I64AtomicLoad32U`       | 1,000,000 |
+| `I32AtomicStore`         | 1,000,000 |
+| `I64AtomicStore`         | 1,000,000 |
+| `I32AtomicStore8`        | 1,000,000 |
+| `I32AtomicStore16`       | 1,000,000 |
+| `I64AtomicStore8`        | 1,000,000 |
+| `I64AtomicStore16`       | 1,000,000 |
+| `I64AtomicStore32`       | 1,000,000 |
+| `I32AtomicRmwAdd`        | 1,000,000 |
+| `I64AtomicRmwAdd`        | 1,000,000 |
+| `I32AtomicRmw8AddU`      | 1,000,000 |
+| `I32AtomicRmw16AddU`     | 1,000,000 |
+| `I64AtomicRmw8AddU`      | 1,000,000 |
+| `I64AtomicRmw16AddU`     | 1,000,000 |
+| `I64AtomicRmw32AddU`     | 1,000,000 |
+| `I32AtomicRmwSub`        | 1,000,000 |
+| `I64AtomicRmwSub`        | 1,000,000 |
+| `I32AtomicRmw8SubU`      | 1,000,000 |
+| `I32AtomicRmw16SubU`     | 1,000,000 |
+| `I64AtomicRmw8SubU`      | 1,000,000 |
+| `I64AtomicRmw16SubU`     | 1,000,000 |
+| `I64AtomicRmw32SubU`     | 1,000,000 |
+| `I32AtomicRmwAnd`        | 1,000,000 |
+| `I64AtomicRmwAnd`        | 1,000,000 |
+| `I32AtomicRmw8AndU`      | 1,000,000 |
+| `I32AtomicRmw16AndU`     | 1,000,000 |
+| `I64AtomicRmw8AndU`      | 1,000,000 |
+| `I64AtomicRmw16AndU`     | 1,000,000 |
+| `I64AtomicRmw32AndU`     | 1,000,000 |
+| `I32AtomicRmwOr`         | 1,000,000 |
+| `I64AtomicRmwOr`         | 1,000,000 |
+| `I32AtomicRmw8OrU`       | 1,000,000 |
+| `I32AtomicRmw16OrU`      | 1,000,000 |
+| `I64AtomicRmw8OrU`       | 1,000,000 |
+| `I64AtomicRmw16OrU`      | 1,000,000 |
+| `I64AtomicRmw32OrU`      | 1,000,000 |
+| `I32AtomicRmwXor`        | 1,000,000 |
+| `I64AtomicRmwXor`        | 1,000,000 |
+| `I32AtomicRmw8XorU`      | 1,000,000 |
+| `I32AtomicRmw16XorU`     | 1,000,000 |
+| `I64AtomicRmw8XorU`      | 1,000,000 |
+| `I64AtomicRmw16XorU`     | 1,000,000 |
+| `I64AtomicRmw32XorU`     | 1,000,000 |
+| `I32AtomicRmwXchg`       | 1,000,000 |
+| `I64AtomicRmwXchg`       | 1,000,000 |
+| `I32AtomicRmw8XchgU`     | 1,000,000 |
+| `I32AtomicRmw16XchgU`    | 1,000,000 |
+| `I64AtomicRmw8XchgU`     | 1,000,000 |
+| `I64AtomicRmw16XchgU`    | 1,000,000 |
+| `I64AtomicRmw32XchgU`    | 1,000,000 |
+| `I32AtomicRmwCmpxchg`    | 1,000,000 |
+| `I64AtomicRmwCmpxchg`    | 1,000,000 |
+| `I32AtomicRmw8CmpxchgU`  | 1,000,000 |
+| `I32AtomicRmw16CmpxchgU` | 1,000,000 |
+| `I64AtomicRmw8CmpxchgU`  | 1,000,000 |
+| `I64AtomicRmw16CmpxchgU` | 1,000,000 |
+| `I64AtomicRmw32CmpxchgU` | 1,000,000 |
+| `MemoryAtomicNotify`     | 1         |
+| `MemoryAtomicWait32`     | 1         |
+| `MemoryAtomicWait64`     | 1         |
+
+</details>
+
+<details>
+<summary>SIMD (128-bit vectors) (273)</summary>
+
+| Opcode                      | Cost      |
+| --------------------------- | --------- |
+| `V128Load`                  | 1,000,000 |
+| `V128Store`                 | 1,000,000 |
+| `V128Const`                 | 1,000,000 |
+| `I8x16Splat`                | 1,000,000 |
+| `I8x16ExtractLaneS`         | 1,000,000 |
+| `I8x16ExtractLaneU`         | 1,000,000 |
+| `I8x16ReplaceLane`          | 1,000,000 |
+| `I16x8Splat`                | 1,000,000 |
+| `I16x8ExtractLaneS`         | 1,000,000 |
+| `I16x8ExtractLaneU`         | 1,000,000 |
+| `I16x8ReplaceLane`          | 1,000,000 |
+| `I32x4Splat`                | 1,000,000 |
+| `I32x4ExtractLane`          | 1,000,000 |
+| `I32x4ReplaceLane`          | 1,000,000 |
+| `I64x2Splat`                | 1,000,000 |
+| `I64x2ExtractLane`          | 1,000,000 |
+| `I64x2ReplaceLane`          | 1,000,000 |
+| `F32x4Splat`                | 1,000,000 |
+| `F32x4ExtractLane`          | 1,000,000 |
+| `F32x4ReplaceLane`          | 1,000,000 |
+| `F64x2Splat`                | 1,000,000 |
+| `F64x2ExtractLane`          | 1,000,000 |
+| `F64x2ReplaceLane`          | 1,000,000 |
+| `I8x16Eq`                   | 1,000,000 |
+| `I8x16Ne`                   | 1,000,000 |
+| `I8x16LtS`                  | 1,000,000 |
+| `I8x16LtU`                  | 1,000,000 |
+| `I8x16GtS`                  | 1,000,000 |
+| `I8x16GtU`                  | 1,000,000 |
+| `I8x16LeS`                  | 1,000,000 |
+| `I8x16LeU`                  | 1,000,000 |
+| `I8x16GeS`                  | 1,000,000 |
+| `I8x16GeU`                  | 1,000,000 |
+| `I16x8Eq`                   | 1,000,000 |
+| `I16x8Ne`                   | 1,000,000 |
+| `I16x8LtS`                  | 1,000,000 |
+| `I16x8LtU`                  | 1,000,000 |
+| `I16x8GtS`                  | 1,000,000 |
+| `I16x8GtU`                  | 1,000,000 |
+| `I16x8LeS`                  | 1,000,000 |
+| `I16x8LeU`                  | 1,000,000 |
+| `I16x8GeS`                  | 1,000,000 |
+| `I16x8GeU`                  | 1,000,000 |
+| `I32x4Eq`                   | 1,000,000 |
+| `I32x4Ne`                   | 1,000,000 |
+| `I32x4LtS`                  | 1,000,000 |
+| `I32x4LtU`                  | 1,000,000 |
+| `I32x4GtS`                  | 1,000,000 |
+| `I32x4GtU`                  | 1,000,000 |
+| `I32x4LeS`                  | 1,000,000 |
+| `I32x4LeU`                  | 1,000,000 |
+| `I32x4GeS`                  | 1,000,000 |
+| `I32x4GeU`                  | 1,000,000 |
+| `F32x4Eq`                   | 1,000,000 |
+| `F32x4Ne`                   | 1,000,000 |
+| `F32x4Lt`                   | 1,000,000 |
+| `F32x4Gt`                   | 1,000,000 |
+| `F32x4Le`                   | 1,000,000 |
+| `F32x4Ge`                   | 1,000,000 |
+| `F64x2Eq`                   | 1,000,000 |
+| `F64x2Ne`                   | 1,000,000 |
+| `F64x2Lt`                   | 1,000,000 |
+| `F64x2Gt`                   | 1,000,000 |
+| `F64x2Le`                   | 1,000,000 |
+| `F64x2Ge`                   | 1,000,000 |
+| `V128Not`                   | 1,000,000 |
+| `V128And`                   | 1,000,000 |
+| `V128AndNot`                | 1,000,000 |
+| `V128Or`                    | 1,000,000 |
+| `V128Xor`                   | 1,000,000 |
+| `V128Bitselect`             | 1,000,000 |
+| `I8x16Neg`                  | 1,000,000 |
+| `I8x16AnyTrue`              | 1,000,000 |
+| `I8x16AllTrue`              | 1,000,000 |
+| `I8x16Shl`                  | 1,000,000 |
+| `I8x16ShrS`                 | 1,000,000 |
+| `I8x16ShrU`                 | 1,000,000 |
+| `I8x16Add`                  | 1,000,000 |
+| `I8x16AddSaturateS`         | 1,000,000 |
+| `I8x16AddSaturateU`         | 1,000,000 |
+| `I8x16Sub`                  | 1,000,000 |
+| `I8x16SubSaturateS`         | 1,000,000 |
+| `I8x16SubSaturateU`         | 1,000,000 |
+| `I8x16MinS`                 | 1,000,000 |
+| `I8x16MinU`                 | 1,000,000 |
+| `I8x16MaxS`                 | 1,000,000 |
+| `I8x16MaxU`                 | 1,000,000 |
+| `I8x16Mul`                  | 1,000,000 |
+| `I16x8Neg`                  | 1,000,000 |
+| `I16x8AnyTrue`              | 1,000,000 |
+| `I16x8AllTrue`              | 1,000,000 |
+| `I16x8Shl`                  | 1,000,000 |
+| `I16x8ShrS`                 | 1,000,000 |
+| `I16x8ShrU`                 | 1,000,000 |
+| `I16x8Add`                  | 1,000,000 |
+| `I16x8AddSaturateS`         | 1,000,000 |
+| `I16x8AddSaturateU`         | 1,000,000 |
+| `I16x8Sub`                  | 1,000,000 |
+| `I16x8SubSaturateS`         | 1,000,000 |
+| `I16x8SubSaturateU`         | 1,000,000 |
+| `I16x8Mul`                  | 1,000,000 |
+| `I16x8MinS`                 | 1,000,000 |
+| `I16x8MinU`                 | 1,000,000 |
+| `I16x8MaxS`                 | 1,000,000 |
+| `I16x8MaxU`                 | 1,000,000 |
+| `I32x4Neg`                  | 1,000,000 |
+| `I32x4AnyTrue`              | 1,000,000 |
+| `I32x4AllTrue`              | 1,000,000 |
+| `I32x4Shl`                  | 1,000,000 |
+| `I32x4ShrS`                 | 1,000,000 |
+| `I32x4ShrU`                 | 1,000,000 |
+| `I32x4Add`                  | 1,000,000 |
+| `I32x4Sub`                  | 1,000,000 |
+| `I32x4Mul`                  | 1,000,000 |
+| `I32x4MinS`                 | 1,000,000 |
+| `I32x4MinU`                 | 1,000,000 |
+| `I32x4MaxS`                 | 1,000,000 |
+| `I32x4MaxU`                 | 1,000,000 |
+| `I64x2Neg`                  | 1,000,000 |
+| `I64x2AnyTrue`              | 1,000,000 |
+| `I64x2AllTrue`              | 1,000,000 |
+| `I64x2Shl`                  | 1,000,000 |
+| `I64x2ShrS`                 | 1,000,000 |
+| `I64x2ShrU`                 | 1,000,000 |
+| `I64x2Add`                  | 1,000,000 |
+| `I64x2Sub`                  | 1,000,000 |
+| `I64x2Mul`                  | 1,000,000 |
+| `F32x4Abs`                  | 1,000,000 |
+| `F32x4Neg`                  | 1,000,000 |
+| `F32x4Sqrt`                 | 1,000,000 |
+| `F32x4Add`                  | 1,000,000 |
+| `F32x4Sub`                  | 1,000,000 |
+| `F32x4Mul`                  | 1,000,000 |
+| `F32x4Div`                  | 1,000,000 |
+| `F32x4Min`                  | 1,000,000 |
+| `F32x4Max`                  | 1,000,000 |
+| `F64x2Abs`                  | 1,000,000 |
+| `F64x2Neg`                  | 1,000,000 |
+| `F64x2Sqrt`                 | 1,000,000 |
+| `F64x2Add`                  | 1,000,000 |
+| `F64x2Sub`                  | 1,000,000 |
+| `F64x2Mul`                  | 1,000,000 |
+| `F64x2Div`                  | 1,000,000 |
+| `F64x2Min`                  | 1,000,000 |
+| `F64x2Max`                  | 1,000,000 |
+| `I32x4TruncSatF32x4S`       | 1,000,000 |
+| `I32x4TruncSatF32x4U`       | 1,000,000 |
+| `I64x2TruncSatF64x2S`       | 1,000,000 |
+| `I64x2TruncSatF64x2U`       | 1,000,000 |
+| `F32x4ConvertI32x4S`        | 1,000,000 |
+| `F32x4ConvertI32x4U`        | 1,000,000 |
+| `F64x2ConvertI64x2S`        | 1,000,000 |
+| `F64x2ConvertI64x2U`        | 1,000,000 |
+| `V8x16Swizzle`              | 1,000,000 |
+| `V8x16Shuffle`              | 1,000,000 |
+| `V8x16LoadSplat`            | 1,000,000 |
+| `V16x8LoadSplat`            | 1,000,000 |
+| `V32x4LoadSplat`            | 1,000,000 |
+| `V64x2LoadSplat`            | 1,000,000 |
+| `I8x16NarrowI16x8S`         | 1,000,000 |
+| `I8x16NarrowI16x8U`         | 1,000,000 |
+| `I16x8NarrowI32x4S`         | 1,000,000 |
+| `I16x8NarrowI32x4U`         | 1,000,000 |
+| `I16x8WidenLowI8x16S`       | 1,000,000 |
+| `I16x8WidenHighI8x16S`      | 1,000,000 |
+| `I16x8WidenLowI8x16U`       | 1,000,000 |
+| `I16x8WidenHighI8x16U`      | 1,000,000 |
+| `I32x4WidenLowI16x8S`       | 1,000,000 |
+| `I32x4WidenHighI16x8S`      | 1,000,000 |
+| `I32x4WidenLowI16x8U`       | 1,000,000 |
+| `I32x4WidenHighI16x8U`      | 1,000,000 |
+| `I16x8Load8x8S`             | 1,000,000 |
+| `I16x8Load8x8U`             | 1,000,000 |
+| `I32x4Load16x4S`            | 1,000,000 |
+| `I32x4Load16x4U`            | 1,000,000 |
+| `I64x2Load32x2S`            | 1,000,000 |
+| `I64x2Load32x2U`            | 1,000,000 |
+| `I8x16RoundingAverageU`     | 1,000,000 |
+| `I16x8RoundingAverageU`     | 1,000,000 |
+| `F32x4Ceil`                 | 1         |
+| `F32x4DemoteF64x2Zero`      | 1         |
+| `F32x4Floor`                | 1         |
+| `F32x4Nearest`              | 1         |
+| `F32x4PMax`                 | 1         |
+| `F32x4PMin`                 | 1         |
+| `F32x4Trunc`                | 1         |
+| `F64x2Ceil`                 | 1         |
+| `F64x2ConvertLowI32x4S`     | 1         |
+| `F64x2ConvertLowI32x4U`     | 1         |
+| `F64x2Floor`                | 1         |
+| `F64x2Nearest`              | 1         |
+| `F64x2PMax`                 | 1         |
+| `F64x2PMin`                 | 1         |
+| `F64x2PromoteLowF32x4`      | 1         |
+| `F64x2Trunc`                | 1         |
+| `I16x8Abs`                  | 1         |
+| `I16x8AddSatS`              | 1         |
+| `I16x8AddSatU`              | 1         |
+| `I16x8Bitmask`              | 1         |
+| `I16x8ExtAddPairwiseI8x16S` | 1         |
+| `I16x8ExtAddPairwiseI8x16U` | 1         |
+| `I16x8ExtMulHighI8x16S`     | 1         |
+| `I16x8ExtMulHighI8x16U`     | 1         |
+| `I16x8ExtMulLowI8x16S`      | 1         |
+| `I16x8ExtMulLowI8x16U`      | 1         |
+| `I16x8ExtendHighI8x16S`     | 1         |
+| `I16x8ExtendHighI8x16U`     | 1         |
+| `I16x8ExtendLowI8x16S`      | 1         |
+| `I16x8ExtendLowI8x16U`      | 1         |
+| `I16x8Q15MulrSatS`          | 1         |
+| `I16x8SubSatS`              | 1         |
+| `I16x8SubSatU`              | 1         |
+| `I32x4Abs`                  | 1         |
+| `I32x4Bitmask`              | 1         |
+| `I32x4DotI16x8S`            | 1         |
+| `I32x4ExtAddPairwiseI16x8S` | 1         |
+| `I32x4ExtAddPairwiseI16x8U` | 1         |
+| `I32x4ExtMulHighI16x8S`     | 1         |
+| `I32x4ExtMulHighI16x8U`     | 1         |
+| `I32x4ExtMulLowI16x8S`      | 1         |
+| `I32x4ExtMulLowI16x8U`      | 1         |
+| `I32x4ExtendHighI16x8S`     | 1         |
+| `I32x4ExtendHighI16x8U`     | 1         |
+| `I32x4ExtendLowI16x8S`      | 1         |
+| `I32x4ExtendLowI16x8U`      | 1         |
+| `I32x4TruncSatF64x2SZero`   | 1         |
+| `I32x4TruncSatF64x2UZero`   | 1         |
+| `I64x2Abs`                  | 1         |
+| `I64x2Bitmask`              | 1         |
+| `I64x2Eq`                   | 1         |
+| `I64x2ExtMulHighI32x4S`     | 1         |
+| `I64x2ExtMulHighI32x4U`     | 1         |
+| `I64x2ExtMulLowI32x4S`      | 1         |
+| `I64x2ExtMulLowI32x4U`      | 1         |
+| `I64x2ExtendHighI32x4S`     | 1         |
+| `I64x2ExtendHighI32x4U`     | 1         |
+| `I64x2ExtendLowI32x4S`      | 1         |
+| `I64x2ExtendLowI32x4U`      | 1         |
+| `I64x2GeS`                  | 1         |
+| `I64x2GtS`                  | 1         |
+| `I64x2LeS`                  | 1         |
+| `I64x2LtS`                  | 1         |
+| `I64x2Ne`                   | 1         |
+| `I8x16Abs`                  | 1         |
+| `I8x16AddSatS`              | 1         |
+| `I8x16AddSatU`              | 1         |
+| `I8x16Bitmask`              | 1         |
+| `I8x16Popcnt`               | 1         |
+| `I8x16Shuffle`              | 1         |
+| `I8x16SubSatS`              | 1         |
+| `I8x16SubSatU`              | 1         |
+| `I8x16Swizzle`              | 1         |
+| `V128AnyTrue`               | 1         |
+| `V128Load16Lane`            | 1         |
+| `V128Load16Splat`           | 1         |
+| `V128Load16x4S`             | 1         |
+| `V128Load16x4U`             | 1         |
+| `V128Load32Lane`            | 1         |
+| `V128Load32Splat`           | 1         |
+| `V128Load32Zero`            | 1         |
+| `V128Load32x2S`             | 1         |
+| `V128Load32x2U`             | 1         |
+| `V128Load64Lane`            | 1         |
+| `V128Load64Splat`           | 1         |
+| `V128Load64Zero`            | 1         |
+| `V128Load8Lane`             | 1         |
+| `V128Load8Splat`            | 1         |
+| `V128Load8x8S`              | 1         |
+| `V128Load8x8U`              | 1         |
+| `V128Store16Lane`           | 1         |
+| `V128Store32Lane`           | 1         |
+| `V128Store64Lane`           | 1         |
+| `V128Store8Lane`            | 1         |
+
+</details>
+
+<details>
+<summary>Integer arithmetic, comparison and conversion (86)</summary>
+
+| Opcode              | Cost |
+| ------------------- | ---- |
+| `I32Const`          | 5    |
+| `I64Const`          | 5    |
+| `I32Eqz`            | 5    |
+| `I32Eq`             | 5    |
+| `I32Ne`             | 5    |
+| `I32LtS`            | 5    |
+| `I32LtU`            | 5    |
+| `I32GtS`            | 5    |
+| `I32GtU`            | 5    |
+| `I32LeS`            | 5    |
+| `I32LeU`            | 5    |
+| `I32GeS`            | 5    |
+| `I32GeU`            | 5    |
+| `I64Eqz`            | 5    |
+| `I64Eq`             | 5    |
+| `I64Ne`             | 5    |
+| `I64LtS`            | 5    |
+| `I64LtU`            | 5    |
+| `I64GtS`            | 5    |
+| `I64GtU`            | 5    |
+| `I64LeS`            | 5    |
+| `I64LeU`            | 5    |
+| `I64GeS`            | 5    |
+| `I64GeU`            | 5    |
+| `I32Clz`            | 100  |
+| `I32Ctz`            | 100  |
+| `I32Popcnt`         | 100  |
+| `I32Add`            | 5    |
+| `I32Sub`            | 5    |
+| `I32Mul`            | 5    |
+| `I32DivS`           | 18   |
+| `I32DivU`           | 18   |
+| `I32RemS`           | 18   |
+| `I32RemU`           | 18   |
+| `I32And`            | 5    |
+| `I32Or`             | 5    |
+| `I32Xor`            | 5    |
+| `I32Shl`            | 5    |
+| `I32ShrS`           | 5    |
+| `I32ShrU`           | 5    |
+| `I32Rotl`           | 5    |
+| `I32Rotr`           | 5    |
+| `I64Clz`            | 100  |
+| `I64Ctz`            | 100  |
+| `I64Popcnt`         | 100  |
+| `I64Add`            | 5    |
+| `I64Sub`            | 5    |
+| `I64Mul`            | 5    |
+| `I64DivS`           | 18   |
+| `I64DivU`           | 18   |
+| `I64RemS`           | 18   |
+| `I64RemU`           | 18   |
+| `I64And`            | 5    |
+| `I64Or`             | 5    |
+| `I64Xor`            | 5    |
+| `I64Shl`            | 5    |
+| `I64ShrS`           | 5    |
+| `I64ShrU`           | 5    |
+| `I64Rotl`           | 5    |
+| `I64Rotr`           | 5    |
+| `I32WrapI64`        | 9    |
+| `I32TruncF32S`      | 100  |
+| `I32TruncF32U`      | 100  |
+| `I32TruncF64S`      | 100  |
+| `I32TruncF64U`      | 100  |
+| `I64ExtendI32S`     | 9    |
+| `I64ExtendI32U`     | 9    |
+| `I64TruncF32S`      | 100  |
+| `I64TruncF32U`      | 100  |
+| `I64TruncF64S`      | 100  |
+| `I64TruncF64U`      | 100  |
+| `I32ReinterpretF32` | 100  |
+| `I64ReinterpretF64` | 100  |
+| `I32Extend8S`       | 9    |
+| `I32Extend16S`      | 9    |
+| `I64Extend8S`       | 9    |
+| `I64Extend16S`      | 9    |
+| `I64Extend32S`      | 9    |
+| `I32TruncSatF32S`   | 100  |
+| `I32TruncSatF32U`   | 100  |
+| `I32TruncSatF64S`   | 100  |
+| `I32TruncSatF64U`   | 100  |
+| `I64TruncSatF32S`   | 100  |
+| `I64TruncSatF32U`   | 100  |
+| `I64TruncSatF64S`   | 100  |
+| `I64TruncSatF64U`   | 100  |
+
+</details>
+
+<details>
+<summary>Floating point (54)</summary>
+
+| Opcode              | Cost |
+| ------------------- | ---- |
+| `F32Const`          | 5    |
+| `F64Const`          | 5    |
+| `F32Eq`             | 6    |
+| `F32Ne`             | 6    |
+| `F32Lt`             | 6    |
+| `F32Gt`             | 6    |
+| `F32Le`             | 6    |
+| `F32Ge`             | 6    |
+| `F64Eq`             | 6    |
+| `F64Ne`             | 6    |
+| `F64Lt`             | 6    |
+| `F64Gt`             | 6    |
+| `F64Le`             | 6    |
+| `F64Ge`             | 6    |
+| `F32Abs`            | 5    |
+| `F32Neg`            | 5    |
+| `F32Ceil`           | 100  |
+| `F32Floor`          | 100  |
+| `F32Trunc`          | 100  |
+| `F32Nearest`        | 100  |
+| `F32Sqrt`           | 100  |
+| `F32Add`            | 5    |
+| `F32Sub`            | 5    |
+| `F32Mul`            | 15   |
+| `F32Div`            | 100  |
+| `F32Min`            | 15   |
+| `F32Max`            | 15   |
+| `F32Copysign`       | 5    |
+| `F64Abs`            | 5    |
+| `F64Neg`            | 5    |
+| `F64Ceil`           | 100  |
+| `F64Floor`          | 100  |
+| `F64Trunc`          | 100  |
+| `F64Nearest`        | 100  |
+| `F64Sqrt`           | 100  |
+| `F64Add`            | 5    |
+| `F64Sub`            | 5    |
+| `F64Mul`            | 15   |
+| `F64Div`            | 100  |
+| `F64Min`            | 15   |
+| `F64Max`            | 15   |
+| `F64Copysign`       | 5    |
+| `F32ConvertI32S`    | 100  |
+| `F32ConvertI32U`    | 100  |
+| `F32ConvertI64S`    | 100  |
+| `F32ConvertI64U`    | 100  |
+| `F32DemoteF64`      | 100  |
+| `F64ConvertI32S`    | 100  |
+| `F64ConvertI32U`    | 100  |
+| `F64ConvertI64S`    | 100  |
+| `F64ConvertI64U`    | 100  |
+| `F64PromoteF32`     | 100  |
+| `F32ReinterpretI32` | 100  |
+| `F64ReinterpretI64` | 100  |
+
+</details>
+
+{/* END GAS-TABLES */}
+
+To regenerate the tables after a gas schedule update, download the current mainnet configuration package and run the generator with the package number and the date:
+
+```bash
+mkdir -p /tmp/klever-config
+curl -sS https://backup.mainnet.klever.org/config.mainnet.108.tar.gz | tar -xz -C /tmp/klever-config
+pnpm run gen:gas-tables /tmp/klever-config/config/gasScheduleV1.yaml 108 2026-11-06
+```
+
+Which schedule file a network uses, from which epoch, is set by `gasSchedule.gasScheduleByEpochs` in the package's `enableEpochs.yaml`. Mainnet package 108 uses `gasScheduleV1.yaml` from epoch 4860; testnet package 109 switched to the same file at epoch 32945.
