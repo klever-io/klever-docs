@@ -68,3 +68,7 @@ This macro will print the following:
 `"I accept CROWD-123456, a number of 2000, and only until 604800"`
 
 Note: For ASCII or decimal representation, use `{}`, and for hexadecimal, use `{:x}`.
+
+## Calls That Fail with "memory limit reached"
+
+If a call fails with result code `VMExecutionFailed` and the internal VM error `memory limit reached`, the contract hit a VM memory limit, for example by calling `memory.grow` more often than the VM allows. The fee paid for the call's gas limit is not returned. These limits are not visible in the Rust code. See [VM Memory Limits](/smart-contracts/config-and-tooling/memory-allocation#vm-memory-limits) for the current values and how they are enforced.

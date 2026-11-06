@@ -154,9 +154,9 @@ Byte slices are a special case of the [list types](developers/data/composite-val
 | `&'static str`  | `"abc"`                      | `0x616263`         | `0x00000003616263` | Unicode string (slice).                                      |
 | `String`        | `"abc".to_string()`          | `0x616263`         | `0x00000003616263` | Unicode string (owned).                                      |
 
-|                                                                                                                                             |
-| ------------------------------------------------------------------------------------------------------------------------------------------- |
-| ℹ️ Inside contracts, `ManagedBuffer` is [the recommended type for generic bytes](developers/best-practices/the-dynamic-allocation-problem). |
+|                                                                                                                                       |
+| ------------------------------------------------------------------------------------------------------------------------------------- |
+| ℹ️ Inside contracts, `ManagedBuffer` is [the recommended type for generic bytes](/smart-contracts/best-practices/dynamic-allocation). |
 
 ---
 

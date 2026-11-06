@@ -18,7 +18,7 @@ export const bodyTransaction = `{
       "signed": true
     }
   ],
-  "Threshold": 2,
+  "threshold": 2,
   "raw": {
     "RawData": {
       "Nonce": 4,
@@ -148,20 +148,68 @@ If, for some reason, your transaction was broadcast but doesn't appear in the pr
 
 ## Multisig API reference
 
+The Multisig API stores a transaction while its cosigners collect signatures. It does not broadcast on its own: once the collected weight reaches the permission threshold, the client calls `POST /broadcast/{hash}`. It is available at `https://multisign.mainnet.klever.org` and `https://multisign.testnet.klever.org`.
+
 ### 1. Create a transaction
 
-- You will need to create a transaction with a valid `permissionID`.
-- Your transaction will be stored with the permission addresses and weights.
+- Build the transaction with the node (`POST /transaction/send`) or with an SDK, using the multisig account as `sender` and a valid `permissionID`.
+- Send it to `POST /transaction` together with its `hash`. The `hash` is the transaction hash the node returns: the hex encoding of the 32-byte Blake2b-256 digest of `RawData`. The API recomputes it from the `raw.RawData` you send and rejects the request when they differ, so the raw data and the signatures are always bound to the same hash. A `0x` prefix is not accepted.
+- The transaction is stored under its lower-case hash, which the response returns: `{"status": "OK", "hash": "<lower-case hash>"}`. Upper-case hex is accepted on every endpoint and converted to lower case.
+- The first request may carry no signatures: it creates the pending transaction, stored with the permission addresses and weights.
+
+<Note color="yellow">
+    **Signatures are verified against the hash.** Every signature must be an ed25519 signature of the 32-byte hash, made by one of the addresses of the permission. A request whose `hash` does not match its `raw.RawData`, or that carries a signature from a key outside the permission, is rejected and nothing is stored.
+</Note>
 
 ### 2. Add signatures
 
-- With your transaction saved on our database, you will be able to add the remaining signatures of the missing addresses
+- Each cosigner signs the hash with their key and sends it to the same `POST /transaction` endpoint, with the same `hash` and `raw.RawData` and their signature in `raw.Signature`.
+- Once the transaction is stored, every request must bring at least one new signature. Sending the signatures already collected together with yours is fine: the known ones are ignored and the new one is merged. A request that brings nothing new, whether it repeats stored signatures or carries none, is rejected.
+- The request is read from `hash` and `raw` only. `address`, `signers` and `threshold` in the body are ignored; which signers are marked as signed is decided from the signatures themselves.
 - You can list the transactions, and signers by hash or address.
 
 ### 3. Broadcast
 
-- After all missing signatures, you can broadcast the transaction to the network
-- But you only can do that if the weight of the permission is valid
+- When the weight of the collected signatures reaches the permission threshold, call `POST /broadcast/{hash}`. Before that, the request is rejected with `transaction is not fully signed yet`.
+- The transaction joins a queue per sender account and is sent to the network in nonce order. A `200` means it was queued; a temporary failure to reach the network is retried by the API and is not reported to the caller.
+- A hash that is not stored also returns `200` and does nothing. Check it with `GET /transaction/{hash}` first.
+
+### Delete a pending transaction
+
+- Any signer listed on the pending transaction can remove it with `DELETE /transaction/{hash}`, whether or not they have signed it yet. Deleting drops every signature collected so far.
+- The request must carry a **delete proof**: an ed25519 signature, by one of those signers, over `Blake2b-256("klever-multisign:delete:" || hash)`, where `hash` is the 32 raw bytes of the transaction hash (not its hex). Send it as hex in the body: `{"signature": "<hex>"}`.
+- Pending Tron transactions cannot be deleted through the API; they are removed when broadcast or when they expire.
+
+<Note color="yellow">
+    **Do not sign the transaction hash itself.** The cosignatures stored on a pending transaction are signatures over its hash, and anyone can read them with `GET /transaction/{hash}`. The API accepts only a signature over the delete message above, so a cosignature can never be used to delete a transaction.
+</Note>
+
+Example in Go. A Klever private key is the 32-byte ed25519 seed. A Klever PEM file holds 64 bytes, the seed followed by the public key, so the seed is its first 32 bytes; the Go SDK's `PrivateKey()` already returns the seed. `ed25519.Sign` needs the expanded key, so derive it with `ed25519.NewKeyFromSeed` first:
+
+```go
+txHash, _ := hex.DecodeString(hashHex) // 32 bytes
+msg := blake2b.Sum256(append([]byte("klever-multisign:delete:"), txHash...))
+key := ed25519.NewKeyFromSeed(seed) // seed: 32 bytes (the first 32 of a PEM key)
+signature := hex.EncodeToString(ed25519.Sign(key, msg[:]))
+// DELETE /transaction/{hashHex} with body {"signature": signature}
+```
+
+### Errors
+
+Errors are returned as `{"error": "<reason>"}` unless the table says the body is empty.
+
+| Endpoint | Status | Reason |
+|---|---|---|
+| `POST /transaction` | `400` | `json: Error marshalling json` (the body is not valid JSON), `invalid transaction data: missing raw data, sender or contract`, `invalid transaction hash: must be the 32-byte hash of the raw data`, `invalid signature`, `address has already signed this transaction`, `permission id not found on sender account` |
+| `POST /broadcast/{hash}` | `400` | `failed to validate request`, `invalid transaction hash: must be the 32-byte hash of the raw data`, `transaction is not fully signed yet`, `transaction nonce is lower than account nonce`, `another pending transaction with the same nonce already exists` |
+| `GET /transaction/{hash}` | `400` | `failed to validate request`, `invalid transaction hash: must be the 32-byte hash of the raw data` |
+| `GET /transaction/{hash}` | `404` | No transaction is stored under this hash. Empty body. |
+| `GET /transaction/by-address/{address}` | `400` | `json: Error marshalling json` (the address does not pass validation) |
+| `GET /transaction/by-address/{address}` | `204` | No transaction is stored for this address. Empty body. |
+| `DELETE /transaction/{hash}` | `400` | `failed to validate request`, `invalid transaction hash: must be the 32-byte hash of the raw data`, `missing signature: sign the delete proof of the transaction hash with a listed signer's key`, `invalid signature` (malformed, or not a delete proof by a listed signer), `deleting a Tron transaction requires a signature scheme that is not supported yet` |
+| `DELETE /transaction/{hash}` | `404` | `transaction not found` |
+| `POST /transaction`, `POST /broadcast/{hash}` | `500` | `cannot find account in database`: the `sender` account does not exist on chain. Retrying does not help; the account must exist (receive a transfer) first. |
+| Any | `500` | The API could not reach its storage or the blockchain. The body carries the underlying error. |
 
 ### API Reference
 
@@ -172,7 +220,7 @@ If, for some reason, your transaction was broadcast but doesn't appear in the pr
   code={bodyTransaction}
 	>
   <div>
-  Body example
+  Body example, in the shape the `GET` endpoints return. A `POST` is read from `hash` and `raw` only; `address`, `signers` and `threshold` are ignored on input and filled by the API.
 ```json
 {
   "hash": "bd51a21cb8c364f5b1cc20e44684fe1163bc0767a7051dcd34095d77d010bf5e",
@@ -189,7 +237,7 @@ If, for some reason, your transaction was broadcast but doesn't appear in the pr
       "signed": true
     }
   ],
-  "Threshold": 2,
+  "threshold": 2,
   "raw": {
     "RawData": {
       "Nonce": 4,
@@ -234,6 +282,12 @@ If, for some reason, your transaction was broadcast but doesn't appear in the pr
   tag="GET"
   label="https://multisign.mainnet.klever.org/transaction/by-address/{address}"
   title="List all transactions for an address"
+/>
+
+<CodeGroup
+  tag="DELETE"
+  label="https://multisign.mainnet.klever.org/transaction/{hash}"
+  title="Delete a pending transaction (requires a delete proof from a listed signer)"
 />
 
 ## Websocket Reference
