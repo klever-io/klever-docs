@@ -95,7 +95,7 @@ const MEANINGS: Record<string, string> = {
   MaxBuiltInCallsPerTx: 'Built-in function calls one transaction may make',
   MaxNumberOfTransfersPerTx: 'Token transfers one transaction may make',
   MaxNumberOfTrieReadsPerTx:
-    'Storage reads from the state trie one transaction may make',
+    'Reads from the state trie one transaction may make: storage reads, and the first write to each key not already read',
   // WASMOpcodeCost entries that are limits or settings, not opcodes
   MaxMemoryGrow: 'Limit, not a cost: `memory.grow` calls allowed in one call',
   MaxMemoryGrowDelta: 'Limit, not a cost: pages one `memory.grow` may request',
@@ -120,12 +120,37 @@ function costTable(s: Map<string, number>, withMeaning = true): string {
   )
 }
 
+/**
+ * The opcodes whose cost the VM passes to the metering engine: the fields of
+ * `OpcodeCost` in klever-go `kvm/wasmer2/opcodeCost.go`. Every other opcode in
+ * `WASMOpcodeCost` is never charged; contracts that use those opcodes are
+ * rejected when the VM compiles them. Update this list when that struct changes.
+ */
+const CHARGED_OPCODES = new Set(
+  `Block Br BrIf BrTable Call CallIndirect Catch CatchAll Delegate Drop Else End
+  GlobalGet GlobalSet I32Add I32And I32Clz I32Const I32Ctz I32DivS I32DivU I32Eq
+  I32Eqz I32Extend16S I32Extend8S I32GeS I32GeU I32GtS I32GtU I32LeS I32LeU
+  I32Load I32Load16S I32Load16U I32Load8S I32Load8U I32LtS I32LtU I32Mul I32Ne
+  I32Or I32Popcnt I32RemS I32RemU I32Rotl I32Rotr I32Shl I32ShrS I32ShrU I32Store
+  I32Store16 I32Store8 I32Sub I32WrapI64 I32Xor I64Add I64And I64Clz I64Const
+  I64Ctz I64DivS I64DivU I64Eq I64Eqz I64Extend16S I64Extend32S I64Extend8S
+  I64ExtendI32S I64ExtendI32U I64GeS I64GeU I64GtS I64GtU I64LeS I64LeU I64Load
+  I64Load16S I64Load16U I64Load32S I64Load32U I64Load8S I64Load8U I64LtS I64LtU
+  I64Mul I64Ne I64Or I64Popcnt I64RemS I64RemU I64Rotl I64Rotr I64Shl I64ShrS
+  I64ShrU I64Store I64Store16 I64Store32 I64Store8 I64Sub I64Xor If LocalGet
+  LocalSet LocalTee LocalAllocate Loop MemoryGrow MemorySize Nop RefFunc RefIsNull
+  RefNull Rethrow Return ReturnCall ReturnCallIndirect Select TableGet TableGrow
+  TableInit TableSet TableSize Throw Try TypedSelect Unreachable Unwind`.split(
+    /\s+/,
+  ),
+)
+
 /** Groups for the WASM opcode table, tried in order; the first match wins. */
 const OPCODE_GROUPS: [string, (op: string) => boolean][] = [
   [
     'Limits and settings',
     (op) =>
-      /^(MaxMemoryGrow|MaxMemoryGrowDelta|MaxDeclaredTableSize|LocalAllocate|LocalsUnmetered)$/.test(
+      /^(MaxMemoryGrow|MaxMemoryGrowDelta|MaxDeclaredTableSize|LocalAllocate|LocalsUnmetered|TableInitPerElement)$/.test(
         op,
       ),
   ],
@@ -165,6 +190,12 @@ function opcodeTables(s: Map<string, number>): string {
   const groups = new Map<string, [string, number][]>(
     OPCODE_GROUPS.map(([g]) => [g, []]),
   )
+  for (const op of CHARGED_OPCODES) {
+    if (!s.has(op))
+      throw new Error(
+        `charged opcode ${op} is not in WASMOpcodeCost; check CHARGED_OPCODES`,
+      )
+  }
   for (const [op, cost] of s) {
     const group = OPCODE_GROUPS.find(([, match]) => match(op))
     if (!group)
@@ -178,13 +209,19 @@ function opcodeTables(s: Map<string, number>): string {
       const rows = ops.map(([op, c]) =>
         isSettings
           ? [`\`${op}\``, fmt(c), MEANINGS[op] ?? '']
-          : [`\`${op}\``, fmt(c)],
+          : [`\`${op}\``, fmt(c), CHARGED_OPCODES.has(op) ? 'Yes' : 'No'],
       )
       const body = table(
-        isSettings ? ['Name', 'Value', 'Meaning'] : ['Opcode', 'Cost'],
+        isSettings
+          ? ['Name', 'Value', 'Meaning']
+          : ['Opcode', 'Cost', 'Charged'],
         rows,
       )
-      return `<details>\n<summary>${g} (${ops.length})</summary>\n\n${body}\n\n</details>`
+      const charged = ops.filter(([op]) => CHARGED_OPCODES.has(op)).length
+      const count = isSettings
+        ? `${ops.length}`
+        : `${ops.length}, ${charged === 0 ? 'none' : charged} charged`
+      return `<details>\n<summary>${g} (${count})</summary>\n\n${body}\n\n</details>`
     })
     .join('\n\n')
 }
@@ -286,8 +323,8 @@ export function render(schedule: Schedule, pkg: string, date: string): string {
     '',
     api(
       'EthAPICost',
-      'Host functions: Ethereum-compatible API',
-      'The EEI-style API kept for compatibility.',
+      'Unused: Ethereum-compatible API',
+      'Present in the schedule file but not used: the VM has no Ethereum-compatible API, and none of these costs is ever charged.',
     ),
     '',
     api(
@@ -298,7 +335,7 @@ export function render(schedule: Schedule, pkg: string, date: string): string {
     '',
     `### WebAssembly opcodes`,
     '',
-    `\`WASMOpcodeCost\`: ${total('WASMOpcodeCost')} entries, grouped by kind. A few entries in this section are limits or settings rather than opcode costs; they are listed first.`,
+    `\`WASMOpcodeCost\`: ${total('WASMOpcodeCost')} entries, grouped by kind. A few entries in this section are limits or settings rather than opcode costs; they are listed first. The Charged column says whether the VM charges the opcode: an opcode marked No is never charged, because a contract that uses it is rejected when the VM compiles it.`,
     '',
     opcodeTables(section(schedule, 'WASMOpcodeCost')),
   ].join('\n')

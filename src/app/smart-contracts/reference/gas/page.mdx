@@ -30,7 +30,7 @@ Gas metering is injected into the contract's WebAssembly when the VM compiles it
 
 A loop that runs 1,000 times costs about 1,000 times the gas of its body. There is no discount for repeated code and no surcharge that grows with the number of iterations.
 
-The schedule lists a cost for every opcode the WebAssembly engine knows, including families a contract cannot use: the VM forbids floating-point operations (see [The Klever VM](/klever-vm#fast-execution-engine)), so those entries are never charged in practice.
+The schedule lists a cost for every opcode the WebAssembly engine knows, but only some of them are charged. The VM passes the metering engine the costs of control flow, locals and globals, integer loads, stores and arithmetic, `memory.size`, `memory.grow`, `ref.*` and `table.get`/`set`/`grow`/`size`/`init`. Floating point, SIMD, atomics and bulk memory (`memory.copy`, `memory.fill`, `memory.init`, `data.drop`), as well as `table.copy`, `table.fill` and `elem.drop`, are never charged: a contract that uses them is rejected when the VM compiles it (see [The Klever VM](/klever-vm#fast-execution-engine)). The opcode tables below mark which entries are charged.
 
 ### What is not per-instruction
 
@@ -38,7 +38,7 @@ Most of the gas in a real call is not spent on instructions. These charges follo
 
 - **Code loading.** `GetCode` (1,000,000) plus `AoTPreparePerByte` (100) per byte of code, on every call. A 50 KB contract pays about 6,000,000 gas before its first instruction runs. Code size is a cost on every call: keep `wasm-opt` on (it is by default, see [Build Reference](/smart-contracts/config-and-tooling/build-reference)) and avoid pulling in code the contract does not need.
 - **`memory.grow`.** A flat 1,000,000 per call, whatever the number of pages. The VM also limits how often and how much memory can grow; see [VM Memory Limits](/smart-contracts/config-and-tooling/memory-allocation#vm-memory-limits).
-- **Host functions.** Each one has a fixed cost per call from its API group: `BaseOpsAPICost`, `ManagedBufferAPICost`, `BigIntAPICost`, `BigFloatAPICost`, `ManagedMapAPICost`, `CryptoAPICost`, `EthAPICost`. When the function moves data between the VM and the contract, it also pays `DataCopyPerByte` (50) for each byte.
+- **Host functions.** Each one has a fixed cost per call from its API group: `BaseOpsAPICost`, `ManagedBufferAPICost`, `BigIntAPICost`, `BigFloatAPICost`, `ManagedMapAPICost`, `CryptoAPICost`. When the function moves data between the VM and the contract, it also pays `DataCopyPerByte` (50) for each byte.
 - **Storage reads.** Priced by a curve; see the next section.
 - **Storage writes.** The host function cost (`StorageStore`, `MBufferStorageStore`: 75,000) plus a per-byte cost that depends on what the write does:
   - a new value, or the bytes a value grows by: `StorePerByte` (10,000) per byte;
@@ -50,7 +50,7 @@ Most of the gas in a real call is not spent on instructions. These charges follo
 
 - **Logs and return data.** `PersistPerByte` per byte of event data and of data a contract returns, on top of the host function cost.
 - **Big integers longer than 32 bytes.** `CopyPerByteForTooBig` (1,000) per byte, when the value is copied or operated on.
-- **Built-in functions.** Protocol operations a contract triggers, such as a transfer or a freeze, cost what `BuiltInCost` lists (`Transfer`: 200,000).
+- **Built-in functions.** Protocol operations a contract triggers, such as a transfer or a freeze, cost what `BuiltInCost` lists (`Transfer`: 200,000). A transfer made by a contract also pays `BaseOpsAPICost.TransferValue` (100,000) per transfer, so it costs at least 300,000.
 
 ### Storage reads
 
@@ -62,7 +62,12 @@ cost(d) = a·d² + b·d + c
 
 with `a` = 688, `b` = 31,858 and `c` = 15,287 in the current schedule. If the curve gives less than `MinimumGasCost` (1,000), the read is charged the host function's fixed storage-load cost instead. The node checks the coefficients when it loads the schedule: `a` must be positive, `c` must not be negative, and the curve must not decrease for positive depths.
 
-The node currently reports a depth of 0 for every read, so **every uncached storage read costs `c` = 15,287 gas** plus `DataCopyPerByte` for the bytes read. A read served from the VM's storage cache costs `CachedStorageLoad` (1,000) instead.
+The node currently reports a depth of 0 for every read, so **every uncached storage read costs `c` = 15,287 gas**. On top of that, `MBufferStorageLoad` (the read the Rust framework uses) pays `DataCopyPerByte` for each byte of the key, for each key byte beyond 32, and twice for each byte of the value. A read served from the VM's storage cache costs `CachedStorageLoad` (1,000) instead of `c`, plus `DataCopyPerByte` once for each byte of the key and the value. For a key of `k` bytes and a value of `v` bytes:
+
+```
+uncached read = 15,287 + 50·k + 50·max(0, k − 32) + 100·v
+cached read   =  1,000 + 50·k + 50·v
+```
 
 The fixed `StorageLoad` costs in `BaseOpsAPICost` (50,000) are not added to this: the curve replaces them.
 
@@ -70,11 +75,13 @@ The fixed `StorageLoad` costs in `BaseOpsAPICost` (50,000) are not added to this
 
 Some limits are counts, not gas. One transaction, including every contract it calls, may make at most:
 
-| Limit                       | Current value |
-| --------------------------- | ------------- |
-| Built-in function calls     | 100           |
-| Token transfers             | 250           |
-| Storage reads from the trie | 1,500         |
+| Limit                     | Current value |
+| ------------------------- | ------------- |
+| Built-in function calls   | 100           |
+| Token transfers           | 250           |
+| Reads from the state trie | 1,500         |
+
+Reads from the state trie include storage reads and the first write to each key not already read in the transaction: before writing, the VM loads the key's old value, which uses one of the 1,500 reads even though no load gas is charged for it.
 
 Going over any of them fails the call with `max calls reached` (`too many built-in functions calls`, `too many KDA transfers` or `too many reads from trie`), with the same consequences as running out of gas.
 
@@ -186,11 +193,11 @@ The contract's code is 57,958 bytes: the code of its last upgrade before this ca
 
 `MaxPerTransaction`: these are counts, not gas.
 
-| Name                        | Limit | Meaning                                                    |
-| --------------------------- | ----- | ---------------------------------------------------------- |
-| `MaxBuiltInCallsPerTx`      | 100   | Built-in function calls one transaction may make           |
-| `MaxNumberOfTransfersPerTx` | 250   | Token transfers one transaction may make                   |
-| `MaxNumberOfTrieReadsPerTx` | 1,500 | Storage reads from the state trie one transaction may make |
+| Name                        | Limit | Meaning                                                                                                             |
+| --------------------------- | ----- | ------------------------------------------------------------------------------------------------------------------- |
+| `MaxBuiltInCallsPerTx`      | 100   | Built-in function calls one transaction may make                                                                    |
+| `MaxNumberOfTransfersPerTx` | 250   | Token transfers one transaction may make                                                                            |
+| `MaxNumberOfTrieReadsPerTx` | 1,500 | Reads from the state trie one transaction may make: storage reads, and the first write to each key not already read |
 
 ### Host functions: base operations
 
@@ -413,9 +420,9 @@ Hashes and signature checks.
 
 </details>
 
-### Host functions: Ethereum-compatible API
+### Unused: Ethereum-compatible API
 
-The EEI-style API kept for compatibility.
+Present in the schedule file but not used: the VM has no Ethereum-compatible API, and none of these costs is ever charged.
 
 <details>
 <summary>`EthAPICost` (32 entries)</summary>
@@ -496,13 +503,14 @@ Protocol operations that a contract triggers, such as transfers, freezes and ass
 
 ### WebAssembly opcodes
 
-`WASMOpcodeCost`: 559 entries, grouped by kind. A few entries in this section are limits or settings rather than opcode costs; they are listed first.
+`WASMOpcodeCost`: 559 entries, grouped by kind. A few entries in this section are limits or settings rather than opcode costs; they are listed first. The Charged column says whether the VM charges the opcode: an opcode marked No is never charged, because a contract that uses it is rejected when the VM compiles it.
 
 <details>
-<summary>Limits and settings (5)</summary>
+<summary>Limits and settings (6)</summary>
 
 | Name                   | Value | Meaning                                                         |
 | ---------------------- | ----- | --------------------------------------------------------------- |
+| `TableInitPerElement`  | 10    | Per element copied by `table.init`                              |
 | `LocalAllocate`        | 5     | Per local variable a function declares beyond `LocalsUnmetered` |
 | `LocalsUnmetered`      | 100   | Setting, not a cost: locals per function that are not charged   |
 | `MaxMemoryGrowDelta`   | 1     | Limit, not a cost: pages one `memory.grow` may request          |
@@ -512,620 +520,619 @@ Protocol operations that a contract triggers, such as transfers, freezes and ass
 </details>
 
 <details>
-<summary>Control flow (25)</summary>
+<summary>Control flow (25, 25 charged)</summary>
 
-| Opcode               | Cost |
-| -------------------- | ---- |
-| `Unreachable`        | 5    |
-| `Nop`                | 5    |
-| `Block`              | 5    |
-| `Loop`               | 5    |
-| `If`                 | 5    |
-| `Else`               | 5    |
-| `End`                | 5    |
-| `Br`                 | 5    |
-| `BrIf`               | 5    |
-| `BrTable`            | 5    |
-| `Return`             | 5    |
-| `Call`               | 5    |
-| `CallIndirect`       | 5    |
-| `Drop`               | 5    |
-| `Select`             | 5    |
-| `TypedSelect`        | 5    |
-| `Catch`              | 1    |
-| `CatchAll`           | 1    |
-| `Delegate`           | 1    |
-| `Rethrow`            | 1    |
-| `ReturnCall`         | 1    |
-| `ReturnCallIndirect` | 1    |
-| `Throw`              | 1    |
-| `Try`                | 1    |
-| `Unwind`             | 1    |
-
-</details>
-
-<details>
-<summary>Locals and globals (5)</summary>
-
-| Opcode      | Cost |
-| ----------- | ---- |
-| `LocalGet`  | 5    |
-| `LocalSet`  | 5    |
-| `LocalTee`  | 5    |
-| `GlobalGet` | 5    |
-| `GlobalSet` | 5    |
+| Opcode               | Cost | Charged |
+| -------------------- | ---- | ------- |
+| `Unreachable`        | 5    | Yes     |
+| `Nop`                | 5    | Yes     |
+| `Block`              | 5    | Yes     |
+| `Loop`               | 5    | Yes     |
+| `If`                 | 5    | Yes     |
+| `Else`               | 5    | Yes     |
+| `End`                | 5    | Yes     |
+| `Br`                 | 5    | Yes     |
+| `BrIf`               | 5    | Yes     |
+| `BrTable`            | 5    | Yes     |
+| `Return`             | 5    | Yes     |
+| `Call`               | 5    | Yes     |
+| `CallIndirect`       | 5    | Yes     |
+| `Drop`               | 5    | Yes     |
+| `Select`             | 5    | Yes     |
+| `TypedSelect`        | 5    | Yes     |
+| `Catch`              | 1    | Yes     |
+| `CatchAll`           | 1    | Yes     |
+| `Delegate`           | 1    | Yes     |
+| `Rethrow`            | 1    | Yes     |
+| `ReturnCall`         | 1    | Yes     |
+| `ReturnCallIndirect` | 1    | Yes     |
+| `Throw`              | 1    | Yes     |
+| `Try`                | 1    | Yes     |
+| `Unwind`             | 1    | Yes     |
 
 </details>
 
 <details>
-<summary>Memory (29)</summary>
+<summary>Locals and globals (5, 5 charged)</summary>
 
-| Opcode       | Cost      |
-| ------------ | --------- |
-| `I32Load`    | 5         |
-| `I64Load`    | 5         |
-| `F32Load`    | 6         |
-| `F64Load`    | 6         |
-| `I32Load8S`  | 5         |
-| `I32Load8U`  | 5         |
-| `I32Load16S` | 5         |
-| `I32Load16U` | 5         |
-| `I64Load8S`  | 5         |
-| `I64Load8U`  | 5         |
-| `I64Load16S` | 5         |
-| `I64Load16U` | 5         |
-| `I64Load32S` | 5         |
-| `I64Load32U` | 5         |
-| `I32Store`   | 5         |
-| `I64Store`   | 5         |
-| `F32Store`   | 12        |
-| `F64Store`   | 12        |
-| `I32Store8`  | 5         |
-| `I32Store16` | 5         |
-| `I64Store8`  | 5         |
-| `I64Store16` | 5         |
-| `I64Store32` | 5         |
-| `MemorySize` | 5         |
-| `MemoryGrow` | 1,000,000 |
-| `MemoryInit` | 5         |
-| `DataDrop`   | 5         |
-| `MemoryCopy` | 5         |
-| `MemoryFill` | 5         |
+| Opcode      | Cost | Charged |
+| ----------- | ---- | ------- |
+| `LocalGet`  | 5    | Yes     |
+| `LocalSet`  | 5    | Yes     |
+| `LocalTee`  | 5    | Yes     |
+| `GlobalGet` | 5    | Yes     |
+| `GlobalSet` | 5    | Yes     |
 
 </details>
 
 <details>
-<summary>Tables and references (12)</summary>
+<summary>Memory (29, 21 charged)</summary>
 
-| Opcode                | Cost |
-| --------------------- | ---- |
-| `RefNull`             | 5    |
-| `RefIsNull`           | 5    |
-| `RefFunc`             | 5    |
-| `TableInit`           | 10   |
-| `TableInitPerElement` | 10   |
-| `ElemDrop`            | 10   |
-| `TableCopy`           | 10   |
-| `TableFill`           | 10   |
-| `TableGet`            | 10   |
-| `TableSet`            | 10   |
-| `TableGrow`           | 10   |
-| `TableSize`           | 10   |
-
-</details>
-
-<details>
-<summary>Atomics (threads) (70)</summary>
-
-| Opcode                   | Cost      |
-| ------------------------ | --------- |
-| `AtomicNotify`           | 1,000,000 |
-| `I32AtomicWait`          | 1,000,000 |
-| `I64AtomicWait`          | 1,000,000 |
-| `AtomicFence`            | 1,000,000 |
-| `I32AtomicLoad`          | 1,000,000 |
-| `I64AtomicLoad`          | 1,000,000 |
-| `I32AtomicLoad8U`        | 1,000,000 |
-| `I32AtomicLoad16U`       | 1,000,000 |
-| `I64AtomicLoad8U`        | 1,000,000 |
-| `I64AtomicLoad16U`       | 1,000,000 |
-| `I64AtomicLoad32U`       | 1,000,000 |
-| `I32AtomicStore`         | 1,000,000 |
-| `I64AtomicStore`         | 1,000,000 |
-| `I32AtomicStore8`        | 1,000,000 |
-| `I32AtomicStore16`       | 1,000,000 |
-| `I64AtomicStore8`        | 1,000,000 |
-| `I64AtomicStore16`       | 1,000,000 |
-| `I64AtomicStore32`       | 1,000,000 |
-| `I32AtomicRmwAdd`        | 1,000,000 |
-| `I64AtomicRmwAdd`        | 1,000,000 |
-| `I32AtomicRmw8AddU`      | 1,000,000 |
-| `I32AtomicRmw16AddU`     | 1,000,000 |
-| `I64AtomicRmw8AddU`      | 1,000,000 |
-| `I64AtomicRmw16AddU`     | 1,000,000 |
-| `I64AtomicRmw32AddU`     | 1,000,000 |
-| `I32AtomicRmwSub`        | 1,000,000 |
-| `I64AtomicRmwSub`        | 1,000,000 |
-| `I32AtomicRmw8SubU`      | 1,000,000 |
-| `I32AtomicRmw16SubU`     | 1,000,000 |
-| `I64AtomicRmw8SubU`      | 1,000,000 |
-| `I64AtomicRmw16SubU`     | 1,000,000 |
-| `I64AtomicRmw32SubU`     | 1,000,000 |
-| `I32AtomicRmwAnd`        | 1,000,000 |
-| `I64AtomicRmwAnd`        | 1,000,000 |
-| `I32AtomicRmw8AndU`      | 1,000,000 |
-| `I32AtomicRmw16AndU`     | 1,000,000 |
-| `I64AtomicRmw8AndU`      | 1,000,000 |
-| `I64AtomicRmw16AndU`     | 1,000,000 |
-| `I64AtomicRmw32AndU`     | 1,000,000 |
-| `I32AtomicRmwOr`         | 1,000,000 |
-| `I64AtomicRmwOr`         | 1,000,000 |
-| `I32AtomicRmw8OrU`       | 1,000,000 |
-| `I32AtomicRmw16OrU`      | 1,000,000 |
-| `I64AtomicRmw8OrU`       | 1,000,000 |
-| `I64AtomicRmw16OrU`      | 1,000,000 |
-| `I64AtomicRmw32OrU`      | 1,000,000 |
-| `I32AtomicRmwXor`        | 1,000,000 |
-| `I64AtomicRmwXor`        | 1,000,000 |
-| `I32AtomicRmw8XorU`      | 1,000,000 |
-| `I32AtomicRmw16XorU`     | 1,000,000 |
-| `I64AtomicRmw8XorU`      | 1,000,000 |
-| `I64AtomicRmw16XorU`     | 1,000,000 |
-| `I64AtomicRmw32XorU`     | 1,000,000 |
-| `I32AtomicRmwXchg`       | 1,000,000 |
-| `I64AtomicRmwXchg`       | 1,000,000 |
-| `I32AtomicRmw8XchgU`     | 1,000,000 |
-| `I32AtomicRmw16XchgU`    | 1,000,000 |
-| `I64AtomicRmw8XchgU`     | 1,000,000 |
-| `I64AtomicRmw16XchgU`    | 1,000,000 |
-| `I64AtomicRmw32XchgU`    | 1,000,000 |
-| `I32AtomicRmwCmpxchg`    | 1,000,000 |
-| `I64AtomicRmwCmpxchg`    | 1,000,000 |
-| `I32AtomicRmw8CmpxchgU`  | 1,000,000 |
-| `I32AtomicRmw16CmpxchgU` | 1,000,000 |
-| `I64AtomicRmw8CmpxchgU`  | 1,000,000 |
-| `I64AtomicRmw16CmpxchgU` | 1,000,000 |
-| `I64AtomicRmw32CmpxchgU` | 1,000,000 |
-| `MemoryAtomicNotify`     | 1         |
-| `MemoryAtomicWait32`     | 1         |
-| `MemoryAtomicWait64`     | 1         |
+| Opcode       | Cost      | Charged |
+| ------------ | --------- | ------- |
+| `I32Load`    | 5         | Yes     |
+| `I64Load`    | 5         | Yes     |
+| `F32Load`    | 6         | No      |
+| `F64Load`    | 6         | No      |
+| `I32Load8S`  | 5         | Yes     |
+| `I32Load8U`  | 5         | Yes     |
+| `I32Load16S` | 5         | Yes     |
+| `I32Load16U` | 5         | Yes     |
+| `I64Load8S`  | 5         | Yes     |
+| `I64Load8U`  | 5         | Yes     |
+| `I64Load16S` | 5         | Yes     |
+| `I64Load16U` | 5         | Yes     |
+| `I64Load32S` | 5         | Yes     |
+| `I64Load32U` | 5         | Yes     |
+| `I32Store`   | 5         | Yes     |
+| `I64Store`   | 5         | Yes     |
+| `F32Store`   | 12        | No      |
+| `F64Store`   | 12        | No      |
+| `I32Store8`  | 5         | Yes     |
+| `I32Store16` | 5         | Yes     |
+| `I64Store8`  | 5         | Yes     |
+| `I64Store16` | 5         | Yes     |
+| `I64Store32` | 5         | Yes     |
+| `MemorySize` | 5         | Yes     |
+| `MemoryGrow` | 1,000,000 | Yes     |
+| `MemoryInit` | 5         | No      |
+| `DataDrop`   | 5         | No      |
+| `MemoryCopy` | 5         | No      |
+| `MemoryFill` | 5         | No      |
 
 </details>
 
 <details>
-<summary>SIMD (128-bit vectors) (273)</summary>
+<summary>Tables and references (11, 8 charged)</summary>
 
-| Opcode                      | Cost      |
-| --------------------------- | --------- |
-| `V128Load`                  | 1,000,000 |
-| `V128Store`                 | 1,000,000 |
-| `V128Const`                 | 1,000,000 |
-| `I8x16Splat`                | 1,000,000 |
-| `I8x16ExtractLaneS`         | 1,000,000 |
-| `I8x16ExtractLaneU`         | 1,000,000 |
-| `I8x16ReplaceLane`          | 1,000,000 |
-| `I16x8Splat`                | 1,000,000 |
-| `I16x8ExtractLaneS`         | 1,000,000 |
-| `I16x8ExtractLaneU`         | 1,000,000 |
-| `I16x8ReplaceLane`          | 1,000,000 |
-| `I32x4Splat`                | 1,000,000 |
-| `I32x4ExtractLane`          | 1,000,000 |
-| `I32x4ReplaceLane`          | 1,000,000 |
-| `I64x2Splat`                | 1,000,000 |
-| `I64x2ExtractLane`          | 1,000,000 |
-| `I64x2ReplaceLane`          | 1,000,000 |
-| `F32x4Splat`                | 1,000,000 |
-| `F32x4ExtractLane`          | 1,000,000 |
-| `F32x4ReplaceLane`          | 1,000,000 |
-| `F64x2Splat`                | 1,000,000 |
-| `F64x2ExtractLane`          | 1,000,000 |
-| `F64x2ReplaceLane`          | 1,000,000 |
-| `I8x16Eq`                   | 1,000,000 |
-| `I8x16Ne`                   | 1,000,000 |
-| `I8x16LtS`                  | 1,000,000 |
-| `I8x16LtU`                  | 1,000,000 |
-| `I8x16GtS`                  | 1,000,000 |
-| `I8x16GtU`                  | 1,000,000 |
-| `I8x16LeS`                  | 1,000,000 |
-| `I8x16LeU`                  | 1,000,000 |
-| `I8x16GeS`                  | 1,000,000 |
-| `I8x16GeU`                  | 1,000,000 |
-| `I16x8Eq`                   | 1,000,000 |
-| `I16x8Ne`                   | 1,000,000 |
-| `I16x8LtS`                  | 1,000,000 |
-| `I16x8LtU`                  | 1,000,000 |
-| `I16x8GtS`                  | 1,000,000 |
-| `I16x8GtU`                  | 1,000,000 |
-| `I16x8LeS`                  | 1,000,000 |
-| `I16x8LeU`                  | 1,000,000 |
-| `I16x8GeS`                  | 1,000,000 |
-| `I16x8GeU`                  | 1,000,000 |
-| `I32x4Eq`                   | 1,000,000 |
-| `I32x4Ne`                   | 1,000,000 |
-| `I32x4LtS`                  | 1,000,000 |
-| `I32x4LtU`                  | 1,000,000 |
-| `I32x4GtS`                  | 1,000,000 |
-| `I32x4GtU`                  | 1,000,000 |
-| `I32x4LeS`                  | 1,000,000 |
-| `I32x4LeU`                  | 1,000,000 |
-| `I32x4GeS`                  | 1,000,000 |
-| `I32x4GeU`                  | 1,000,000 |
-| `F32x4Eq`                   | 1,000,000 |
-| `F32x4Ne`                   | 1,000,000 |
-| `F32x4Lt`                   | 1,000,000 |
-| `F32x4Gt`                   | 1,000,000 |
-| `F32x4Le`                   | 1,000,000 |
-| `F32x4Ge`                   | 1,000,000 |
-| `F64x2Eq`                   | 1,000,000 |
-| `F64x2Ne`                   | 1,000,000 |
-| `F64x2Lt`                   | 1,000,000 |
-| `F64x2Gt`                   | 1,000,000 |
-| `F64x2Le`                   | 1,000,000 |
-| `F64x2Ge`                   | 1,000,000 |
-| `V128Not`                   | 1,000,000 |
-| `V128And`                   | 1,000,000 |
-| `V128AndNot`                | 1,000,000 |
-| `V128Or`                    | 1,000,000 |
-| `V128Xor`                   | 1,000,000 |
-| `V128Bitselect`             | 1,000,000 |
-| `I8x16Neg`                  | 1,000,000 |
-| `I8x16AnyTrue`              | 1,000,000 |
-| `I8x16AllTrue`              | 1,000,000 |
-| `I8x16Shl`                  | 1,000,000 |
-| `I8x16ShrS`                 | 1,000,000 |
-| `I8x16ShrU`                 | 1,000,000 |
-| `I8x16Add`                  | 1,000,000 |
-| `I8x16AddSaturateS`         | 1,000,000 |
-| `I8x16AddSaturateU`         | 1,000,000 |
-| `I8x16Sub`                  | 1,000,000 |
-| `I8x16SubSaturateS`         | 1,000,000 |
-| `I8x16SubSaturateU`         | 1,000,000 |
-| `I8x16MinS`                 | 1,000,000 |
-| `I8x16MinU`                 | 1,000,000 |
-| `I8x16MaxS`                 | 1,000,000 |
-| `I8x16MaxU`                 | 1,000,000 |
-| `I8x16Mul`                  | 1,000,000 |
-| `I16x8Neg`                  | 1,000,000 |
-| `I16x8AnyTrue`              | 1,000,000 |
-| `I16x8AllTrue`              | 1,000,000 |
-| `I16x8Shl`                  | 1,000,000 |
-| `I16x8ShrS`                 | 1,000,000 |
-| `I16x8ShrU`                 | 1,000,000 |
-| `I16x8Add`                  | 1,000,000 |
-| `I16x8AddSaturateS`         | 1,000,000 |
-| `I16x8AddSaturateU`         | 1,000,000 |
-| `I16x8Sub`                  | 1,000,000 |
-| `I16x8SubSaturateS`         | 1,000,000 |
-| `I16x8SubSaturateU`         | 1,000,000 |
-| `I16x8Mul`                  | 1,000,000 |
-| `I16x8MinS`                 | 1,000,000 |
-| `I16x8MinU`                 | 1,000,000 |
-| `I16x8MaxS`                 | 1,000,000 |
-| `I16x8MaxU`                 | 1,000,000 |
-| `I32x4Neg`                  | 1,000,000 |
-| `I32x4AnyTrue`              | 1,000,000 |
-| `I32x4AllTrue`              | 1,000,000 |
-| `I32x4Shl`                  | 1,000,000 |
-| `I32x4ShrS`                 | 1,000,000 |
-| `I32x4ShrU`                 | 1,000,000 |
-| `I32x4Add`                  | 1,000,000 |
-| `I32x4Sub`                  | 1,000,000 |
-| `I32x4Mul`                  | 1,000,000 |
-| `I32x4MinS`                 | 1,000,000 |
-| `I32x4MinU`                 | 1,000,000 |
-| `I32x4MaxS`                 | 1,000,000 |
-| `I32x4MaxU`                 | 1,000,000 |
-| `I64x2Neg`                  | 1,000,000 |
-| `I64x2AnyTrue`              | 1,000,000 |
-| `I64x2AllTrue`              | 1,000,000 |
-| `I64x2Shl`                  | 1,000,000 |
-| `I64x2ShrS`                 | 1,000,000 |
-| `I64x2ShrU`                 | 1,000,000 |
-| `I64x2Add`                  | 1,000,000 |
-| `I64x2Sub`                  | 1,000,000 |
-| `I64x2Mul`                  | 1,000,000 |
-| `F32x4Abs`                  | 1,000,000 |
-| `F32x4Neg`                  | 1,000,000 |
-| `F32x4Sqrt`                 | 1,000,000 |
-| `F32x4Add`                  | 1,000,000 |
-| `F32x4Sub`                  | 1,000,000 |
-| `F32x4Mul`                  | 1,000,000 |
-| `F32x4Div`                  | 1,000,000 |
-| `F32x4Min`                  | 1,000,000 |
-| `F32x4Max`                  | 1,000,000 |
-| `F64x2Abs`                  | 1,000,000 |
-| `F64x2Neg`                  | 1,000,000 |
-| `F64x2Sqrt`                 | 1,000,000 |
-| `F64x2Add`                  | 1,000,000 |
-| `F64x2Sub`                  | 1,000,000 |
-| `F64x2Mul`                  | 1,000,000 |
-| `F64x2Div`                  | 1,000,000 |
-| `F64x2Min`                  | 1,000,000 |
-| `F64x2Max`                  | 1,000,000 |
-| `I32x4TruncSatF32x4S`       | 1,000,000 |
-| `I32x4TruncSatF32x4U`       | 1,000,000 |
-| `I64x2TruncSatF64x2S`       | 1,000,000 |
-| `I64x2TruncSatF64x2U`       | 1,000,000 |
-| `F32x4ConvertI32x4S`        | 1,000,000 |
-| `F32x4ConvertI32x4U`        | 1,000,000 |
-| `F64x2ConvertI64x2S`        | 1,000,000 |
-| `F64x2ConvertI64x2U`        | 1,000,000 |
-| `V8x16Swizzle`              | 1,000,000 |
-| `V8x16Shuffle`              | 1,000,000 |
-| `V8x16LoadSplat`            | 1,000,000 |
-| `V16x8LoadSplat`            | 1,000,000 |
-| `V32x4LoadSplat`            | 1,000,000 |
-| `V64x2LoadSplat`            | 1,000,000 |
-| `I8x16NarrowI16x8S`         | 1,000,000 |
-| `I8x16NarrowI16x8U`         | 1,000,000 |
-| `I16x8NarrowI32x4S`         | 1,000,000 |
-| `I16x8NarrowI32x4U`         | 1,000,000 |
-| `I16x8WidenLowI8x16S`       | 1,000,000 |
-| `I16x8WidenHighI8x16S`      | 1,000,000 |
-| `I16x8WidenLowI8x16U`       | 1,000,000 |
-| `I16x8WidenHighI8x16U`      | 1,000,000 |
-| `I32x4WidenLowI16x8S`       | 1,000,000 |
-| `I32x4WidenHighI16x8S`      | 1,000,000 |
-| `I32x4WidenLowI16x8U`       | 1,000,000 |
-| `I32x4WidenHighI16x8U`      | 1,000,000 |
-| `I16x8Load8x8S`             | 1,000,000 |
-| `I16x8Load8x8U`             | 1,000,000 |
-| `I32x4Load16x4S`            | 1,000,000 |
-| `I32x4Load16x4U`            | 1,000,000 |
-| `I64x2Load32x2S`            | 1,000,000 |
-| `I64x2Load32x2U`            | 1,000,000 |
-| `I8x16RoundingAverageU`     | 1,000,000 |
-| `I16x8RoundingAverageU`     | 1,000,000 |
-| `F32x4Ceil`                 | 1         |
-| `F32x4DemoteF64x2Zero`      | 1         |
-| `F32x4Floor`                | 1         |
-| `F32x4Nearest`              | 1         |
-| `F32x4PMax`                 | 1         |
-| `F32x4PMin`                 | 1         |
-| `F32x4Trunc`                | 1         |
-| `F64x2Ceil`                 | 1         |
-| `F64x2ConvertLowI32x4S`     | 1         |
-| `F64x2ConvertLowI32x4U`     | 1         |
-| `F64x2Floor`                | 1         |
-| `F64x2Nearest`              | 1         |
-| `F64x2PMax`                 | 1         |
-| `F64x2PMin`                 | 1         |
-| `F64x2PromoteLowF32x4`      | 1         |
-| `F64x2Trunc`                | 1         |
-| `I16x8Abs`                  | 1         |
-| `I16x8AddSatS`              | 1         |
-| `I16x8AddSatU`              | 1         |
-| `I16x8Bitmask`              | 1         |
-| `I16x8ExtAddPairwiseI8x16S` | 1         |
-| `I16x8ExtAddPairwiseI8x16U` | 1         |
-| `I16x8ExtMulHighI8x16S`     | 1         |
-| `I16x8ExtMulHighI8x16U`     | 1         |
-| `I16x8ExtMulLowI8x16S`      | 1         |
-| `I16x8ExtMulLowI8x16U`      | 1         |
-| `I16x8ExtendHighI8x16S`     | 1         |
-| `I16x8ExtendHighI8x16U`     | 1         |
-| `I16x8ExtendLowI8x16S`      | 1         |
-| `I16x8ExtendLowI8x16U`      | 1         |
-| `I16x8Q15MulrSatS`          | 1         |
-| `I16x8SubSatS`              | 1         |
-| `I16x8SubSatU`              | 1         |
-| `I32x4Abs`                  | 1         |
-| `I32x4Bitmask`              | 1         |
-| `I32x4DotI16x8S`            | 1         |
-| `I32x4ExtAddPairwiseI16x8S` | 1         |
-| `I32x4ExtAddPairwiseI16x8U` | 1         |
-| `I32x4ExtMulHighI16x8S`     | 1         |
-| `I32x4ExtMulHighI16x8U`     | 1         |
-| `I32x4ExtMulLowI16x8S`      | 1         |
-| `I32x4ExtMulLowI16x8U`      | 1         |
-| `I32x4ExtendHighI16x8S`     | 1         |
-| `I32x4ExtendHighI16x8U`     | 1         |
-| `I32x4ExtendLowI16x8S`      | 1         |
-| `I32x4ExtendLowI16x8U`      | 1         |
-| `I32x4TruncSatF64x2SZero`   | 1         |
-| `I32x4TruncSatF64x2UZero`   | 1         |
-| `I64x2Abs`                  | 1         |
-| `I64x2Bitmask`              | 1         |
-| `I64x2Eq`                   | 1         |
-| `I64x2ExtMulHighI32x4S`     | 1         |
-| `I64x2ExtMulHighI32x4U`     | 1         |
-| `I64x2ExtMulLowI32x4S`      | 1         |
-| `I64x2ExtMulLowI32x4U`      | 1         |
-| `I64x2ExtendHighI32x4S`     | 1         |
-| `I64x2ExtendHighI32x4U`     | 1         |
-| `I64x2ExtendLowI32x4S`      | 1         |
-| `I64x2ExtendLowI32x4U`      | 1         |
-| `I64x2GeS`                  | 1         |
-| `I64x2GtS`                  | 1         |
-| `I64x2LeS`                  | 1         |
-| `I64x2LtS`                  | 1         |
-| `I64x2Ne`                   | 1         |
-| `I8x16Abs`                  | 1         |
-| `I8x16AddSatS`              | 1         |
-| `I8x16AddSatU`              | 1         |
-| `I8x16Bitmask`              | 1         |
-| `I8x16Popcnt`               | 1         |
-| `I8x16Shuffle`              | 1         |
-| `I8x16SubSatS`              | 1         |
-| `I8x16SubSatU`              | 1         |
-| `I8x16Swizzle`              | 1         |
-| `V128AnyTrue`               | 1         |
-| `V128Load16Lane`            | 1         |
-| `V128Load16Splat`           | 1         |
-| `V128Load16x4S`             | 1         |
-| `V128Load16x4U`             | 1         |
-| `V128Load32Lane`            | 1         |
-| `V128Load32Splat`           | 1         |
-| `V128Load32Zero`            | 1         |
-| `V128Load32x2S`             | 1         |
-| `V128Load32x2U`             | 1         |
-| `V128Load64Lane`            | 1         |
-| `V128Load64Splat`           | 1         |
-| `V128Load64Zero`            | 1         |
-| `V128Load8Lane`             | 1         |
-| `V128Load8Splat`            | 1         |
-| `V128Load8x8S`              | 1         |
-| `V128Load8x8U`              | 1         |
-| `V128Store16Lane`           | 1         |
-| `V128Store32Lane`           | 1         |
-| `V128Store64Lane`           | 1         |
-| `V128Store8Lane`            | 1         |
+| Opcode      | Cost | Charged |
+| ----------- | ---- | ------- |
+| `RefNull`   | 5    | Yes     |
+| `RefIsNull` | 5    | Yes     |
+| `RefFunc`   | 5    | Yes     |
+| `TableInit` | 10   | Yes     |
+| `ElemDrop`  | 10   | No      |
+| `TableCopy` | 10   | No      |
+| `TableFill` | 10   | No      |
+| `TableGet`  | 10   | Yes     |
+| `TableSet`  | 10   | Yes     |
+| `TableGrow` | 10   | Yes     |
+| `TableSize` | 10   | Yes     |
 
 </details>
 
 <details>
-<summary>Integer arithmetic, comparison and conversion (86)</summary>
+<summary>Atomics (threads) (70, none charged)</summary>
 
-| Opcode              | Cost |
-| ------------------- | ---- |
-| `I32Const`          | 5    |
-| `I64Const`          | 5    |
-| `I32Eqz`            | 5    |
-| `I32Eq`             | 5    |
-| `I32Ne`             | 5    |
-| `I32LtS`            | 5    |
-| `I32LtU`            | 5    |
-| `I32GtS`            | 5    |
-| `I32GtU`            | 5    |
-| `I32LeS`            | 5    |
-| `I32LeU`            | 5    |
-| `I32GeS`            | 5    |
-| `I32GeU`            | 5    |
-| `I64Eqz`            | 5    |
-| `I64Eq`             | 5    |
-| `I64Ne`             | 5    |
-| `I64LtS`            | 5    |
-| `I64LtU`            | 5    |
-| `I64GtS`            | 5    |
-| `I64GtU`            | 5    |
-| `I64LeS`            | 5    |
-| `I64LeU`            | 5    |
-| `I64GeS`            | 5    |
-| `I64GeU`            | 5    |
-| `I32Clz`            | 100  |
-| `I32Ctz`            | 100  |
-| `I32Popcnt`         | 100  |
-| `I32Add`            | 5    |
-| `I32Sub`            | 5    |
-| `I32Mul`            | 5    |
-| `I32DivS`           | 18   |
-| `I32DivU`           | 18   |
-| `I32RemS`           | 18   |
-| `I32RemU`           | 18   |
-| `I32And`            | 5    |
-| `I32Or`             | 5    |
-| `I32Xor`            | 5    |
-| `I32Shl`            | 5    |
-| `I32ShrS`           | 5    |
-| `I32ShrU`           | 5    |
-| `I32Rotl`           | 5    |
-| `I32Rotr`           | 5    |
-| `I64Clz`            | 100  |
-| `I64Ctz`            | 100  |
-| `I64Popcnt`         | 100  |
-| `I64Add`            | 5    |
-| `I64Sub`            | 5    |
-| `I64Mul`            | 5    |
-| `I64DivS`           | 18   |
-| `I64DivU`           | 18   |
-| `I64RemS`           | 18   |
-| `I64RemU`           | 18   |
-| `I64And`            | 5    |
-| `I64Or`             | 5    |
-| `I64Xor`            | 5    |
-| `I64Shl`            | 5    |
-| `I64ShrS`           | 5    |
-| `I64ShrU`           | 5    |
-| `I64Rotl`           | 5    |
-| `I64Rotr`           | 5    |
-| `I32WrapI64`        | 9    |
-| `I32TruncF32S`      | 100  |
-| `I32TruncF32U`      | 100  |
-| `I32TruncF64S`      | 100  |
-| `I32TruncF64U`      | 100  |
-| `I64ExtendI32S`     | 9    |
-| `I64ExtendI32U`     | 9    |
-| `I64TruncF32S`      | 100  |
-| `I64TruncF32U`      | 100  |
-| `I64TruncF64S`      | 100  |
-| `I64TruncF64U`      | 100  |
-| `I32ReinterpretF32` | 100  |
-| `I64ReinterpretF64` | 100  |
-| `I32Extend8S`       | 9    |
-| `I32Extend16S`      | 9    |
-| `I64Extend8S`       | 9    |
-| `I64Extend16S`      | 9    |
-| `I64Extend32S`      | 9    |
-| `I32TruncSatF32S`   | 100  |
-| `I32TruncSatF32U`   | 100  |
-| `I32TruncSatF64S`   | 100  |
-| `I32TruncSatF64U`   | 100  |
-| `I64TruncSatF32S`   | 100  |
-| `I64TruncSatF32U`   | 100  |
-| `I64TruncSatF64S`   | 100  |
-| `I64TruncSatF64U`   | 100  |
+| Opcode                   | Cost      | Charged |
+| ------------------------ | --------- | ------- |
+| `AtomicNotify`           | 1,000,000 | No      |
+| `I32AtomicWait`          | 1,000,000 | No      |
+| `I64AtomicWait`          | 1,000,000 | No      |
+| `AtomicFence`            | 1,000,000 | No      |
+| `I32AtomicLoad`          | 1,000,000 | No      |
+| `I64AtomicLoad`          | 1,000,000 | No      |
+| `I32AtomicLoad8U`        | 1,000,000 | No      |
+| `I32AtomicLoad16U`       | 1,000,000 | No      |
+| `I64AtomicLoad8U`        | 1,000,000 | No      |
+| `I64AtomicLoad16U`       | 1,000,000 | No      |
+| `I64AtomicLoad32U`       | 1,000,000 | No      |
+| `I32AtomicStore`         | 1,000,000 | No      |
+| `I64AtomicStore`         | 1,000,000 | No      |
+| `I32AtomicStore8`        | 1,000,000 | No      |
+| `I32AtomicStore16`       | 1,000,000 | No      |
+| `I64AtomicStore8`        | 1,000,000 | No      |
+| `I64AtomicStore16`       | 1,000,000 | No      |
+| `I64AtomicStore32`       | 1,000,000 | No      |
+| `I32AtomicRmwAdd`        | 1,000,000 | No      |
+| `I64AtomicRmwAdd`        | 1,000,000 | No      |
+| `I32AtomicRmw8AddU`      | 1,000,000 | No      |
+| `I32AtomicRmw16AddU`     | 1,000,000 | No      |
+| `I64AtomicRmw8AddU`      | 1,000,000 | No      |
+| `I64AtomicRmw16AddU`     | 1,000,000 | No      |
+| `I64AtomicRmw32AddU`     | 1,000,000 | No      |
+| `I32AtomicRmwSub`        | 1,000,000 | No      |
+| `I64AtomicRmwSub`        | 1,000,000 | No      |
+| `I32AtomicRmw8SubU`      | 1,000,000 | No      |
+| `I32AtomicRmw16SubU`     | 1,000,000 | No      |
+| `I64AtomicRmw8SubU`      | 1,000,000 | No      |
+| `I64AtomicRmw16SubU`     | 1,000,000 | No      |
+| `I64AtomicRmw32SubU`     | 1,000,000 | No      |
+| `I32AtomicRmwAnd`        | 1,000,000 | No      |
+| `I64AtomicRmwAnd`        | 1,000,000 | No      |
+| `I32AtomicRmw8AndU`      | 1,000,000 | No      |
+| `I32AtomicRmw16AndU`     | 1,000,000 | No      |
+| `I64AtomicRmw8AndU`      | 1,000,000 | No      |
+| `I64AtomicRmw16AndU`     | 1,000,000 | No      |
+| `I64AtomicRmw32AndU`     | 1,000,000 | No      |
+| `I32AtomicRmwOr`         | 1,000,000 | No      |
+| `I64AtomicRmwOr`         | 1,000,000 | No      |
+| `I32AtomicRmw8OrU`       | 1,000,000 | No      |
+| `I32AtomicRmw16OrU`      | 1,000,000 | No      |
+| `I64AtomicRmw8OrU`       | 1,000,000 | No      |
+| `I64AtomicRmw16OrU`      | 1,000,000 | No      |
+| `I64AtomicRmw32OrU`      | 1,000,000 | No      |
+| `I32AtomicRmwXor`        | 1,000,000 | No      |
+| `I64AtomicRmwXor`        | 1,000,000 | No      |
+| `I32AtomicRmw8XorU`      | 1,000,000 | No      |
+| `I32AtomicRmw16XorU`     | 1,000,000 | No      |
+| `I64AtomicRmw8XorU`      | 1,000,000 | No      |
+| `I64AtomicRmw16XorU`     | 1,000,000 | No      |
+| `I64AtomicRmw32XorU`     | 1,000,000 | No      |
+| `I32AtomicRmwXchg`       | 1,000,000 | No      |
+| `I64AtomicRmwXchg`       | 1,000,000 | No      |
+| `I32AtomicRmw8XchgU`     | 1,000,000 | No      |
+| `I32AtomicRmw16XchgU`    | 1,000,000 | No      |
+| `I64AtomicRmw8XchgU`     | 1,000,000 | No      |
+| `I64AtomicRmw16XchgU`    | 1,000,000 | No      |
+| `I64AtomicRmw32XchgU`    | 1,000,000 | No      |
+| `I32AtomicRmwCmpxchg`    | 1,000,000 | No      |
+| `I64AtomicRmwCmpxchg`    | 1,000,000 | No      |
+| `I32AtomicRmw8CmpxchgU`  | 1,000,000 | No      |
+| `I32AtomicRmw16CmpxchgU` | 1,000,000 | No      |
+| `I64AtomicRmw8CmpxchgU`  | 1,000,000 | No      |
+| `I64AtomicRmw16CmpxchgU` | 1,000,000 | No      |
+| `I64AtomicRmw32CmpxchgU` | 1,000,000 | No      |
+| `MemoryAtomicNotify`     | 1         | No      |
+| `MemoryAtomicWait32`     | 1         | No      |
+| `MemoryAtomicWait64`     | 1         | No      |
 
 </details>
 
 <details>
-<summary>Floating point (54)</summary>
+<summary>SIMD (128-bit vectors) (273, none charged)</summary>
 
-| Opcode              | Cost |
-| ------------------- | ---- |
-| `F32Const`          | 5    |
-| `F64Const`          | 5    |
-| `F32Eq`             | 6    |
-| `F32Ne`             | 6    |
-| `F32Lt`             | 6    |
-| `F32Gt`             | 6    |
-| `F32Le`             | 6    |
-| `F32Ge`             | 6    |
-| `F64Eq`             | 6    |
-| `F64Ne`             | 6    |
-| `F64Lt`             | 6    |
-| `F64Gt`             | 6    |
-| `F64Le`             | 6    |
-| `F64Ge`             | 6    |
-| `F32Abs`            | 5    |
-| `F32Neg`            | 5    |
-| `F32Ceil`           | 100  |
-| `F32Floor`          | 100  |
-| `F32Trunc`          | 100  |
-| `F32Nearest`        | 100  |
-| `F32Sqrt`           | 100  |
-| `F32Add`            | 5    |
-| `F32Sub`            | 5    |
-| `F32Mul`            | 15   |
-| `F32Div`            | 100  |
-| `F32Min`            | 15   |
-| `F32Max`            | 15   |
-| `F32Copysign`       | 5    |
-| `F64Abs`            | 5    |
-| `F64Neg`            | 5    |
-| `F64Ceil`           | 100  |
-| `F64Floor`          | 100  |
-| `F64Trunc`          | 100  |
-| `F64Nearest`        | 100  |
-| `F64Sqrt`           | 100  |
-| `F64Add`            | 5    |
-| `F64Sub`            | 5    |
-| `F64Mul`            | 15   |
-| `F64Div`            | 100  |
-| `F64Min`            | 15   |
-| `F64Max`            | 15   |
-| `F64Copysign`       | 5    |
-| `F32ConvertI32S`    | 100  |
-| `F32ConvertI32U`    | 100  |
-| `F32ConvertI64S`    | 100  |
-| `F32ConvertI64U`    | 100  |
-| `F32DemoteF64`      | 100  |
-| `F64ConvertI32S`    | 100  |
-| `F64ConvertI32U`    | 100  |
-| `F64ConvertI64S`    | 100  |
-| `F64ConvertI64U`    | 100  |
-| `F64PromoteF32`     | 100  |
-| `F32ReinterpretI32` | 100  |
-| `F64ReinterpretI64` | 100  |
+| Opcode                      | Cost      | Charged |
+| --------------------------- | --------- | ------- |
+| `V128Load`                  | 1,000,000 | No      |
+| `V128Store`                 | 1,000,000 | No      |
+| `V128Const`                 | 1,000,000 | No      |
+| `I8x16Splat`                | 1,000,000 | No      |
+| `I8x16ExtractLaneS`         | 1,000,000 | No      |
+| `I8x16ExtractLaneU`         | 1,000,000 | No      |
+| `I8x16ReplaceLane`          | 1,000,000 | No      |
+| `I16x8Splat`                | 1,000,000 | No      |
+| `I16x8ExtractLaneS`         | 1,000,000 | No      |
+| `I16x8ExtractLaneU`         | 1,000,000 | No      |
+| `I16x8ReplaceLane`          | 1,000,000 | No      |
+| `I32x4Splat`                | 1,000,000 | No      |
+| `I32x4ExtractLane`          | 1,000,000 | No      |
+| `I32x4ReplaceLane`          | 1,000,000 | No      |
+| `I64x2Splat`                | 1,000,000 | No      |
+| `I64x2ExtractLane`          | 1,000,000 | No      |
+| `I64x2ReplaceLane`          | 1,000,000 | No      |
+| `F32x4Splat`                | 1,000,000 | No      |
+| `F32x4ExtractLane`          | 1,000,000 | No      |
+| `F32x4ReplaceLane`          | 1,000,000 | No      |
+| `F64x2Splat`                | 1,000,000 | No      |
+| `F64x2ExtractLane`          | 1,000,000 | No      |
+| `F64x2ReplaceLane`          | 1,000,000 | No      |
+| `I8x16Eq`                   | 1,000,000 | No      |
+| `I8x16Ne`                   | 1,000,000 | No      |
+| `I8x16LtS`                  | 1,000,000 | No      |
+| `I8x16LtU`                  | 1,000,000 | No      |
+| `I8x16GtS`                  | 1,000,000 | No      |
+| `I8x16GtU`                  | 1,000,000 | No      |
+| `I8x16LeS`                  | 1,000,000 | No      |
+| `I8x16LeU`                  | 1,000,000 | No      |
+| `I8x16GeS`                  | 1,000,000 | No      |
+| `I8x16GeU`                  | 1,000,000 | No      |
+| `I16x8Eq`                   | 1,000,000 | No      |
+| `I16x8Ne`                   | 1,000,000 | No      |
+| `I16x8LtS`                  | 1,000,000 | No      |
+| `I16x8LtU`                  | 1,000,000 | No      |
+| `I16x8GtS`                  | 1,000,000 | No      |
+| `I16x8GtU`                  | 1,000,000 | No      |
+| `I16x8LeS`                  | 1,000,000 | No      |
+| `I16x8LeU`                  | 1,000,000 | No      |
+| `I16x8GeS`                  | 1,000,000 | No      |
+| `I16x8GeU`                  | 1,000,000 | No      |
+| `I32x4Eq`                   | 1,000,000 | No      |
+| `I32x4Ne`                   | 1,000,000 | No      |
+| `I32x4LtS`                  | 1,000,000 | No      |
+| `I32x4LtU`                  | 1,000,000 | No      |
+| `I32x4GtS`                  | 1,000,000 | No      |
+| `I32x4GtU`                  | 1,000,000 | No      |
+| `I32x4LeS`                  | 1,000,000 | No      |
+| `I32x4LeU`                  | 1,000,000 | No      |
+| `I32x4GeS`                  | 1,000,000 | No      |
+| `I32x4GeU`                  | 1,000,000 | No      |
+| `F32x4Eq`                   | 1,000,000 | No      |
+| `F32x4Ne`                   | 1,000,000 | No      |
+| `F32x4Lt`                   | 1,000,000 | No      |
+| `F32x4Gt`                   | 1,000,000 | No      |
+| `F32x4Le`                   | 1,000,000 | No      |
+| `F32x4Ge`                   | 1,000,000 | No      |
+| `F64x2Eq`                   | 1,000,000 | No      |
+| `F64x2Ne`                   | 1,000,000 | No      |
+| `F64x2Lt`                   | 1,000,000 | No      |
+| `F64x2Gt`                   | 1,000,000 | No      |
+| `F64x2Le`                   | 1,000,000 | No      |
+| `F64x2Ge`                   | 1,000,000 | No      |
+| `V128Not`                   | 1,000,000 | No      |
+| `V128And`                   | 1,000,000 | No      |
+| `V128AndNot`                | 1,000,000 | No      |
+| `V128Or`                    | 1,000,000 | No      |
+| `V128Xor`                   | 1,000,000 | No      |
+| `V128Bitselect`             | 1,000,000 | No      |
+| `I8x16Neg`                  | 1,000,000 | No      |
+| `I8x16AnyTrue`              | 1,000,000 | No      |
+| `I8x16AllTrue`              | 1,000,000 | No      |
+| `I8x16Shl`                  | 1,000,000 | No      |
+| `I8x16ShrS`                 | 1,000,000 | No      |
+| `I8x16ShrU`                 | 1,000,000 | No      |
+| `I8x16Add`                  | 1,000,000 | No      |
+| `I8x16AddSaturateS`         | 1,000,000 | No      |
+| `I8x16AddSaturateU`         | 1,000,000 | No      |
+| `I8x16Sub`                  | 1,000,000 | No      |
+| `I8x16SubSaturateS`         | 1,000,000 | No      |
+| `I8x16SubSaturateU`         | 1,000,000 | No      |
+| `I8x16MinS`                 | 1,000,000 | No      |
+| `I8x16MinU`                 | 1,000,000 | No      |
+| `I8x16MaxS`                 | 1,000,000 | No      |
+| `I8x16MaxU`                 | 1,000,000 | No      |
+| `I8x16Mul`                  | 1,000,000 | No      |
+| `I16x8Neg`                  | 1,000,000 | No      |
+| `I16x8AnyTrue`              | 1,000,000 | No      |
+| `I16x8AllTrue`              | 1,000,000 | No      |
+| `I16x8Shl`                  | 1,000,000 | No      |
+| `I16x8ShrS`                 | 1,000,000 | No      |
+| `I16x8ShrU`                 | 1,000,000 | No      |
+| `I16x8Add`                  | 1,000,000 | No      |
+| `I16x8AddSaturateS`         | 1,000,000 | No      |
+| `I16x8AddSaturateU`         | 1,000,000 | No      |
+| `I16x8Sub`                  | 1,000,000 | No      |
+| `I16x8SubSaturateS`         | 1,000,000 | No      |
+| `I16x8SubSaturateU`         | 1,000,000 | No      |
+| `I16x8Mul`                  | 1,000,000 | No      |
+| `I16x8MinS`                 | 1,000,000 | No      |
+| `I16x8MinU`                 | 1,000,000 | No      |
+| `I16x8MaxS`                 | 1,000,000 | No      |
+| `I16x8MaxU`                 | 1,000,000 | No      |
+| `I32x4Neg`                  | 1,000,000 | No      |
+| `I32x4AnyTrue`              | 1,000,000 | No      |
+| `I32x4AllTrue`              | 1,000,000 | No      |
+| `I32x4Shl`                  | 1,000,000 | No      |
+| `I32x4ShrS`                 | 1,000,000 | No      |
+| `I32x4ShrU`                 | 1,000,000 | No      |
+| `I32x4Add`                  | 1,000,000 | No      |
+| `I32x4Sub`                  | 1,000,000 | No      |
+| `I32x4Mul`                  | 1,000,000 | No      |
+| `I32x4MinS`                 | 1,000,000 | No      |
+| `I32x4MinU`                 | 1,000,000 | No      |
+| `I32x4MaxS`                 | 1,000,000 | No      |
+| `I32x4MaxU`                 | 1,000,000 | No      |
+| `I64x2Neg`                  | 1,000,000 | No      |
+| `I64x2AnyTrue`              | 1,000,000 | No      |
+| `I64x2AllTrue`              | 1,000,000 | No      |
+| `I64x2Shl`                  | 1,000,000 | No      |
+| `I64x2ShrS`                 | 1,000,000 | No      |
+| `I64x2ShrU`                 | 1,000,000 | No      |
+| `I64x2Add`                  | 1,000,000 | No      |
+| `I64x2Sub`                  | 1,000,000 | No      |
+| `I64x2Mul`                  | 1,000,000 | No      |
+| `F32x4Abs`                  | 1,000,000 | No      |
+| `F32x4Neg`                  | 1,000,000 | No      |
+| `F32x4Sqrt`                 | 1,000,000 | No      |
+| `F32x4Add`                  | 1,000,000 | No      |
+| `F32x4Sub`                  | 1,000,000 | No      |
+| `F32x4Mul`                  | 1,000,000 | No      |
+| `F32x4Div`                  | 1,000,000 | No      |
+| `F32x4Min`                  | 1,000,000 | No      |
+| `F32x4Max`                  | 1,000,000 | No      |
+| `F64x2Abs`                  | 1,000,000 | No      |
+| `F64x2Neg`                  | 1,000,000 | No      |
+| `F64x2Sqrt`                 | 1,000,000 | No      |
+| `F64x2Add`                  | 1,000,000 | No      |
+| `F64x2Sub`                  | 1,000,000 | No      |
+| `F64x2Mul`                  | 1,000,000 | No      |
+| `F64x2Div`                  | 1,000,000 | No      |
+| `F64x2Min`                  | 1,000,000 | No      |
+| `F64x2Max`                  | 1,000,000 | No      |
+| `I32x4TruncSatF32x4S`       | 1,000,000 | No      |
+| `I32x4TruncSatF32x4U`       | 1,000,000 | No      |
+| `I64x2TruncSatF64x2S`       | 1,000,000 | No      |
+| `I64x2TruncSatF64x2U`       | 1,000,000 | No      |
+| `F32x4ConvertI32x4S`        | 1,000,000 | No      |
+| `F32x4ConvertI32x4U`        | 1,000,000 | No      |
+| `F64x2ConvertI64x2S`        | 1,000,000 | No      |
+| `F64x2ConvertI64x2U`        | 1,000,000 | No      |
+| `V8x16Swizzle`              | 1,000,000 | No      |
+| `V8x16Shuffle`              | 1,000,000 | No      |
+| `V8x16LoadSplat`            | 1,000,000 | No      |
+| `V16x8LoadSplat`            | 1,000,000 | No      |
+| `V32x4LoadSplat`            | 1,000,000 | No      |
+| `V64x2LoadSplat`            | 1,000,000 | No      |
+| `I8x16NarrowI16x8S`         | 1,000,000 | No      |
+| `I8x16NarrowI16x8U`         | 1,000,000 | No      |
+| `I16x8NarrowI32x4S`         | 1,000,000 | No      |
+| `I16x8NarrowI32x4U`         | 1,000,000 | No      |
+| `I16x8WidenLowI8x16S`       | 1,000,000 | No      |
+| `I16x8WidenHighI8x16S`      | 1,000,000 | No      |
+| `I16x8WidenLowI8x16U`       | 1,000,000 | No      |
+| `I16x8WidenHighI8x16U`      | 1,000,000 | No      |
+| `I32x4WidenLowI16x8S`       | 1,000,000 | No      |
+| `I32x4WidenHighI16x8S`      | 1,000,000 | No      |
+| `I32x4WidenLowI16x8U`       | 1,000,000 | No      |
+| `I32x4WidenHighI16x8U`      | 1,000,000 | No      |
+| `I16x8Load8x8S`             | 1,000,000 | No      |
+| `I16x8Load8x8U`             | 1,000,000 | No      |
+| `I32x4Load16x4S`            | 1,000,000 | No      |
+| `I32x4Load16x4U`            | 1,000,000 | No      |
+| `I64x2Load32x2S`            | 1,000,000 | No      |
+| `I64x2Load32x2U`            | 1,000,000 | No      |
+| `I8x16RoundingAverageU`     | 1,000,000 | No      |
+| `I16x8RoundingAverageU`     | 1,000,000 | No      |
+| `F32x4Ceil`                 | 1         | No      |
+| `F32x4DemoteF64x2Zero`      | 1         | No      |
+| `F32x4Floor`                | 1         | No      |
+| `F32x4Nearest`              | 1         | No      |
+| `F32x4PMax`                 | 1         | No      |
+| `F32x4PMin`                 | 1         | No      |
+| `F32x4Trunc`                | 1         | No      |
+| `F64x2Ceil`                 | 1         | No      |
+| `F64x2ConvertLowI32x4S`     | 1         | No      |
+| `F64x2ConvertLowI32x4U`     | 1         | No      |
+| `F64x2Floor`                | 1         | No      |
+| `F64x2Nearest`              | 1         | No      |
+| `F64x2PMax`                 | 1         | No      |
+| `F64x2PMin`                 | 1         | No      |
+| `F64x2PromoteLowF32x4`      | 1         | No      |
+| `F64x2Trunc`                | 1         | No      |
+| `I16x8Abs`                  | 1         | No      |
+| `I16x8AddSatS`              | 1         | No      |
+| `I16x8AddSatU`              | 1         | No      |
+| `I16x8Bitmask`              | 1         | No      |
+| `I16x8ExtAddPairwiseI8x16S` | 1         | No      |
+| `I16x8ExtAddPairwiseI8x16U` | 1         | No      |
+| `I16x8ExtMulHighI8x16S`     | 1         | No      |
+| `I16x8ExtMulHighI8x16U`     | 1         | No      |
+| `I16x8ExtMulLowI8x16S`      | 1         | No      |
+| `I16x8ExtMulLowI8x16U`      | 1         | No      |
+| `I16x8ExtendHighI8x16S`     | 1         | No      |
+| `I16x8ExtendHighI8x16U`     | 1         | No      |
+| `I16x8ExtendLowI8x16S`      | 1         | No      |
+| `I16x8ExtendLowI8x16U`      | 1         | No      |
+| `I16x8Q15MulrSatS`          | 1         | No      |
+| `I16x8SubSatS`              | 1         | No      |
+| `I16x8SubSatU`              | 1         | No      |
+| `I32x4Abs`                  | 1         | No      |
+| `I32x4Bitmask`              | 1         | No      |
+| `I32x4DotI16x8S`            | 1         | No      |
+| `I32x4ExtAddPairwiseI16x8S` | 1         | No      |
+| `I32x4ExtAddPairwiseI16x8U` | 1         | No      |
+| `I32x4ExtMulHighI16x8S`     | 1         | No      |
+| `I32x4ExtMulHighI16x8U`     | 1         | No      |
+| `I32x4ExtMulLowI16x8S`      | 1         | No      |
+| `I32x4ExtMulLowI16x8U`      | 1         | No      |
+| `I32x4ExtendHighI16x8S`     | 1         | No      |
+| `I32x4ExtendHighI16x8U`     | 1         | No      |
+| `I32x4ExtendLowI16x8S`      | 1         | No      |
+| `I32x4ExtendLowI16x8U`      | 1         | No      |
+| `I32x4TruncSatF64x2SZero`   | 1         | No      |
+| `I32x4TruncSatF64x2UZero`   | 1         | No      |
+| `I64x2Abs`                  | 1         | No      |
+| `I64x2Bitmask`              | 1         | No      |
+| `I64x2Eq`                   | 1         | No      |
+| `I64x2ExtMulHighI32x4S`     | 1         | No      |
+| `I64x2ExtMulHighI32x4U`     | 1         | No      |
+| `I64x2ExtMulLowI32x4S`      | 1         | No      |
+| `I64x2ExtMulLowI32x4U`      | 1         | No      |
+| `I64x2ExtendHighI32x4S`     | 1         | No      |
+| `I64x2ExtendHighI32x4U`     | 1         | No      |
+| `I64x2ExtendLowI32x4S`      | 1         | No      |
+| `I64x2ExtendLowI32x4U`      | 1         | No      |
+| `I64x2GeS`                  | 1         | No      |
+| `I64x2GtS`                  | 1         | No      |
+| `I64x2LeS`                  | 1         | No      |
+| `I64x2LtS`                  | 1         | No      |
+| `I64x2Ne`                   | 1         | No      |
+| `I8x16Abs`                  | 1         | No      |
+| `I8x16AddSatS`              | 1         | No      |
+| `I8x16AddSatU`              | 1         | No      |
+| `I8x16Bitmask`              | 1         | No      |
+| `I8x16Popcnt`               | 1         | No      |
+| `I8x16Shuffle`              | 1         | No      |
+| `I8x16SubSatS`              | 1         | No      |
+| `I8x16SubSatU`              | 1         | No      |
+| `I8x16Swizzle`              | 1         | No      |
+| `V128AnyTrue`               | 1         | No      |
+| `V128Load16Lane`            | 1         | No      |
+| `V128Load16Splat`           | 1         | No      |
+| `V128Load16x4S`             | 1         | No      |
+| `V128Load16x4U`             | 1         | No      |
+| `V128Load32Lane`            | 1         | No      |
+| `V128Load32Splat`           | 1         | No      |
+| `V128Load32Zero`            | 1         | No      |
+| `V128Load32x2S`             | 1         | No      |
+| `V128Load32x2U`             | 1         | No      |
+| `V128Load64Lane`            | 1         | No      |
+| `V128Load64Splat`           | 1         | No      |
+| `V128Load64Zero`            | 1         | No      |
+| `V128Load8Lane`             | 1         | No      |
+| `V128Load8Splat`            | 1         | No      |
+| `V128Load8x8S`              | 1         | No      |
+| `V128Load8x8U`              | 1         | No      |
+| `V128Store16Lane`           | 1         | No      |
+| `V128Store32Lane`           | 1         | No      |
+| `V128Store64Lane`           | 1         | No      |
+| `V128Store8Lane`            | 1         | No      |
+
+</details>
+
+<details>
+<summary>Integer arithmetic, comparison and conversion (86, 68 charged)</summary>
+
+| Opcode              | Cost | Charged |
+| ------------------- | ---- | ------- |
+| `I32Const`          | 5    | Yes     |
+| `I64Const`          | 5    | Yes     |
+| `I32Eqz`            | 5    | Yes     |
+| `I32Eq`             | 5    | Yes     |
+| `I32Ne`             | 5    | Yes     |
+| `I32LtS`            | 5    | Yes     |
+| `I32LtU`            | 5    | Yes     |
+| `I32GtS`            | 5    | Yes     |
+| `I32GtU`            | 5    | Yes     |
+| `I32LeS`            | 5    | Yes     |
+| `I32LeU`            | 5    | Yes     |
+| `I32GeS`            | 5    | Yes     |
+| `I32GeU`            | 5    | Yes     |
+| `I64Eqz`            | 5    | Yes     |
+| `I64Eq`             | 5    | Yes     |
+| `I64Ne`             | 5    | Yes     |
+| `I64LtS`            | 5    | Yes     |
+| `I64LtU`            | 5    | Yes     |
+| `I64GtS`            | 5    | Yes     |
+| `I64GtU`            | 5    | Yes     |
+| `I64LeS`            | 5    | Yes     |
+| `I64LeU`            | 5    | Yes     |
+| `I64GeS`            | 5    | Yes     |
+| `I64GeU`            | 5    | Yes     |
+| `I32Clz`            | 100  | Yes     |
+| `I32Ctz`            | 100  | Yes     |
+| `I32Popcnt`         | 100  | Yes     |
+| `I32Add`            | 5    | Yes     |
+| `I32Sub`            | 5    | Yes     |
+| `I32Mul`            | 5    | Yes     |
+| `I32DivS`           | 18   | Yes     |
+| `I32DivU`           | 18   | Yes     |
+| `I32RemS`           | 18   | Yes     |
+| `I32RemU`           | 18   | Yes     |
+| `I32And`            | 5    | Yes     |
+| `I32Or`             | 5    | Yes     |
+| `I32Xor`            | 5    | Yes     |
+| `I32Shl`            | 5    | Yes     |
+| `I32ShrS`           | 5    | Yes     |
+| `I32ShrU`           | 5    | Yes     |
+| `I32Rotl`           | 5    | Yes     |
+| `I32Rotr`           | 5    | Yes     |
+| `I64Clz`            | 100  | Yes     |
+| `I64Ctz`            | 100  | Yes     |
+| `I64Popcnt`         | 100  | Yes     |
+| `I64Add`            | 5    | Yes     |
+| `I64Sub`            | 5    | Yes     |
+| `I64Mul`            | 5    | Yes     |
+| `I64DivS`           | 18   | Yes     |
+| `I64DivU`           | 18   | Yes     |
+| `I64RemS`           | 18   | Yes     |
+| `I64RemU`           | 18   | Yes     |
+| `I64And`            | 5    | Yes     |
+| `I64Or`             | 5    | Yes     |
+| `I64Xor`            | 5    | Yes     |
+| `I64Shl`            | 5    | Yes     |
+| `I64ShrS`           | 5    | Yes     |
+| `I64ShrU`           | 5    | Yes     |
+| `I64Rotl`           | 5    | Yes     |
+| `I64Rotr`           | 5    | Yes     |
+| `I32WrapI64`        | 9    | Yes     |
+| `I32TruncF32S`      | 100  | No      |
+| `I32TruncF32U`      | 100  | No      |
+| `I32TruncF64S`      | 100  | No      |
+| `I32TruncF64U`      | 100  | No      |
+| `I64ExtendI32S`     | 9    | Yes     |
+| `I64ExtendI32U`     | 9    | Yes     |
+| `I64TruncF32S`      | 100  | No      |
+| `I64TruncF32U`      | 100  | No      |
+| `I64TruncF64S`      | 100  | No      |
+| `I64TruncF64U`      | 100  | No      |
+| `I32ReinterpretF32` | 100  | No      |
+| `I64ReinterpretF64` | 100  | No      |
+| `I32Extend8S`       | 9    | Yes     |
+| `I32Extend16S`      | 9    | Yes     |
+| `I64Extend8S`       | 9    | Yes     |
+| `I64Extend16S`      | 9    | Yes     |
+| `I64Extend32S`      | 9    | Yes     |
+| `I32TruncSatF32S`   | 100  | No      |
+| `I32TruncSatF32U`   | 100  | No      |
+| `I32TruncSatF64S`   | 100  | No      |
+| `I32TruncSatF64U`   | 100  | No      |
+| `I64TruncSatF32S`   | 100  | No      |
+| `I64TruncSatF32U`   | 100  | No      |
+| `I64TruncSatF64S`   | 100  | No      |
+| `I64TruncSatF64U`   | 100  | No      |
+
+</details>
+
+<details>
+<summary>Floating point (54, none charged)</summary>
+
+| Opcode              | Cost | Charged |
+| ------------------- | ---- | ------- |
+| `F32Const`          | 5    | No      |
+| `F64Const`          | 5    | No      |
+| `F32Eq`             | 6    | No      |
+| `F32Ne`             | 6    | No      |
+| `F32Lt`             | 6    | No      |
+| `F32Gt`             | 6    | No      |
+| `F32Le`             | 6    | No      |
+| `F32Ge`             | 6    | No      |
+| `F64Eq`             | 6    | No      |
+| `F64Ne`             | 6    | No      |
+| `F64Lt`             | 6    | No      |
+| `F64Gt`             | 6    | No      |
+| `F64Le`             | 6    | No      |
+| `F64Ge`             | 6    | No      |
+| `F32Abs`            | 5    | No      |
+| `F32Neg`            | 5    | No      |
+| `F32Ceil`           | 100  | No      |
+| `F32Floor`          | 100  | No      |
+| `F32Trunc`          | 100  | No      |
+| `F32Nearest`        | 100  | No      |
+| `F32Sqrt`           | 100  | No      |
+| `F32Add`            | 5    | No      |
+| `F32Sub`            | 5    | No      |
+| `F32Mul`            | 15   | No      |
+| `F32Div`            | 100  | No      |
+| `F32Min`            | 15   | No      |
+| `F32Max`            | 15   | No      |
+| `F32Copysign`       | 5    | No      |
+| `F64Abs`            | 5    | No      |
+| `F64Neg`            | 5    | No      |
+| `F64Ceil`           | 100  | No      |
+| `F64Floor`          | 100  | No      |
+| `F64Trunc`          | 100  | No      |
+| `F64Nearest`        | 100  | No      |
+| `F64Sqrt`           | 100  | No      |
+| `F64Add`            | 5    | No      |
+| `F64Sub`            | 5    | No      |
+| `F64Mul`            | 15   | No      |
+| `F64Div`            | 100  | No      |
+| `F64Min`            | 15   | No      |
+| `F64Max`            | 15   | No      |
+| `F64Copysign`       | 5    | No      |
+| `F32ConvertI32S`    | 100  | No      |
+| `F32ConvertI32U`    | 100  | No      |
+| `F32ConvertI64S`    | 100  | No      |
+| `F32ConvertI64U`    | 100  | No      |
+| `F32DemoteF64`      | 100  | No      |
+| `F64ConvertI32S`    | 100  | No      |
+| `F64ConvertI32U`    | 100  | No      |
+| `F64ConvertI64S`    | 100  | No      |
+| `F64ConvertI64U`    | 100  | No      |
+| `F64PromoteF32`     | 100  | No      |
+| `F32ReinterpretI32` | 100  | No      |
+| `F64ReinterpretI64` | 100  | No      |
 
 </details>
 
