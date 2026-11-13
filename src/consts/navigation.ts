@@ -118,6 +118,7 @@ export const navigation: Array<NavGroup> = [
               },
               { title: 'Debugging', href: '/debugging' },
               { title: 'Random Numbers', href: '/random-numbers' },
+              { title: 'Gas and Fees', href: '/gas' },
             ],
           },
           {

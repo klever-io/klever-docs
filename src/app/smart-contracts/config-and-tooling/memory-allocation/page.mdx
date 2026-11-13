@@ -39,7 +39,7 @@ The Klever VM limits how much linear memory a contract can declare and how often
 | Pages requested by one `memory.grow`   | 1                   | Gas schedule, `WASMOpcodeCost.MaxMemoryGrowDelta`        | The call fails with `VMExecutionFailed` ("memory limit reached") and **keeps its full gas fee** |
 | Memory declared by the contract module | 20 pages (1.25 MiB) | Constant in the VM executor (`MAX_MEMORY_PAGES_ALLOWED`) | The deploy fails: the VM rejects the code as invalid contract code                              |
 
-Each successful `memory.grow` also costs gas: currently 1,000,000 (`WASMOpcodeCost.MemoryGrow`).
+Each successful `memory.grow` also costs gas: currently 1,000,000 (`WASMOpcodeCost.MemoryGrow`). [Gas and Fees](/smart-contracts/reference/gas) explains how the VM charges gas and lists every cost.
 
 ### Exceeding the grow limits fails the call
 
