@@ -5,7 +5,7 @@ Thank you for your interest in contributing! This guide explains how to set up y
 ## Getting Started
 - Fork the repository
 - Clone your fork
-- Ensure Node.js 20.x is active (repo ships with `.nvmrc`)
+- Ensure Node.js 24.x is active (repo ships with `.nvmrc`)
 - Install dependencies with pnpm
 
 ```bash

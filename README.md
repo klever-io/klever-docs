@@ -15,7 +15,7 @@ Welcome to the **Klever** open-source documentation repository! This project is 
 ## Getting Started
 
 ### Prerequisites
-- Node.js 20.x (project includes `.nvmrc`)
+- Node.js 24.x (project includes `.nvmrc`)
 - pnpm (standard package manager for this repo)
 
 Make sure you have Node.js installed on your machine. You can verify this by running:
