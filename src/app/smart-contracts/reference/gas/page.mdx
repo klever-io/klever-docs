@@ -73,15 +73,9 @@ The fixed `StorageLoad` costs in `BaseOpsAPICost` (50,000) are not added to this
 
 ### Per-transaction limits
 
-Some limits are counts, not gas. One transaction, including every contract it calls, may make at most:
+Some limits are counts, not gas. One transaction, including every contract it calls, may make only so many built-in function calls, token transfers and reads from the state trie. The current values are in the `MaxPerTransaction` table under [Current costs](#current-costs).
 
-| Limit                     | Current value |
-| ------------------------- | ------------- |
-| Built-in function calls   | 100           |
-| Token transfers           | 250           |
-| Reads from the state trie | 1,500         |
-
-Reads from the state trie include storage reads and the first write to each key not already read in the transaction: before writing, the VM loads the key's old value, which uses one of the 1,500 reads even though no load gas is charged for it.
+Reads from the state trie include storage reads and the first write to each key not already read in the transaction: before writing, the VM loads the key's old value, which counts as a read even though no load gas is charged for it.
 
 Going over any of them fails the call with `max calls reached` (`too many built-in functions calls`, `too many KDA transfers` or `too many reads from trie`), with the same consequences as running out of gas.
 
@@ -157,8 +151,8 @@ The contract's code is 57,958 bytes: the code of its last upgrade before this ca
 
 <Note>
   Values from `gasScheduleV1.yaml` in mainnet configuration package 108, read on
-  2026-11-06. Testnet runs the same file. They are set by the network
-  configuration, not by the VM code, and a gas schedule update can change them.
+  2026-11-06. They are set by the network configuration, not by the VM code, and
+  a gas schedule update can change them.
 </Note>
 
 ### Base operations
@@ -420,49 +414,7 @@ Hashes and signature checks.
 
 </details>
 
-### Unused: Ethereum-compatible API
-
-Present in the schedule file but not used: the VM has no Ethereum-compatible API, and none of these costs is ever charged.
-
-<details>
-<summary>`EthAPICost` (32 entries)</summary>
-
-| Name                  | Cost      |
-| --------------------- | --------- |
-| `UseGas`              | 100       |
-| `GetAddress`          | 100,000   |
-| `GetExternalBalance`  | 70,000    |
-| `GetBlockHash`        | 100,000   |
-| `Call`                | 160,000   |
-| `CallDataCopy`        | 200       |
-| `GetCallDataSize`     | 100       |
-| `CallCode`            | 160,000   |
-| `CallDelegate`        | 160,000   |
-| `CallStatic`          | 160,000   |
-| `StorageStore`        | 250,000   |
-| `StorageLoad`         | 100,000   |
-| `GetCaller`           | 100       |
-| `GetCallValue`        | 100       |
-| `CodeCopy`            | 1,000     |
-| `GetCodeSize`         | 100       |
-| `GetBlockCoinbase`    | 100       |
-| `Create`              | 320,000   |
-| `GetBlockDifficulty`  | 100       |
-| `ExternalCodeCopy`    | 3,000     |
-| `GetExternalCodeSize` | 2,500     |
-| `GetGasLeft`          | 100       |
-| `GetBlockGasLimit`    | 100,000   |
-| `Log`                 | 3,750     |
-| `GetBlockNumber`      | 100,000   |
-| `GetTxOrigin`         | 100,000   |
-| `Finish`              | 1         |
-| `Revert`              | 1         |
-| `GetReturnDataSize`   | 200       |
-| `ReturnDataCopy`      | 500       |
-| `SelfDestruct`        | 5,000,000 |
-| `GetBlockTimeStamp`   | 100,000   |
-
-</details>
+The schedule file also has an `EthAPICost` section (32 entries). It is not used: the VM has no Ethereum-compatible API, and none of these costs is ever charged.
 
 ### Built-in functions
 
@@ -622,365 +574,6 @@ Protocol operations that a contract triggers, such as transfers, freezes and ass
 </details>
 
 <details>
-<summary>Atomics (threads) (70, none charged)</summary>
-
-| Opcode                   | Cost      | Charged |
-| ------------------------ | --------- | ------- |
-| `AtomicNotify`           | 1,000,000 | No      |
-| `I32AtomicWait`          | 1,000,000 | No      |
-| `I64AtomicWait`          | 1,000,000 | No      |
-| `AtomicFence`            | 1,000,000 | No      |
-| `I32AtomicLoad`          | 1,000,000 | No      |
-| `I64AtomicLoad`          | 1,000,000 | No      |
-| `I32AtomicLoad8U`        | 1,000,000 | No      |
-| `I32AtomicLoad16U`       | 1,000,000 | No      |
-| `I64AtomicLoad8U`        | 1,000,000 | No      |
-| `I64AtomicLoad16U`       | 1,000,000 | No      |
-| `I64AtomicLoad32U`       | 1,000,000 | No      |
-| `I32AtomicStore`         | 1,000,000 | No      |
-| `I64AtomicStore`         | 1,000,000 | No      |
-| `I32AtomicStore8`        | 1,000,000 | No      |
-| `I32AtomicStore16`       | 1,000,000 | No      |
-| `I64AtomicStore8`        | 1,000,000 | No      |
-| `I64AtomicStore16`       | 1,000,000 | No      |
-| `I64AtomicStore32`       | 1,000,000 | No      |
-| `I32AtomicRmwAdd`        | 1,000,000 | No      |
-| `I64AtomicRmwAdd`        | 1,000,000 | No      |
-| `I32AtomicRmw8AddU`      | 1,000,000 | No      |
-| `I32AtomicRmw16AddU`     | 1,000,000 | No      |
-| `I64AtomicRmw8AddU`      | 1,000,000 | No      |
-| `I64AtomicRmw16AddU`     | 1,000,000 | No      |
-| `I64AtomicRmw32AddU`     | 1,000,000 | No      |
-| `I32AtomicRmwSub`        | 1,000,000 | No      |
-| `I64AtomicRmwSub`        | 1,000,000 | No      |
-| `I32AtomicRmw8SubU`      | 1,000,000 | No      |
-| `I32AtomicRmw16SubU`     | 1,000,000 | No      |
-| `I64AtomicRmw8SubU`      | 1,000,000 | No      |
-| `I64AtomicRmw16SubU`     | 1,000,000 | No      |
-| `I64AtomicRmw32SubU`     | 1,000,000 | No      |
-| `I32AtomicRmwAnd`        | 1,000,000 | No      |
-| `I64AtomicRmwAnd`        | 1,000,000 | No      |
-| `I32AtomicRmw8AndU`      | 1,000,000 | No      |
-| `I32AtomicRmw16AndU`     | 1,000,000 | No      |
-| `I64AtomicRmw8AndU`      | 1,000,000 | No      |
-| `I64AtomicRmw16AndU`     | 1,000,000 | No      |
-| `I64AtomicRmw32AndU`     | 1,000,000 | No      |
-| `I32AtomicRmwOr`         | 1,000,000 | No      |
-| `I64AtomicRmwOr`         | 1,000,000 | No      |
-| `I32AtomicRmw8OrU`       | 1,000,000 | No      |
-| `I32AtomicRmw16OrU`      | 1,000,000 | No      |
-| `I64AtomicRmw8OrU`       | 1,000,000 | No      |
-| `I64AtomicRmw16OrU`      | 1,000,000 | No      |
-| `I64AtomicRmw32OrU`      | 1,000,000 | No      |
-| `I32AtomicRmwXor`        | 1,000,000 | No      |
-| `I64AtomicRmwXor`        | 1,000,000 | No      |
-| `I32AtomicRmw8XorU`      | 1,000,000 | No      |
-| `I32AtomicRmw16XorU`     | 1,000,000 | No      |
-| `I64AtomicRmw8XorU`      | 1,000,000 | No      |
-| `I64AtomicRmw16XorU`     | 1,000,000 | No      |
-| `I64AtomicRmw32XorU`     | 1,000,000 | No      |
-| `I32AtomicRmwXchg`       | 1,000,000 | No      |
-| `I64AtomicRmwXchg`       | 1,000,000 | No      |
-| `I32AtomicRmw8XchgU`     | 1,000,000 | No      |
-| `I32AtomicRmw16XchgU`    | 1,000,000 | No      |
-| `I64AtomicRmw8XchgU`     | 1,000,000 | No      |
-| `I64AtomicRmw16XchgU`    | 1,000,000 | No      |
-| `I64AtomicRmw32XchgU`    | 1,000,000 | No      |
-| `I32AtomicRmwCmpxchg`    | 1,000,000 | No      |
-| `I64AtomicRmwCmpxchg`    | 1,000,000 | No      |
-| `I32AtomicRmw8CmpxchgU`  | 1,000,000 | No      |
-| `I32AtomicRmw16CmpxchgU` | 1,000,000 | No      |
-| `I64AtomicRmw8CmpxchgU`  | 1,000,000 | No      |
-| `I64AtomicRmw16CmpxchgU` | 1,000,000 | No      |
-| `I64AtomicRmw32CmpxchgU` | 1,000,000 | No      |
-| `MemoryAtomicNotify`     | 1         | No      |
-| `MemoryAtomicWait32`     | 1         | No      |
-| `MemoryAtomicWait64`     | 1         | No      |
-
-</details>
-
-<details>
-<summary>SIMD (128-bit vectors) (273, none charged)</summary>
-
-| Opcode                      | Cost      | Charged |
-| --------------------------- | --------- | ------- |
-| `V128Load`                  | 1,000,000 | No      |
-| `V128Store`                 | 1,000,000 | No      |
-| `V128Const`                 | 1,000,000 | No      |
-| `I8x16Splat`                | 1,000,000 | No      |
-| `I8x16ExtractLaneS`         | 1,000,000 | No      |
-| `I8x16ExtractLaneU`         | 1,000,000 | No      |
-| `I8x16ReplaceLane`          | 1,000,000 | No      |
-| `I16x8Splat`                | 1,000,000 | No      |
-| `I16x8ExtractLaneS`         | 1,000,000 | No      |
-| `I16x8ExtractLaneU`         | 1,000,000 | No      |
-| `I16x8ReplaceLane`          | 1,000,000 | No      |
-| `I32x4Splat`                | 1,000,000 | No      |
-| `I32x4ExtractLane`          | 1,000,000 | No      |
-| `I32x4ReplaceLane`          | 1,000,000 | No      |
-| `I64x2Splat`                | 1,000,000 | No      |
-| `I64x2ExtractLane`          | 1,000,000 | No      |
-| `I64x2ReplaceLane`          | 1,000,000 | No      |
-| `F32x4Splat`                | 1,000,000 | No      |
-| `F32x4ExtractLane`          | 1,000,000 | No      |
-| `F32x4ReplaceLane`          | 1,000,000 | No      |
-| `F64x2Splat`                | 1,000,000 | No      |
-| `F64x2ExtractLane`          | 1,000,000 | No      |
-| `F64x2ReplaceLane`          | 1,000,000 | No      |
-| `I8x16Eq`                   | 1,000,000 | No      |
-| `I8x16Ne`                   | 1,000,000 | No      |
-| `I8x16LtS`                  | 1,000,000 | No      |
-| `I8x16LtU`                  | 1,000,000 | No      |
-| `I8x16GtS`                  | 1,000,000 | No      |
-| `I8x16GtU`                  | 1,000,000 | No      |
-| `I8x16LeS`                  | 1,000,000 | No      |
-| `I8x16LeU`                  | 1,000,000 | No      |
-| `I8x16GeS`                  | 1,000,000 | No      |
-| `I8x16GeU`                  | 1,000,000 | No      |
-| `I16x8Eq`                   | 1,000,000 | No      |
-| `I16x8Ne`                   | 1,000,000 | No      |
-| `I16x8LtS`                  | 1,000,000 | No      |
-| `I16x8LtU`                  | 1,000,000 | No      |
-| `I16x8GtS`                  | 1,000,000 | No      |
-| `I16x8GtU`                  | 1,000,000 | No      |
-| `I16x8LeS`                  | 1,000,000 | No      |
-| `I16x8LeU`                  | 1,000,000 | No      |
-| `I16x8GeS`                  | 1,000,000 | No      |
-| `I16x8GeU`                  | 1,000,000 | No      |
-| `I32x4Eq`                   | 1,000,000 | No      |
-| `I32x4Ne`                   | 1,000,000 | No      |
-| `I32x4LtS`                  | 1,000,000 | No      |
-| `I32x4LtU`                  | 1,000,000 | No      |
-| `I32x4GtS`                  | 1,000,000 | No      |
-| `I32x4GtU`                  | 1,000,000 | No      |
-| `I32x4LeS`                  | 1,000,000 | No      |
-| `I32x4LeU`                  | 1,000,000 | No      |
-| `I32x4GeS`                  | 1,000,000 | No      |
-| `I32x4GeU`                  | 1,000,000 | No      |
-| `F32x4Eq`                   | 1,000,000 | No      |
-| `F32x4Ne`                   | 1,000,000 | No      |
-| `F32x4Lt`                   | 1,000,000 | No      |
-| `F32x4Gt`                   | 1,000,000 | No      |
-| `F32x4Le`                   | 1,000,000 | No      |
-| `F32x4Ge`                   | 1,000,000 | No      |
-| `F64x2Eq`                   | 1,000,000 | No      |
-| `F64x2Ne`                   | 1,000,000 | No      |
-| `F64x2Lt`                   | 1,000,000 | No      |
-| `F64x2Gt`                   | 1,000,000 | No      |
-| `F64x2Le`                   | 1,000,000 | No      |
-| `F64x2Ge`                   | 1,000,000 | No      |
-| `V128Not`                   | 1,000,000 | No      |
-| `V128And`                   | 1,000,000 | No      |
-| `V128AndNot`                | 1,000,000 | No      |
-| `V128Or`                    | 1,000,000 | No      |
-| `V128Xor`                   | 1,000,000 | No      |
-| `V128Bitselect`             | 1,000,000 | No      |
-| `I8x16Neg`                  | 1,000,000 | No      |
-| `I8x16AnyTrue`              | 1,000,000 | No      |
-| `I8x16AllTrue`              | 1,000,000 | No      |
-| `I8x16Shl`                  | 1,000,000 | No      |
-| `I8x16ShrS`                 | 1,000,000 | No      |
-| `I8x16ShrU`                 | 1,000,000 | No      |
-| `I8x16Add`                  | 1,000,000 | No      |
-| `I8x16AddSaturateS`         | 1,000,000 | No      |
-| `I8x16AddSaturateU`         | 1,000,000 | No      |
-| `I8x16Sub`                  | 1,000,000 | No      |
-| `I8x16SubSaturateS`         | 1,000,000 | No      |
-| `I8x16SubSaturateU`         | 1,000,000 | No      |
-| `I8x16MinS`                 | 1,000,000 | No      |
-| `I8x16MinU`                 | 1,000,000 | No      |
-| `I8x16MaxS`                 | 1,000,000 | No      |
-| `I8x16MaxU`                 | 1,000,000 | No      |
-| `I8x16Mul`                  | 1,000,000 | No      |
-| `I16x8Neg`                  | 1,000,000 | No      |
-| `I16x8AnyTrue`              | 1,000,000 | No      |
-| `I16x8AllTrue`              | 1,000,000 | No      |
-| `I16x8Shl`                  | 1,000,000 | No      |
-| `I16x8ShrS`                 | 1,000,000 | No      |
-| `I16x8ShrU`                 | 1,000,000 | No      |
-| `I16x8Add`                  | 1,000,000 | No      |
-| `I16x8AddSaturateS`         | 1,000,000 | No      |
-| `I16x8AddSaturateU`         | 1,000,000 | No      |
-| `I16x8Sub`                  | 1,000,000 | No      |
-| `I16x8SubSaturateS`         | 1,000,000 | No      |
-| `I16x8SubSaturateU`         | 1,000,000 | No      |
-| `I16x8Mul`                  | 1,000,000 | No      |
-| `I16x8MinS`                 | 1,000,000 | No      |
-| `I16x8MinU`                 | 1,000,000 | No      |
-| `I16x8MaxS`                 | 1,000,000 | No      |
-| `I16x8MaxU`                 | 1,000,000 | No      |
-| `I32x4Neg`                  | 1,000,000 | No      |
-| `I32x4AnyTrue`              | 1,000,000 | No      |
-| `I32x4AllTrue`              | 1,000,000 | No      |
-| `I32x4Shl`                  | 1,000,000 | No      |
-| `I32x4ShrS`                 | 1,000,000 | No      |
-| `I32x4ShrU`                 | 1,000,000 | No      |
-| `I32x4Add`                  | 1,000,000 | No      |
-| `I32x4Sub`                  | 1,000,000 | No      |
-| `I32x4Mul`                  | 1,000,000 | No      |
-| `I32x4MinS`                 | 1,000,000 | No      |
-| `I32x4MinU`                 | 1,000,000 | No      |
-| `I32x4MaxS`                 | 1,000,000 | No      |
-| `I32x4MaxU`                 | 1,000,000 | No      |
-| `I64x2Neg`                  | 1,000,000 | No      |
-| `I64x2AnyTrue`              | 1,000,000 | No      |
-| `I64x2AllTrue`              | 1,000,000 | No      |
-| `I64x2Shl`                  | 1,000,000 | No      |
-| `I64x2ShrS`                 | 1,000,000 | No      |
-| `I64x2ShrU`                 | 1,000,000 | No      |
-| `I64x2Add`                  | 1,000,000 | No      |
-| `I64x2Sub`                  | 1,000,000 | No      |
-| `I64x2Mul`                  | 1,000,000 | No      |
-| `F32x4Abs`                  | 1,000,000 | No      |
-| `F32x4Neg`                  | 1,000,000 | No      |
-| `F32x4Sqrt`                 | 1,000,000 | No      |
-| `F32x4Add`                  | 1,000,000 | No      |
-| `F32x4Sub`                  | 1,000,000 | No      |
-| `F32x4Mul`                  | 1,000,000 | No      |
-| `F32x4Div`                  | 1,000,000 | No      |
-| `F32x4Min`                  | 1,000,000 | No      |
-| `F32x4Max`                  | 1,000,000 | No      |
-| `F64x2Abs`                  | 1,000,000 | No      |
-| `F64x2Neg`                  | 1,000,000 | No      |
-| `F64x2Sqrt`                 | 1,000,000 | No      |
-| `F64x2Add`                  | 1,000,000 | No      |
-| `F64x2Sub`                  | 1,000,000 | No      |
-| `F64x2Mul`                  | 1,000,000 | No      |
-| `F64x2Div`                  | 1,000,000 | No      |
-| `F64x2Min`                  | 1,000,000 | No      |
-| `F64x2Max`                  | 1,000,000 | No      |
-| `I32x4TruncSatF32x4S`       | 1,000,000 | No      |
-| `I32x4TruncSatF32x4U`       | 1,000,000 | No      |
-| `I64x2TruncSatF64x2S`       | 1,000,000 | No      |
-| `I64x2TruncSatF64x2U`       | 1,000,000 | No      |
-| `F32x4ConvertI32x4S`        | 1,000,000 | No      |
-| `F32x4ConvertI32x4U`        | 1,000,000 | No      |
-| `F64x2ConvertI64x2S`        | 1,000,000 | No      |
-| `F64x2ConvertI64x2U`        | 1,000,000 | No      |
-| `V8x16Swizzle`              | 1,000,000 | No      |
-| `V8x16Shuffle`              | 1,000,000 | No      |
-| `V8x16LoadSplat`            | 1,000,000 | No      |
-| `V16x8LoadSplat`            | 1,000,000 | No      |
-| `V32x4LoadSplat`            | 1,000,000 | No      |
-| `V64x2LoadSplat`            | 1,000,000 | No      |
-| `I8x16NarrowI16x8S`         | 1,000,000 | No      |
-| `I8x16NarrowI16x8U`         | 1,000,000 | No      |
-| `I16x8NarrowI32x4S`         | 1,000,000 | No      |
-| `I16x8NarrowI32x4U`         | 1,000,000 | No      |
-| `I16x8WidenLowI8x16S`       | 1,000,000 | No      |
-| `I16x8WidenHighI8x16S`      | 1,000,000 | No      |
-| `I16x8WidenLowI8x16U`       | 1,000,000 | No      |
-| `I16x8WidenHighI8x16U`      | 1,000,000 | No      |
-| `I32x4WidenLowI16x8S`       | 1,000,000 | No      |
-| `I32x4WidenHighI16x8S`      | 1,000,000 | No      |
-| `I32x4WidenLowI16x8U`       | 1,000,000 | No      |
-| `I32x4WidenHighI16x8U`      | 1,000,000 | No      |
-| `I16x8Load8x8S`             | 1,000,000 | No      |
-| `I16x8Load8x8U`             | 1,000,000 | No      |
-| `I32x4Load16x4S`            | 1,000,000 | No      |
-| `I32x4Load16x4U`            | 1,000,000 | No      |
-| `I64x2Load32x2S`            | 1,000,000 | No      |
-| `I64x2Load32x2U`            | 1,000,000 | No      |
-| `I8x16RoundingAverageU`     | 1,000,000 | No      |
-| `I16x8RoundingAverageU`     | 1,000,000 | No      |
-| `F32x4Ceil`                 | 1         | No      |
-| `F32x4DemoteF64x2Zero`      | 1         | No      |
-| `F32x4Floor`                | 1         | No      |
-| `F32x4Nearest`              | 1         | No      |
-| `F32x4PMax`                 | 1         | No      |
-| `F32x4PMin`                 | 1         | No      |
-| `F32x4Trunc`                | 1         | No      |
-| `F64x2Ceil`                 | 1         | No      |
-| `F64x2ConvertLowI32x4S`     | 1         | No      |
-| `F64x2ConvertLowI32x4U`     | 1         | No      |
-| `F64x2Floor`                | 1         | No      |
-| `F64x2Nearest`              | 1         | No      |
-| `F64x2PMax`                 | 1         | No      |
-| `F64x2PMin`                 | 1         | No      |
-| `F64x2PromoteLowF32x4`      | 1         | No      |
-| `F64x2Trunc`                | 1         | No      |
-| `I16x8Abs`                  | 1         | No      |
-| `I16x8AddSatS`              | 1         | No      |
-| `I16x8AddSatU`              | 1         | No      |
-| `I16x8Bitmask`              | 1         | No      |
-| `I16x8ExtAddPairwiseI8x16S` | 1         | No      |
-| `I16x8ExtAddPairwiseI8x16U` | 1         | No      |
-| `I16x8ExtMulHighI8x16S`     | 1         | No      |
-| `I16x8ExtMulHighI8x16U`     | 1         | No      |
-| `I16x8ExtMulLowI8x16S`      | 1         | No      |
-| `I16x8ExtMulLowI8x16U`      | 1         | No      |
-| `I16x8ExtendHighI8x16S`     | 1         | No      |
-| `I16x8ExtendHighI8x16U`     | 1         | No      |
-| `I16x8ExtendLowI8x16S`      | 1         | No      |
-| `I16x8ExtendLowI8x16U`      | 1         | No      |
-| `I16x8Q15MulrSatS`          | 1         | No      |
-| `I16x8SubSatS`              | 1         | No      |
-| `I16x8SubSatU`              | 1         | No      |
-| `I32x4Abs`                  | 1         | No      |
-| `I32x4Bitmask`              | 1         | No      |
-| `I32x4DotI16x8S`            | 1         | No      |
-| `I32x4ExtAddPairwiseI16x8S` | 1         | No      |
-| `I32x4ExtAddPairwiseI16x8U` | 1         | No      |
-| `I32x4ExtMulHighI16x8S`     | 1         | No      |
-| `I32x4ExtMulHighI16x8U`     | 1         | No      |
-| `I32x4ExtMulLowI16x8S`      | 1         | No      |
-| `I32x4ExtMulLowI16x8U`      | 1         | No      |
-| `I32x4ExtendHighI16x8S`     | 1         | No      |
-| `I32x4ExtendHighI16x8U`     | 1         | No      |
-| `I32x4ExtendLowI16x8S`      | 1         | No      |
-| `I32x4ExtendLowI16x8U`      | 1         | No      |
-| `I32x4TruncSatF64x2SZero`   | 1         | No      |
-| `I32x4TruncSatF64x2UZero`   | 1         | No      |
-| `I64x2Abs`                  | 1         | No      |
-| `I64x2Bitmask`              | 1         | No      |
-| `I64x2Eq`                   | 1         | No      |
-| `I64x2ExtMulHighI32x4S`     | 1         | No      |
-| `I64x2ExtMulHighI32x4U`     | 1         | No      |
-| `I64x2ExtMulLowI32x4S`      | 1         | No      |
-| `I64x2ExtMulLowI32x4U`      | 1         | No      |
-| `I64x2ExtendHighI32x4S`     | 1         | No      |
-| `I64x2ExtendHighI32x4U`     | 1         | No      |
-| `I64x2ExtendLowI32x4S`      | 1         | No      |
-| `I64x2ExtendLowI32x4U`      | 1         | No      |
-| `I64x2GeS`                  | 1         | No      |
-| `I64x2GtS`                  | 1         | No      |
-| `I64x2LeS`                  | 1         | No      |
-| `I64x2LtS`                  | 1         | No      |
-| `I64x2Ne`                   | 1         | No      |
-| `I8x16Abs`                  | 1         | No      |
-| `I8x16AddSatS`              | 1         | No      |
-| `I8x16AddSatU`              | 1         | No      |
-| `I8x16Bitmask`              | 1         | No      |
-| `I8x16Popcnt`               | 1         | No      |
-| `I8x16Shuffle`              | 1         | No      |
-| `I8x16SubSatS`              | 1         | No      |
-| `I8x16SubSatU`              | 1         | No      |
-| `I8x16Swizzle`              | 1         | No      |
-| `V128AnyTrue`               | 1         | No      |
-| `V128Load16Lane`            | 1         | No      |
-| `V128Load16Splat`           | 1         | No      |
-| `V128Load16x4S`             | 1         | No      |
-| `V128Load16x4U`             | 1         | No      |
-| `V128Load32Lane`            | 1         | No      |
-| `V128Load32Splat`           | 1         | No      |
-| `V128Load32Zero`            | 1         | No      |
-| `V128Load32x2S`             | 1         | No      |
-| `V128Load32x2U`             | 1         | No      |
-| `V128Load64Lane`            | 1         | No      |
-| `V128Load64Splat`           | 1         | No      |
-| `V128Load64Zero`            | 1         | No      |
-| `V128Load8Lane`             | 1         | No      |
-| `V128Load8Splat`            | 1         | No      |
-| `V128Load8x8S`              | 1         | No      |
-| `V128Load8x8U`              | 1         | No      |
-| `V128Store16Lane`           | 1         | No      |
-| `V128Store32Lane`           | 1         | No      |
-| `V128Store64Lane`           | 1         | No      |
-| `V128Store8Lane`            | 1         | No      |
-
-</details>
-
-<details>
 <summary>Integer arithmetic, comparison and conversion (86, 68 charged)</summary>
 
 | Opcode              | Cost | Charged |
@@ -1074,76 +667,19 @@ Protocol operations that a contract triggers, such as transfers, freezes and ass
 
 </details>
 
-<details>
-<summary>Floating point (54, none charged)</summary>
-
-| Opcode              | Cost | Charged |
-| ------------------- | ---- | ------- |
-| `F32Const`          | 5    | No      |
-| `F64Const`          | 5    | No      |
-| `F32Eq`             | 6    | No      |
-| `F32Ne`             | 6    | No      |
-| `F32Lt`             | 6    | No      |
-| `F32Gt`             | 6    | No      |
-| `F32Le`             | 6    | No      |
-| `F32Ge`             | 6    | No      |
-| `F64Eq`             | 6    | No      |
-| `F64Ne`             | 6    | No      |
-| `F64Lt`             | 6    | No      |
-| `F64Gt`             | 6    | No      |
-| `F64Le`             | 6    | No      |
-| `F64Ge`             | 6    | No      |
-| `F32Abs`            | 5    | No      |
-| `F32Neg`            | 5    | No      |
-| `F32Ceil`           | 100  | No      |
-| `F32Floor`          | 100  | No      |
-| `F32Trunc`          | 100  | No      |
-| `F32Nearest`        | 100  | No      |
-| `F32Sqrt`           | 100  | No      |
-| `F32Add`            | 5    | No      |
-| `F32Sub`            | 5    | No      |
-| `F32Mul`            | 15   | No      |
-| `F32Div`            | 100  | No      |
-| `F32Min`            | 15   | No      |
-| `F32Max`            | 15   | No      |
-| `F32Copysign`       | 5    | No      |
-| `F64Abs`            | 5    | No      |
-| `F64Neg`            | 5    | No      |
-| `F64Ceil`           | 100  | No      |
-| `F64Floor`          | 100  | No      |
-| `F64Trunc`          | 100  | No      |
-| `F64Nearest`        | 100  | No      |
-| `F64Sqrt`           | 100  | No      |
-| `F64Add`            | 5    | No      |
-| `F64Sub`            | 5    | No      |
-| `F64Mul`            | 15   | No      |
-| `F64Div`            | 100  | No      |
-| `F64Min`            | 15   | No      |
-| `F64Max`            | 15   | No      |
-| `F64Copysign`       | 5    | No      |
-| `F32ConvertI32S`    | 100  | No      |
-| `F32ConvertI32U`    | 100  | No      |
-| `F32ConvertI64S`    | 100  | No      |
-| `F32ConvertI64U`    | 100  | No      |
-| `F32DemoteF64`      | 100  | No      |
-| `F64ConvertI32S`    | 100  | No      |
-| `F64ConvertI32U`    | 100  | No      |
-| `F64ConvertI64S`    | 100  | No      |
-| `F64ConvertI64U`    | 100  | No      |
-| `F64PromoteF32`     | 100  | No      |
-| `F32ReinterpretI32` | 100  | No      |
-| `F64ReinterpretI64` | 100  | No      |
-
-</details>
+The schedule also lists 70 atomic, 273 SIMD and 54 floating-point opcodes. None of them is charged: a contract that uses them is rejected when the VM compiles it, so their costs are not shown here.
 
 {/* END GAS-TABLES */}
 
-To regenerate the tables after a gas schedule update, download the current mainnet configuration package and run the generator with the package number and the date:
+To regenerate the tables after a gas schedule update, download the current mainnet configuration package and the VM's list of charged opcodes from the klever-go release that package runs, then run the generator with both files, the package number and the date:
 
 ```bash
 mkdir -p /tmp/klever-config
 curl -sS https://backup.mainnet.klever.org/config.mainnet.108.tar.gz | tar -xz -C /tmp/klever-config
-pnpm run gen:gas-tables /tmp/klever-config/config/gasScheduleV1.yaml 108 2026-11-06
+curl -sS -o /tmp/klever-config/opcodeCost.go https://raw.githubusercontent.com/klever-io/klever-go/v1.7.22/kvm/wasmer2/opcodeCost.go
+pnpm run gen:gas-tables /tmp/klever-config/config/gasScheduleV1.yaml /tmp/klever-config/opcodeCost.go 108 2026-11-06
 ```
+
+The prose above the tables repeats some schedule values (code loading, storage costs, the storage read curve, the instruction costs) and so does [VM Memory Limits](/smart-contracts/config-and-tooling/memory-allocation#vm-memory-limits). The generator stops and lists them when the new schedule changes any of them: update that text, then the `PROSE_VALUES` list in the script, and run it again.
 
 Which schedule file a network uses, from which epoch, is set by `gasSchedule.gasScheduleByEpochs` in the package's `enableEpochs.yaml`. Mainnet package 108 uses `gasScheduleV1.yaml` from epoch 4860; testnet package 109 switched to the same file at epoch 32945.

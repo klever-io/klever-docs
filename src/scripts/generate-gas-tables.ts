@@ -1,14 +1,18 @@
 /**
  * Generates the gas cost tables on /smart-contracts/reference/gas from a node
- * gas schedule (`gasScheduleV1.yaml`).
+ * gas schedule (`gasScheduleV1.yaml`) and the VM's list of metered opcodes
+ * (`kvm/wasmer2/opcodeCost.go` in klever-go).
  *
- * Usage:
+ * Usage, with <N> the current mainnet config package and <TAG> the klever-go
+ * release that package runs:
  *   curl -sS https://backup.mainnet.klever.org/config.mainnet.<N>.tar.gz | tar -xz -C /some/empty/dir
- *   pnpm run gen:gas-tables -- /some/empty/dir/config/gasScheduleV1.yaml <N> <YYYY-MM-DD>
+ *   curl -sS -o /some/empty/dir/opcodeCost.go https://raw.githubusercontent.com/klever-io/klever-go/<TAG>/kvm/wasmer2/opcodeCost.go
+ *   pnpm run gen:gas-tables /some/empty/dir/config/gasScheduleV1.yaml /some/empty/dir/opcodeCost.go <N> <YYYY-MM-DD>
  *
- * <N> is the mainnet config package number and the date is the day the values
- * were read. The script rewrites everything between the GAS-TABLES markers in
- * the page and leaves the rest of the page alone.
+ * The date is the day the values were read. The script rewrites everything
+ * between the GAS-TABLES markers in the page and leaves the rest alone. It fails
+ * when a value the hand-written prose repeats (PROSE_VALUES) no longer matches
+ * the schedule, so the prose is updated together with the tables.
  */
 import { readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
@@ -49,6 +53,132 @@ export function parseSchedule(text: string): Schedule {
     section.set(entry[1], Number(entry[2]))
   })
   return schedule
+}
+
+/**
+ * The opcodes whose cost the VM passes to the metering engine: the fields of
+ * the `OpcodeCost` struct. Every other opcode in `WASMOpcodeCost` is never
+ * charged, because a contract that uses it is rejected when the VM compiles it.
+ */
+export function parseChargedOpcodes(text: string): Set<string> {
+  const body = /type OpcodeCost struct \{([^}]*)\}/.exec(text)
+  if (!body) throw new Error('opcodeCost.go has no OpcodeCost struct')
+  const fields = [...body[1].matchAll(/^\s*([A-Za-z0-9]+)\s+uint32\s*$/gm)].map(
+    (m) => m[1],
+  )
+  if (fields.length === 0) throw new Error('OpcodeCost has no uint32 fields')
+  return new Set(fields)
+}
+
+/**
+ * Values the hand-written prose states, outside the generated block. If the
+ * schedule changes one of them, the script stops so the prose is updated too.
+ * `where` says which text to fix; update the value here once it is fixed.
+ */
+const PROSE_VALUES: [
+  section: string,
+  name: string,
+  value: number,
+  where: string,
+][] = [
+  [
+    'BaseOperationCost',
+    'GetCode',
+    1_000_000,
+    'gas page: code loading, worked example',
+  ],
+  [
+    'BaseOperationCost',
+    'AoTPreparePerByte',
+    100,
+    'gas page: code loading, worked example',
+  ],
+  [
+    'BaseOperationCost',
+    'DataCopyPerByte',
+    50,
+    'gas page: host functions, storage writes, storage read formulas',
+  ],
+  ['BaseOperationCost', 'StorePerByte', 10_000, 'gas page: storage writes'],
+  ['BaseOperationCost', 'PersistPerByte', 1_000, 'gas page: storage writes'],
+  [
+    'BaseOpsAPICost',
+    'StorageStore',
+    75_000,
+    'gas page: storage writes, worked example',
+  ],
+  [
+    'ManagedBufferAPICost',
+    'MBufferStorageStore',
+    75_000,
+    'gas page: storage writes',
+  ],
+  ['BaseOpsAPICost', 'StorageLoad', 50_000, 'gas page: storage reads'],
+  [
+    'BaseOpsAPICost',
+    'CachedStorageLoad',
+    1_000,
+    'gas page: storage reads and read formulas',
+  ],
+  ['BaseOpsAPICost', 'TransferValue', 100_000, 'gas page: built-in functions'],
+  ['BigIntAPICost', 'CopyPerByteForTooBig', 1_000, 'gas page: big integers'],
+  ['BuiltInCost', 'Transfer', 200_000, 'gas page: built-in functions'],
+  [
+    'DynamicStorageLoad',
+    'QuadraticCoefficient',
+    688,
+    'gas page: storage reads',
+  ],
+  [
+    'DynamicStorageLoad',
+    'LinearCoefficient',
+    31_858,
+    'gas page: storage reads',
+  ],
+  [
+    'DynamicStorageLoad',
+    'ConstantCoefficient',
+    15_287,
+    'gas page: storage reads, read formulas, worked example',
+  ],
+  ['DynamicStorageLoad', 'MinimumGasCost', 1_000, 'gas page: storage reads'],
+  ['WASMOpcodeCost', 'I32Add', 5, 'gas page: instruction cost table'],
+  ['WASMOpcodeCost', 'I32DivS', 18, 'gas page: instruction cost table'],
+  ['WASMOpcodeCost', 'I32Clz', 100, 'gas page: instruction cost table'],
+  [
+    'WASMOpcodeCost',
+    'MemoryGrow',
+    1_000_000,
+    'gas page: instruction table and memory.grow; memory-allocation page: VM Memory Limits',
+  ],
+  [
+    'WASMOpcodeCost',
+    'MaxMemoryGrow',
+    10,
+    'memory-allocation page: VM Memory Limits',
+  ],
+  [
+    'WASMOpcodeCost',
+    'MaxMemoryGrowDelta',
+    1,
+    'memory-allocation page: VM Memory Limits',
+  ],
+]
+
+function checkProseValues(schedule: Schedule) {
+  const stale = PROSE_VALUES.flatMap(([s, name, value, where]) => {
+    const actual = schedule.get(s)?.get(name)
+    return actual === value
+      ? []
+      : [
+          `  ${s}.${name}: prose says ${fmt(value)}, schedule has ${actual === undefined ? 'no entry' : fmt(actual)} (${where})`,
+        ]
+  })
+  if (stale.length > 0) {
+    throw new Error(
+      `the schedule changed values the hand-written prose repeats:\n${stale.join('\n')}\nUpdate that prose, then PROSE_VALUES in this script, and run it again.`,
+    )
+  }
 }
 
 const fmt = (n: number) => n.toLocaleString('en-US')
@@ -99,7 +229,6 @@ const MEANINGS: Record<string, string> = {
   // WASMOpcodeCost entries that are limits or settings, not opcodes
   MaxMemoryGrow: 'Limit, not a cost: `memory.grow` calls allowed in one call',
   MaxMemoryGrowDelta: 'Limit, not a cost: pages one `memory.grow` may request',
-  MemoryGrow: 'Flat cost of one `memory.grow`, whatever the size',
   LocalAllocate:
     'Per local variable a function declares beyond `LocalsUnmetered`',
   LocalsUnmetered:
@@ -108,156 +237,153 @@ const MEANINGS: Record<string, string> = {
   TableInitPerElement: 'Per element copied by `table.init`',
 }
 
-function costTable(s: Map<string, number>, withMeaning = true): string {
+function costTable(
+  s: Map<string, number>,
+  { valueHeader = 'Cost', withMeaning = true } = {},
+): string {
   const rows = [...s].map(([k, v]) =>
     withMeaning
       ? [`\`${k}\``, fmt(v), MEANINGS[k] ?? '']
       : [`\`${k}\``, fmt(v)],
   )
   return table(
-    withMeaning ? ['Name', 'Cost', 'Meaning'] : ['Name', 'Cost'],
+    withMeaning ? ['Name', valueHeader, 'Meaning'] : ['Name', valueHeader],
     rows,
   )
 }
 
-/**
- * The opcodes whose cost the VM passes to the metering engine: the fields of
- * `OpcodeCost` in klever-go `kvm/wasmer2/opcodeCost.go`. Every other opcode in
- * `WASMOpcodeCost` is never charged; contracts that use those opcodes are
- * rejected when the VM compiles them. Update this list when that struct changes.
- */
-const CHARGED_OPCODES = new Set(
-  `Block Br BrIf BrTable Call CallIndirect Catch CatchAll Delegate Drop Else End
-  GlobalGet GlobalSet I32Add I32And I32Clz I32Const I32Ctz I32DivS I32DivU I32Eq
-  I32Eqz I32Extend16S I32Extend8S I32GeS I32GeU I32GtS I32GtU I32LeS I32LeU
-  I32Load I32Load16S I32Load16U I32Load8S I32Load8U I32LtS I32LtU I32Mul I32Ne
-  I32Or I32Popcnt I32RemS I32RemU I32Rotl I32Rotr I32Shl I32ShrS I32ShrU I32Store
-  I32Store16 I32Store8 I32Sub I32WrapI64 I32Xor I64Add I64And I64Clz I64Const
-  I64Ctz I64DivS I64DivU I64Eq I64Eqz I64Extend16S I64Extend32S I64Extend8S
-  I64ExtendI32S I64ExtendI32U I64GeS I64GeU I64GtS I64GtU I64LeS I64LeU I64Load
-  I64Load16S I64Load16U I64Load32S I64Load32U I64Load8S I64Load8U I64LtS I64LtU
-  I64Mul I64Ne I64Or I64Popcnt I64RemS I64RemU I64Rotl I64Rotr I64Shl I64ShrS
-  I64ShrU I64Store I64Store16 I64Store32 I64Store8 I64Sub I64Xor If LocalGet
-  LocalSet LocalTee LocalAllocate Loop MemoryGrow MemorySize Nop RefFunc RefIsNull
-  RefNull Rethrow Return ReturnCall ReturnCallIndirect Select TableGet TableGrow
-  TableInit TableSet TableSize Throw Try TypedSelect Unreachable Unwind`.split(
-    /\s+/,
-  ),
-)
-
-/** Groups for the WASM opcode table, tried in order; the first match wins. */
-const OPCODE_GROUPS: [string, (op: string) => boolean][] = [
+/** Groups for the WASM opcode tables, tried in order; the first match wins. */
+const OPCODE_GROUPS: [title: string, match: RegExp, noun: string][] = [
   [
     'Limits and settings',
-    (op) =>
-      /^(MaxMemoryGrow|MaxMemoryGrowDelta|MaxDeclaredTableSize|LocalAllocate|LocalsUnmetered|TableInitPerElement)$/.test(
-        op,
-      ),
+    /^(MaxMemoryGrow|MaxMemoryGrowDelta|MaxDeclaredTableSize|LocalAllocate|LocalsUnmetered|TableInitPerElement)$/,
+    'limits and settings',
   ],
   [
     'Control flow',
-    (op) =>
-      /^(Unreachable|Nop|Block|Loop|If|Else|End|Br|BrIf|BrTable|Return|Call|CallIndirect|ReturnCall|ReturnCallIndirect|Drop|Select|TypedSelect|Try|Catch|CatchAll|Throw|Rethrow|Delegate|Unwind)$/.test(
-        op,
-      ),
+    /^(Unreachable|Nop|Block|Loop|If|Else|End|Br|BrIf|BrTable|Return|Call|CallIndirect|ReturnCall|ReturnCallIndirect|Drop|Select|TypedSelect|Try|Catch|CatchAll|Throw|Rethrow|Delegate|Unwind)$/,
+    'control flow opcodes',
   ],
-  ['Locals and globals', (op) => /^(Local|Global)(Get|Set|Tee)$/.test(op)],
+  [
+    'Locals and globals',
+    /^(Local|Global)(Get|Set|Tee)$/,
+    'local and global opcodes',
+  ],
   [
     'Memory',
-    (op) =>
-      /^(I32|I64|F32|F64)(Load|Store)/.test(op) ||
-      /^(MemorySize|MemoryGrow|MemoryInit|MemoryCopy|MemoryFill|DataDrop)$/.test(
-        op,
-      ),
+    /^((I32|I64|F32|F64)(Load|Store)|MemorySize|MemoryGrow|MemoryInit|MemoryCopy|MemoryFill|DataDrop)/,
+    'memory opcodes',
   ],
-  ['Tables and references', (op) => /^(Table|Elem|Ref)/.test(op)],
-  ['Atomics (threads)', (op) => /Atomic/.test(op)],
+  ['Tables and references', /^(Table|Elem|Ref)/, 'table and reference opcodes'],
+  ['Atomics (threads)', /Atomic/, 'atomic'],
   [
     'SIMD (128-bit vectors)',
-    (op) =>
-      /^(V128|V8x16|V16x8|V32x4|V64x2|I8x16|I16x8|I32x4|I64x2|F32x4|F64x2)/.test(
-        op,
-      ),
+    /^(V128|V8x16|V16x8|V32x4|V64x2|I8x16|I16x8|I32x4|I64x2|F32x4|F64x2)/,
+    'SIMD',
   ],
   [
     'Integer arithmetic, comparison and conversion',
-    (op) => /^(I32|I64)/.test(op),
+    /^(I32|I64)/,
+    'integer opcodes',
   ],
-  ['Floating point', (op) => /^(F32|F64)/.test(op)],
+  ['Floating point', /^(F32|F64)/, 'floating-point'],
 ]
 
-function opcodeTables(s: Map<string, number>): string {
+function opcodeTables(s: Map<string, number>, charged: Set<string>): string {
+  for (const op of charged) {
+    if (!s.has(op))
+      throw new Error(
+        `OpcodeCost charges ${op}, but WASMOpcodeCost has no ${op}: the schedule and opcodeCost.go are from different releases`,
+      )
+  }
   const groups = new Map<string, [string, number][]>(
     OPCODE_GROUPS.map(([g]) => [g, []]),
   )
-  for (const op of CHARGED_OPCODES) {
-    if (!s.has(op))
-      throw new Error(
-        `charged opcode ${op} is not in WASMOpcodeCost; check CHARGED_OPCODES`,
-      )
-  }
   for (const [op, cost] of s) {
-    const group = OPCODE_GROUPS.find(([, match]) => match(op))
+    const group = OPCODE_GROUPS.find(([, re]) => re.test(op))
     if (!group)
       throw new Error(`opcode ${op} fits no group; add it to OPCODE_GROUPS`)
     groups.get(group[0])!.push([op, cost])
   }
-  return [...groups]
-    .filter(([, ops]) => ops.length > 0)
-    .map(([g, ops]) => {
-      const isSettings = g === 'Limits and settings'
-      const rows = ops.map(([op, c]) =>
-        isSettings
-          ? [`\`${op}\``, fmt(c), MEANINGS[op] ?? '']
-          : [`\`${op}\``, fmt(c), CHARGED_OPCODES.has(op) ? 'Yes' : 'No'],
+
+  const tables: string[] = []
+  const neverCharged: string[] = []
+  for (const [title, , noun] of OPCODE_GROUPS) {
+    const ops = groups.get(title)!
+    if (ops.length === 0) continue
+    if (title === 'Limits and settings') {
+      const rows = ops.map(([op, c]) => [
+        `\`${op}\``,
+        fmt(c),
+        MEANINGS[op] ?? '',
+      ])
+      tables.push(
+        `<details>\n<summary>${title} (${ops.length})</summary>\n\n${table(['Name', 'Value', 'Meaning'], rows)}\n\n</details>`,
       )
-      const body = table(
-        isSettings
-          ? ['Name', 'Value', 'Meaning']
-          : ['Opcode', 'Cost', 'Charged'],
-        rows,
-      )
-      const charged = ops.filter(([op]) => CHARGED_OPCODES.has(op)).length
-      const count = isSettings
-        ? `${ops.length}`
-        : `${ops.length}, ${charged === 0 ? 'none' : charged} charged`
-      return `<details>\n<summary>${g} (${count})</summary>\n\n${body}\n\n</details>`
-    })
-    .join('\n\n')
+      continue
+    }
+    const n = ops.filter(([op]) => charged.has(op)).length
+    if (n === 0) {
+      neverCharged.push(`${ops.length} ${noun}`)
+      continue
+    }
+    const rows = ops.map(([op, c]) => [
+      `\`${op}\``,
+      fmt(c),
+      charged.has(op) ? 'Yes' : 'No',
+    ])
+    tables.push(
+      `<details>\n<summary>${title} (${ops.length}, ${n} charged)</summary>\n\n${table(['Opcode', 'Cost', 'Charged'], rows)}\n\n</details>`,
+    )
+  }
+  const list =
+    neverCharged.length > 1
+      ? `${neverCharged.slice(0, -1).join(', ')} and ${neverCharged[neverCharged.length - 1]}`
+      : neverCharged.join('')
+  const tail = list
+    ? `\n\nThe schedule also lists ${list} opcodes. None of them is charged: a contract that uses them is rejected when the VM compiles it, so their costs are not shown here.`
+    : ''
+  return tables.join('\n\n') + tail
 }
 
-export function render(schedule: Schedule, pkg: string, date: string): string {
-  const total = (name: string) => section(schedule, name).size
-  const known = new Set([
-    'BuiltInCost',
-    'BaseOperationCost',
-    'BaseOpsAPICost',
-    'EthAPICost',
-    'BigIntAPICost',
-    'BigFloatAPICost',
-    'ManagedBufferAPICost',
-    'ManagedMapAPICost',
-    'CryptoAPICost',
-    'WASMOpcodeCost',
-    'DynamicStorageLoad',
-    'MaxPerTransaction',
-  ])
+const KNOWN_SECTIONS = new Set([
+  'BuiltInCost',
+  'BaseOperationCost',
+  'BaseOpsAPICost',
+  'EthAPICost',
+  'BigIntAPICost',
+  'BigFloatAPICost',
+  'ManagedBufferAPICost',
+  'ManagedMapAPICost',
+  'CryptoAPICost',
+  'WASMOpcodeCost',
+  'DynamicStorageLoad',
+  'MaxPerTransaction',
+])
+
+export function render(
+  schedule: Schedule,
+  charged: Set<string>,
+  pkg: string,
+  date: string,
+): string {
   for (const name of schedule.keys()) {
-    if (!known.has(name))
+    if (!KNOWN_SECTIONS.has(name))
       throw new Error(
         `new gas schedule section ${name}: add it to the generator`,
       )
   }
+  const total = (name: string) => section(schedule, name).size
 
   const api = (name: string, title: string, intro: string) =>
     `### ${title}\n\n${intro}\n\n<details>\n<summary>\`${name}\` (${total(name)} entries)</summary>\n\n${costTable(
       section(schedule, name),
-      false,
+      { withMeaning: false },
     )}\n\n</details>`
 
   return [
     `<Note>`,
-    `Values from \`gasScheduleV1.yaml\` in mainnet configuration package ${pkg}, read on ${date}. Testnet runs the same file. They are set by the network configuration, not by the VM code, and a gas schedule update can change them.`,
+    `Values from \`gasScheduleV1.yaml\` in mainnet configuration package ${pkg}, read on ${date}. They are set by the network configuration, not by the VM code, and a gas schedule update can change them.`,
     `</Note>`,
     '',
     `### Base operations`,
@@ -276,14 +402,7 @@ export function render(schedule: Schedule, pkg: string, date: string): string {
     '',
     `\`MaxPerTransaction\`: these are counts, not gas.`,
     '',
-    table(
-      ['Name', 'Limit', 'Meaning'],
-      [...section(schedule, 'MaxPerTransaction')].map(([k, v]) => [
-        `\`${k}\``,
-        fmt(v),
-        MEANINGS[k] ?? '',
-      ]),
-    ),
+    costTable(section(schedule, 'MaxPerTransaction'), { valueHeader: 'Limit' }),
     '',
     api(
       'BaseOpsAPICost',
@@ -321,11 +440,7 @@ export function render(schedule: Schedule, pkg: string, date: string): string {
       'Hashes and signature checks.',
     ),
     '',
-    api(
-      'EthAPICost',
-      'Unused: Ethereum-compatible API',
-      'Present in the schedule file but not used: the VM has no Ethereum-compatible API, and none of these costs is ever charged.',
-    ),
+    `The schedule file also has an \`EthAPICost\` section (${total('EthAPICost')} entries). It is not used: the VM has no Ethereum-compatible API, and none of these costs is ever charged.`,
     '',
     api(
       'BuiltInCost',
@@ -337,19 +452,24 @@ export function render(schedule: Schedule, pkg: string, date: string): string {
     '',
     `\`WASMOpcodeCost\`: ${total('WASMOpcodeCost')} entries, grouped by kind. A few entries in this section are limits or settings rather than opcode costs; they are listed first. The Charged column says whether the VM charges the opcode: an opcode marked No is never charged, because a contract that uses it is rejected when the VM compiles it.`,
     '',
-    opcodeTables(section(schedule, 'WASMOpcodeCost')),
+    opcodeTables(section(schedule, 'WASMOpcodeCost'), charged),
   ].join('\n')
 }
 
 async function main() {
-  const [file, pkg, date] = process.argv.slice(2)
-  if (!file || !pkg || !/^\d{4}-\d{2}-\d{2}$/.test(date ?? '')) {
+  // pnpm passes a literal `--` through to the script; accept both forms.
+  const args = process.argv.slice(2).filter((a, i) => !(i === 0 && a === '--'))
+  const [file, opcodeFile, pkg, date] = args
+  if (!file || !opcodeFile || !pkg || !/^\d{4}-\d{2}-\d{2}$/.test(date ?? '')) {
     console.error(
-      'usage: generate-gas-tables <gasScheduleV1.yaml> <config package number> <YYYY-MM-DD>',
+      'usage: generate-gas-tables <gasScheduleV1.yaml> <opcodeCost.go> <config package number> <YYYY-MM-DD>',
     )
     process.exit(1)
   }
-  const generated = render(parseSchedule(readFileSync(file, 'utf8')), pkg, date)
+  const schedule = parseSchedule(readFileSync(file, 'utf8'))
+  checkProseValues(schedule)
+  const charged = parseChargedOpcodes(readFileSync(opcodeFile, 'utf8'))
+  const generated = render(schedule, charged, pkg, date)
   const page = readFileSync(PAGE, 'utf8')
   const start = page.indexOf(BEGIN)
   const stop = page.indexOf(END)
@@ -362,7 +482,7 @@ async function main() {
     await prettier.format(out, { ...options, filepath: PAGE }),
   )
   console.log(
-    `wrote gas tables from ${file} (package ${pkg}, ${date}) into ${PAGE}`,
+    `wrote gas tables from ${file} and ${opcodeFile} (package ${pkg}, ${date}) into ${PAGE}`,
   )
 }
 
