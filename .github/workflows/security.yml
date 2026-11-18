@@ -28,7 +28,14 @@ jobs:
       - name: Run pnpm audit
         run: pnpm audit --audit-level=high
 
+      # pnpm outdated needs node_modules, and should still report when the
+      # audit step above fails.
+      - name: Install dependencies
+        if: always()
+        run: pnpm install --frozen-lockfile --ignore-scripts
+
       - name: Check for outdated dependencies
+        if: always()
         run: |
           echo "📦 Checking for outdated packages..."
           pnpm outdated || true
