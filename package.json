@@ -59,12 +59,17 @@
     "eslint-config-next": "15.5.29",
     "prettier": "^3.10.1",
     "prettier-plugin-tailwindcss": "^0.6.14",
-    "sharp": "^0.35.5"
+    "sharp": "^0.35.5",
+    "webpack": "^5.112.2"
   },
   "pnpm": {
     "overrides": {
       "@types/react": "19.2.14",
-      "@types/react-dom": "19.2.3"
+      "@types/react-dom": "19.2.3",
+      "dpdm>glob": "^14.0.2",
+      "next>postcss": "^8.5.23",
+      "postcss-selector-parser@6": "^6.1.5",
+      "yaml@2": "^2.8.3"
     }
   }
 }
