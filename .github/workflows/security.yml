@@ -4,30 +4,48 @@ on:
   push:
     branches: [master, develop]
   pull_request:
-    branches: [master]
+    branches: [master, develop]
   schedule:
-    - cron: '30 2 * * 1'  # Weekly on Monday at 2:30 AM
+    - cron: '30 2 * * 1' # Weekly on Monday at 2:30 AM
+
+permissions:
+  contents: read
 
 jobs:
   dependency-audit:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
-    
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '24'
-    
-    - name: Install pnpm
-      uses: pnpm/action-setup@v4
-    
-    - name: Run pnpm audit
-      run: |
-        pnpm audit --audit-level=moderate || true
-        echo "Check the audit report above for vulnerabilities"
-    
-    - name: Check for outdated dependencies
-      run: |
-        echo "📦 Checking for outdated packages..."
-        pnpm outdated || true
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+
+      # Full report at every severity. Never fails, so moderate and low
+      # advisories stay visible in the log.
+      - name: Audit report (all severities)
+        run: pnpm audit || true
+
+      # Fails the job on any high or critical advisory. An advisory with no
+      # fixed version can be accepted in package.json under
+      # pnpm.auditConfig.ignoreGhsas, with the reason in the PR that adds it.
+      - name: Run pnpm audit
+        id: audit
+        run: pnpm audit --audit-level=high
+
+      # pnpm outdated needs node_modules. Both steps still run when the audit
+      # fails, but not when the run is cancelled or an earlier step failed.
+      - name: Install dependencies
+        id: install
+        if: ${{ !cancelled() && (steps.audit.outcome == 'success' || steps.audit.outcome == 'failure') }}
+        run: pnpm install --frozen-lockfile --ignore-scripts
+
+      - name: Check for outdated dependencies
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+        run: |
+          echo "📦 Checking for outdated packages..."
+          pnpm outdated || true
