@@ -75,8 +75,8 @@ Create and handle transactions with multiple signatures accounts:
 
 ### WebSocket
 
-Receive blocks, addresses and transactions from WebSocket:
-[Websocket Reference](https://docs.klever.org/api-and-sdk#websocket-reference)
+Receive blocks, transactions and account changes in real time over WebSocket:
+[Websocket Reference](#websocket-reference)
 
 ## Checking the status of the transaction
 
@@ -292,136 +292,473 @@ Errors are returned as `{"error": "<reason>"}` unless the table says the body is
 
 ## Websocket Reference
 
-Here you will find a guide on establishing a connection to the Blockchain WebSocket client. This guide will walk you through the step-by-step process of connecting and receiving messages.
+A Klever node pushes blocks, transactions and account changes over a WebSocket at `/subscribe`. On the same connection you can also query a block or a transaction and change your subscriptions without reconnecting.
 
-**Important:** You need to set up and run your own Klever node with the indexer option enabled to use WebSocket subscriptions.
+### Endpoints
 
-For detailed instructions on setting up your indexer, see: [How to Set Up Your Own Indexer](/node-operations#how-to-set-up-your-own-indexer)
+| Network | Chain ID | URL |
+| ------- | -------- | --- |
+| Mainnet | `108` | `wss://node.mainnet.klever.org/subscribe` |
+| Testnet | `109` | `wss://node.testnet.klever.org/subscribe` |
 
-### How to receive messages:
+The public endpoints need no API key and are shared by everyone. For a workload that cannot miss events or depend on a shared service, run your own node with the indexer enabled and connect to its `ws://localhost:8080/subscribe`. See [How to Set Up Your Own Indexer](/node-operations#how-to-set-up-your-own-indexer) and [Securing the node API](/node-operations/securing-the-api).
 
-To connect to the Blockchain WebSocket client, follow these steps.
+### Connecting
 
-1. Connect to the WebSocket URL.
-2. Establish a connection to it using a WebSocket library or framework of your choice.
-3. After successfully connecting, it's important to send an initial message to subscribe to the desired topics or a specific address or hash. This message should contain the necessary information for the server to understand your subscription preferences.
-4. Once subscribed, you will start receiving messages related to the subscribed topics or a specific address or hash.
+1. Open a WebSocket connection to the endpoint.
+2. Send the subscription message as the first message, within 30 seconds.
+3. Read the events the node pushes.
 
-```go
+The subscription message:
+
+```json
+{
+  "addresses": [],
+  "subscribed_types": ["blocks"]
+}
+```
+
+| Field | Description |
+| ----- | ----------- |
+| `subscribed_types` | The event types to receive. Must contain at least one type from the table below. |
+| `addresses` | The `klv1...` addresses to watch. Used by `accounts` and `user_transactions`; send `[]` when you subscribe only to `blocks` or `transactions`. |
+
+### Subscription types
+
+| Type | Needs `addresses` | What you receive |
+| ---- | ----------------- | ---------------- |
+| `blocks` | No | Every new block. |
+| `transactions` | No | Every transaction on the network, grouped by block. |
+| `accounts` | Yes | The new state of a watched account each time it changes. |
+| `user_transactions` | Yes | Each transaction a watched address sends or receives. |
+
+You can combine any of the four types in one connection. `accounts` and `user_transactions` deliver nothing until you give them at least one address.
+
+### Events
+
+Every event the node pushes has the same envelope:
+
+```json
+{
+  "type": "blocks",
+  "address": "",
+  "hash": "",
+  "data": {}
+}
+```
+
+| Field | Description |
+| ----- | ----------- |
+| `type` | The subscription type that produced the event. |
+| `address` | The watched address, for `accounts` and `user_transactions`. Empty for `blocks` and `transactions`. |
+| `hash` | Empty in events sent to clients. Read the block or transaction hash from `data.hash`. |
+| `data` | The payload. Its shape depends on `type`, as shown below. |
+
+The samples below are shortened: long hex strings are cut and some fields are left out. Timestamps in events are in milliseconds.
+
+#### `blocks`
+
+`data` is one block.
+
+```json
+{
+  "type": "blocks",
+  "address": "",
+  "hash": "",
+  "data": {
+    "hash": "ebf88d93f91c0adaa4ded34d8c5a3ca15ecf8c722f1914b7ddbb2e88180b366c",
+    "nonce": 34623521,
+    "parentHash": "9bf90daa4dc5612dc6f805109674b9ff742951b0c2945965bf77a8f16a617d7c",
+    "timestamp": 1795463464000,
+    "slot": 34695766,
+    "epoch": 6425,
+    "isEpochStart": false,
+    "size": 391,
+    "txCount": 0,
+    "txHashes": [],
+    "blockRewards": 15000000,
+    "stakingRewards": 15000000,
+    "chainID": "108"
+  }
+}
+```
+
+#### `transactions`
+
+`data` is an array with the transactions of one block.
+
+```json
+{
+  "type": "transactions",
+  "address": "",
+  "hash": "",
+  "data": [
+    {
+      "hash": "914a6febfe3fb4a2fe28f3b2a491d320a6da3323163d138723c31e67d07008d8",
+      "blockNum": 34623522,
+      "sender": "klv104p4avjw44w909xhuctwq66jf8mykp8agyv4t39zchf3xvjr5e2slkxss2",
+      "nonce": 12672,
+      "timestamp": 1795463468000,
+      "kAppFee": 2000000,
+      "bandwidthFee": 12932100,
+      "status": "success",
+      "resultCode": "Ok",
+      "chainID": "108",
+      "contract": [
+        {
+          "type": 63,
+          "typeString": "SmartContractType",
+          "parameter": {
+            "type": "SCInvoke",
+            "address": "klv1qqqqqqqqqqqqqpgq5ejc7nt4396vnwl4tvvagrjmxzaglx3epuzs5nvk4p"
+          }
+        }
+      ],
+      "receipts": [
+        {
+          "type": 19,
+          "typeString": "SignedBy",
+          "signer": "klv104p4avjw44w909xhuctwq66jf8mykp8agyv4t39zchf3xvjr5e2slkxss2"
+        }
+      ]
+    }
+  ]
+}
+```
+
+#### `user_transactions`
+
+`data` is one transaction, in the same shape as an item of the `transactions` array. `address` is the watched address the transaction involves. A transaction between two watched addresses arrives once for each.
+
+```json
+{
+  "type": "user_transactions",
+  "address": "klv1t98a8r7ej26nmqadk8e4hykfxsm6gqelavwrt2l5z3a02xdm8xuq9cx9n5",
+  "hash": "",
+  "data": {
+    "hash": "4c01f831e4673b7e5021979278e6e98458bf2a7ca64c0c6ab9e1df0f807653ae",
+    "blockNum": 34623661,
+    "sender": "klv1t98a8r7ej26nmqadk8e4hykfxsm6gqelavwrt2l5z3a02xdm8xuq9cx9n5",
+    "nonce": 651,
+    "timestamp": 1795464024000,
+    "status": "success",
+    "resultCode": "Ok"
+  }
+}
+```
+
+#### `accounts`
+
+`data` is the account after the change.
+
+```json
+{
+  "type": "accounts",
+  "address": "klv1t98a8r7ej26nmqadk8e4hykfxsm6gqelavwrt2l5z3a02xdm8xuq9cx9n5",
+  "hash": "",
+  "data": {
+    "address": "klv1t98a8r7ej26nmqadk8e4hykfxsm6gqelavwrt2l5z3a02xdm8xuq9cx9n5",
+    "nonce": 652,
+    "balance": 32355548870,
+    "frozenBalance": 0,
+    "unfrozenBalance": 0,
+    "allowance": 0,
+    "permissions": [],
+    "timestamp": 1795464024000,
+    "updatedAt": 1795464024000
+  }
+}
+```
+
+### Requests
+
+After the subscription message you can send requests at any time. Each request carries an `id` you choose, a `method` and its `params`:
+
+```json
+{
+  "id": "1",
+  "method": "get_block",
+  "params": { "nonce": 34623521 }
+}
+```
+
+The reply repeats your `id`, so you can match replies to requests when several are in flight. It carries `data` on success or `error` on failure:
+
+```json
+{ "id": "1", "data": {} }
+```
+
+```json
+{ "id": "1", "error": "must provide nonce or hash" }
+```
+
+Replies and events share the connection. A message with an `id` field is a reply; a message with a `type` field is an event.
+
+#### `get_transaction`
+
+Returns a transaction by hash.
+
+| Param | Required | Description |
+| ----- | -------- | ----------- |
+| `hash` | Yes | The transaction hash. |
+| `withResults` | No | Include receipts and logs. Defaults to `false`. |
+
+```json
+{
+  "id": "2",
+  "method": "get_transaction",
+  "params": {
+    "hash": "914a6febfe3fb4a2fe28f3b2a491d320a6da3323163d138723c31e67d07008d8",
+    "withResults": true
+  }
+}
+```
+
+#### `get_block`
+
+Returns a block by nonce or by hash. If you send both, the nonce is used.
+
+| Param | Required | Description |
+| ----- | -------- | ----------- |
+| `nonce` | One of `nonce` or `hash` | The block nonce (height). |
+| `hash` | One of `nonce` or `hash` | The block hash. |
+| `withTxs` | No | Include the block's transactions. Defaults to `false`. |
+
+```json
+{
+  "id": "3",
+  "method": "get_block",
+  "params": { "nonce": 34623521, "withTxs": false }
+}
+```
+
+<Note>
+  `get_block` and `get_transaction` return the same format as the node's REST API, which is not the format of the pushed events: the block fields sit under `Header` with capitalized names, byte fields are base64, and `Timestamp` is in seconds.
+</Note>
+
+#### `subscribe`
+
+Adds types and addresses to the connection. Subscriptions add up: each call merges with what the connection already has.
+
+| Param | Required | Description |
+| ----- | -------- | ----------- |
+| `types` | Yes | The types to add. |
+| `addresses` | For `accounts` and `user_transactions` | The addresses to watch. |
+
+```json
+{
+  "id": "4",
+  "method": "subscribe",
+  "params": {
+    "types": ["accounts", "user_transactions"],
+    "addresses": ["klv1t98a8r7ej26nmqadk8e4hykfxsm6gqelavwrt2l5z3a02xdm8xuq9cx9n5"]
+  }
+}
+```
+
+The reply is `{"id": "4", "data": "subscribed"}`.
+
+#### `unsubscribe`
+
+Removes types and addresses from the connection, and leaves the rest untouched.
+
+| Param | Required | Description |
+| ----- | -------- | ----------- |
+| `types` | Yes | The types to remove. |
+| `addresses` | For `accounts` and `user_transactions` | The addresses to stop watching. |
+
+```json
+{
+  "id": "5",
+  "method": "unsubscribe",
+  "params": { "types": ["transactions"] }
+}
+```
+
+The reply is `{"id": "5", "data": "unsubscribed"}`. For an address, only the named type is removed: an address watched for both `accounts` and `user_transactions` keeps the other one.
+
+### Errors
+
+**In the subscription message.** The node answers with an error that has no `id` and closes the connection:
+
+| Error | Cause |
+| ----- | ----- |
+| `subscribed_types must not be empty` | `subscribed_types` is missing, empty or misspelled. |
+| `invalid subscription type: ...` | A type is not one of the four above. Note the plural in `blocks` and `transactions`. |
+| `too many addresses in a single subscribe` | More than 10,000 addresses in the message. |
+
+If the first message is not valid JSON, or does not arrive within 30 seconds, the node closes the connection without an error message.
+
+**In a request.** The node answers with the error and your `id`, and the connection stays open:
+
+| Error | Cause |
+| ----- | ----- |
+| `invalid json: ...` | The message is not valid JSON. The reply has an empty `id`. |
+| `unknown method: ...` | `method` is not one of the four methods. |
+| `missing required param: hash` | `get_transaction` without `hash`. |
+| `must provide nonce or hash` | `get_block` without `nonce` or `hash`. |
+| `invalid subscription type: ...` | `subscribe` or `unsubscribe` with an unknown type. |
+| `too many addresses in a single subscribe: ...` | `subscribe` with more than 10,000 addresses. |
+| `address subscription limit reached for this connection (max 50000)` | The connection already watches the maximum number of addresses. |
+| `query not supported: facade unavailable` | The node does not answer `get_transaction` and `get_block` over WebSocket. |
+
+### Connection lifecycle
+
+- The node sends a ping frame every 15 seconds and closes the connection if it gets no pong within 30 seconds. Browsers and most WebSocket libraries answer pings for you.
+- To disconnect, close the WebSocket. The node drops all subscriptions of a closed connection, so subscribe again after you reconnect.
+- Connections do drop: nodes restart and networks fail. Reconnect with a delay that grows after each failed attempt.
+
+### Limits
+
+| Limit | Value |
+| ----- | ----- |
+| Addresses in one subscription message or `subscribe` request | 10,000 |
+| Addresses watched by one connection | 50,000 |
+
+To watch more addresses, split them across connections. These are the node defaults. If you run your own node you can change them, along with the connection limits; see [WebSocket limits](/node-operations/securing-the-api#websocket-limits).
+
+### Do not assume you receive every event
+
+The feed is best effort. When the node's event queue or your connection's buffer is full, the node drops the event rather than wait for a slow client. It does not send it again and does not tell you. You also miss everything that happens while you are disconnected.
+
+To detect and repair gaps:
+
+1. Subscribe to `blocks` and keep the `nonce` of the last block you processed.
+2. Block nonces increase by one. If a block arrives with a nonce greater than the last one plus one, you missed the blocks in between.
+3. Fetch each missing block with the `get_block` request, or over REST with `GET /block/by-nonce/{nonce}` on the [node API](https://node.mainnet.klever.org/swagger/index.html).
+4. Do the same check when you reconnect, before you trust new events.
+
+If you act on transactions or account changes, such as crediting a deposit, confirm them from the blocks you fetched instead of relying only on the pushed event.
+
+### Examples
+
+Both examples subscribe to `blocks` on mainnet, print each block and report gaps in the nonce sequence. To use testnet, change the URL to `wss://node.testnet.klever.org/subscribe`.
+
+<CodeGroup>
+
+```go {{ title: 'Go' }}
 package main
 
 import (
 	"encoding/json"
 	"log"
-	"net/url"
 
 	"github.com/gorilla/websocket"
 )
 
-type EventType string
+const endpoint = "wss://node.mainnet.klever.org/subscribe"
 
-const (
-	ACCOUNTS    EventType = "accounts"    // receive all accounts changed or created
-	BLOCKS      EventType = "blocks"      // receive all blocks
-	TRANSACTION EventType = "transaction" // receive all transactions
-)
-
-type Data struct {
-	Types     []EventType `json:"subcribed_types"`
-	Addresses []string    `json:"addresses"`
+type Subscription struct {
+	Addresses []string `json:"addresses"`
+	Types     []string `json:"subscribed_types"`
 }
 
 type Event struct {
-	Type    EventType `json:"type"`
-	Address string    `json:"address"`
-	Hash    string    `json:"hash"`
-	Data    []byte    `json:"data"`
+	Type    string          `json:"type"`
+	Address string          `json:"address"`
+	Data    json.RawMessage `json:"data"`
+	Error   string          `json:"error"`
+}
+
+type Block struct {
+	Nonce   uint64 `json:"nonce"`
+	Hash    string `json:"hash"`
+	TxCount int    `json:"txCount"`
 }
 
 func main() {
-	// your indexer node
-	u := url.URL{Scheme: "ws", Host: "127.0.0.1:8080", Path: "/subscribe"}
-	log.Printf("connecting to %s", u.String())
-
-	c, _, err := websocket.DefaultDialer.Dial(u.String(), nil)
+	conn, _, err := websocket.DefaultDialer.Dial(endpoint, nil)
 	if err != nil {
-		log.Fatal("dial:", err)
+		log.Fatal("dial: ", err)
 	}
-	defer c.Close()
+	defer conn.Close()
 
-	done := make(chan struct{})
+	// The first message must be the subscription.
+	sub := Subscription{
+		Addresses: []string{},
+		Types:     []string{"blocks"},
+	}
+	if err := conn.WriteJSON(sub); err != nil {
+		log.Fatal("subscribe: ", err)
+	}
 
-	go func() {
-		defer close(done)
-		for {
-			_, message, err := c.ReadMessage()
-			if err != nil {
-				log.Println("read:", err)
-				return
-			}
-
-			// marshal the message to Event struct
-			var event Event
-			if err := json.Unmarshal(message, &event); err != nil {
-				log.Println("unmarshal:", err)
-				return
-			}
-
-			switch event.Type {
-			case BLOCKS:
-				log.Println("Received BLOCKS data:", string(event.Data))
-			case ACCOUNTS:
-				log.Println("Received ACCOUNTS data:", string(event.Data))
-			case TRANSACTION:
-				log.Println("Received TRANSACTION data:", string(event.Data))
-			default:
-				log.Println("Unknown data ", string(message))
-			}
-
+	var lastNonce uint64
+	for {
+		_, message, err := conn.ReadMessage()
+		if err != nil {
+			log.Fatal("read: ", err)
 		}
-	}()
 
-	subMessage := Data{
-		Types: []EventType{BLOCKS, TRANSACTION, ACCOUNTS},
+		var event Event
+		if err := json.Unmarshal(message, &event); err != nil {
+			log.Println("skipping message: ", err)
+			continue
+		}
+		if event.Error != "" {
+			log.Fatal("node error: ", event.Error)
+		}
+		if event.Type != "blocks" {
+			continue
+		}
+
+		var block Block
+		if err := json.Unmarshal(event.Data, &block); err != nil {
+			log.Println("skipping block: ", err)
+			continue
+		}
+
+		if lastNonce != 0 && block.Nonce > lastNonce+1 {
+			log.Printf("missed blocks %d to %d, fetch them with get_block", lastNonce+1, block.Nonce-1)
+		}
+		lastNonce = block.Nonce
+
+		log.Printf("block %d %s txs=%d", block.Nonce, block.Hash, block.TxCount)
 	}
-
-	// send the first message to subscribe
-	if err := c.WriteJSON(subMessage); err != nil {
-		log.Println("err: ", err)
-		done <- struct{}{}
-	}
-
-	<-done
 }
-
 ```
 
-```javascript
-import useWebSocket from 'react-use-websocket'
+```js {{ title: 'JavaScript' }}
+// Runs in browsers and in Node.js 22 or newer, which have WebSocket built in.
+const endpoint = 'wss://node.mainnet.klever.org/subscribe'
 
-export enum WSTopics {
-  accounts = 'accounts', // receive all accounts changed or created
-  blocks = 'blocks', // receive all blocks
-  transaction = 'transaction', // receive all transactions
-}
+const socket = new WebSocket(endpoint)
+let lastNonce = 0
 
-const socketUrl = "ws://127.0.0.1:8080" // your indexer node
+socket.addEventListener('open', () => {
+  // The first message must be the subscription.
+  socket.send(
+    JSON.stringify({
+      addresses: [],
+      subscribed_types: ['blocks'],
+    }),
+  )
+})
 
-const { sendJsonMessage, lastJsonMessage } = useWebSocket(socketUrl, {
-    onOpen: () => {
-      const payload = {
-        addresses: ["klv1...."], // OPTIONAL field to listen a specific address
-        subcribed_types: [WSTopics.blocks],
-      }
-      sendJsonMessage(payload)
-    }
+socket.addEventListener('message', (message) => {
+  const event = JSON.parse(message.data)
+
+  if (event.error) {
+    console.error('node error:', event.error)
+    return
+  }
+  if (event.type !== 'blocks') {
+    return
+  }
+
+  const block = event.data
+  if (lastNonce !== 0 && block.nonce > lastNonce + 1) {
+    console.warn(
+      `missed blocks ${lastNonce + 1} to ${block.nonce - 1}, fetch them with get_block`,
+    )
+  }
+  lastNonce = block.nonce
+
+  console.log(`block ${block.nonce} ${block.hash} txs=${block.txCount}`)
+})
+
+socket.addEventListener('close', (event) => {
+  console.log('connection closed:', event.code)
 })
 ```
 
-# Topics
-
-| Topic        | Value        |
-| ------------ | ------------ |
-| BLOCKS       | blocks       |
-| TRANSACTIONS | transactions |
-| ACCOUNTS     | accounts     |
+</CodeGroup>
