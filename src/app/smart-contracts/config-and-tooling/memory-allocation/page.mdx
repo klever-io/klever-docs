@@ -41,6 +41,10 @@ The Klever VM limits how much linear memory a contract can declare and how often
 
 Each successful `memory.grow` also costs gas: currently 1,000,000 (`WASMOpcodeCost.MemoryGrow`). [Gas and Fees](/smart-contracts/reference/gas) explains how the VM charges gas and lists every cost.
 
+### Contract code size
+
+From the FixAuditChangesV7 epoch (6424 on mainnet), the compiled `.wasm` itself is limited to 786,432 bytes (768 KiB). A deploy or an upgrade with larger code fails as invalid contract code, with an error that ends with `(code too large)`. Contracts deployed before that epoch are not affected until they are upgraded with new code.
+
 ### Exceeding the grow limits fails the call
 
 The Wasm specification says that `memory.grow` returns `-1` when it cannot grow memory. On Klever this is **not** what happens when a contract exceeds `MaxMemoryGrow` or `MaxMemoryGrowDelta`. The VM stops the contract with a memory-limit breakpoint, and the transaction fails with result code `VMExecutionFailed` and the internal VM error `memory limit reached`. The fee paid for the call's gas limit is not returned, and the contract cannot catch the failure and recover. The 11th grow fails even if the first ten succeeded, and so does a single `memory.grow(2)`.

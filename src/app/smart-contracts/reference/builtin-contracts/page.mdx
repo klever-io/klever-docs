@@ -2,6 +2,16 @@
 
 The Klever Blockchain BuiltIn Contracts are a set of contracts that are supported in the Klever Blockchain network. They are used to manage the network's assets, such as KDA, KFI, and other fungible and non-fungible tokens.
 
+<Note>
+  A built-in call made by a contract pays its cost from the gas of the contract
+  call. From the FixAuditChangesV7 epoch (6424 on mainnet), a call with less gas
+  than that cost fails with `not enough gas was sent in the transaction`, and
+  `CreateValidator`, `ValidatorConfig` and `Unjail` cannot be called from a
+  contract. See [Gas and
+  Fees](/smart-contracts/reference/gas#what-is-not-per-instruction) for the
+  costs.
+</Note>
+
 # Methods
 
 ## Transfer

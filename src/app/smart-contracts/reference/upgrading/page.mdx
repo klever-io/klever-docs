@@ -18,3 +18,15 @@ docker run -it --rm \
 Replace SC_ADDRESS, KEY_FILE and WASM_PATH accordingly. If needs arguments, add --args VALUE.
 
 Check your flags --payable --payableBySC --readable --upgradeable to make sure they are correct.
+
+## When an upgrade is refused
+
+The node refuses an upgrade for one of three reasons, and the error says which:
+
+| Error                                      | Reason                                                             |
+| ------------------------------------------ | ------------------------------------------------------------------ |
+| `contract not found for upgrade`           | There is no contract at `SC_ADDRESS`                               |
+| `contract is not upgradeable`              | The contract was deployed or last upgraded without `--upgradeable` |
+| `upgrade caller is not the contract owner` | The transaction was not sent by the owner of the contract          |
+
+The upgradeable flag is checked before the owner, so a contract that is not upgradeable returns the second error whoever sends the transaction. The new code is also subject to the [code size limit](/smart-contracts/config-and-tooling/memory-allocation#contract-code-size).

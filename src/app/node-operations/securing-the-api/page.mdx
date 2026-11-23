@@ -138,6 +138,35 @@ The general HTTP throttlers (`simultaneousRequests`, `sameSourceRequests`) relea
 HTTP-to-WebSocket upgrade, so they do not bound live WebSocket connections. The `webSocket*` settings
 are what do.
 
+## Busy responses (429)
+
+The node limits how many requests some routes serve at the same time. A request over the limit is not queued: it gets HTTP 429 with the code `system_busy`.
+
+```json
+{
+  "data": null,
+  "error": "VM query service is busy, try again later",
+  "code": "system_busy"
+}
+```
+
+The `error` text starts with a prefix that depends on the route.
+
+Two settings in `config.yaml` decide when this happens:
+
+- `antiflood.webServer.endpointsThrottlers` caps the requests each route serves at once. The mainnet configuration package sets:
+
+  | Route                                              | Requests at once |
+  | -------------------------------------------------- | ---------------- |
+  | `/transaction/:hash`                               | 10               |
+  | `/transaction/send`                                | 2                |
+  | `/transaction/simulate`                            | 1                |
+  | `/vm/hex`, `/vm/string`, `/vm/int`, `/vm/query`    | 10 each          |
+
+- `virtualMachine.querying.maxQueryWaitInMilliseconds` is how long a `/vm/*` query waits for a busy query VM before it is refused. The package sets `1000`; `0` means 1 second. It also bounds the wait for the transaction simulator, which runs smart contract transactions for `/transaction/send`, `/transaction/simulate` and `/transaction/estimate-fee`.
+
+A client that gets `system_busy` should wait and send the request again. If your own tools get it often from your own node, lower their concurrency before raising the limits: `querying.numConcurrentVMs` is `1` in the package, so contract queries run one at a time.
+
 ## Checklist
 
 - [ ] API bound to `localhost` unless deliberately exposed

@@ -323,6 +323,8 @@ Ex: When Fixed ratio for KLV is 1,and the Fixed ratio for KDA is 2, the cost wil
 |    ✅    | hasRoleMint         | boolean | Should be able to mint?           |
 |    ✅    | hasRoleSetITOPrices | boolean | Should be able to set ITO prices? |
 
+An asset holds at most 20 roles. `AddRole` for an address that has no role yet fails with `role limit reached` when the asset already has 20. Changing the role of an address that already has one is always allowed.
+
 <div id="asset-trigger-staking-structure" />
 <br />
 ### Staking Structure{' '}
@@ -622,6 +624,13 @@ Creates a proposal to change the chain network parameters.
 | 34  | Max Epochs for active proposal duration  | Max Epochs an proposal will remain active           |
 | 35  | KApp Fee for ITO Trigger                 | KApp Fee for ITO Trigger                            |
 | 36  | KApp Fee for Deposit                     | KApp Fee for Deposit                                |
+| 37  | KApp Fee for Smart Contract              | KApp Fee for a smart contract transaction           |
+| 38  | GasMultiplier                            | Gas bought by each unit of bandwidth fee            |
+| 39  | MaxGasPerBlock                           | Max gas the contract calls of one block may use     |
+| 40  | MaxGasPerTX                              | Max gas limit of one transaction                    |
+| 41  | MinKFIVoteAmount                         | Min KFI amount of a vote on a proposal              |
+
+`MinSelfDelegatedAmount` and `MinTotalDelegatedAmount` take effect at the start of the epoch after the proposal is approved: a validator below the new minimum leaves the elected list. From the FixAuditChangesV7 epoch (6424 on mainnet), a new minimum cannot leave the network with fewer elected validators than it needs. Validators below the minimum are removed only while enough others remain, and no more than the usual number of validators changes in one epoch. The others keep their seats until their stake reaches the minimum or the parameter is changed again.
 
 ## Vote
 
@@ -634,6 +643,12 @@ Votes on an active proposal, the weight of the vote depends on the staked KFI of
 | ✅       | amount     | number | Weight of the vote, maximum amount depends on address' KFI |
 | ✅       | proposalId | number | Proposal id to be voted in                                 |
 | ✅       | type       | number | 0: Vote Yes, 1: Vote No                                    |
+
+### Minimum vote and number of voters
+
+- The `amount` of a vote must be at least the network parameter `MinKFIVoteAmount`: 10 KFI by default, and a proposal can set it to any value from 0.000001 to 1,000 KFI. A smaller vote fails with `vote amount is below the minimum to vote on a proposal`.
+- If you unfreeze KFI and what is left of one of your votes on an active proposal falls below the minimum, the whole vote is removed from the proposal, not only the part you unfroze.
+- A proposal has no limit on the number of accounts that vote on it. Proposals created before the FixAuditChangesV7 epoch (6424 on mainnet) keep the earlier limit of 7,000 voters: once it is reached, a vote from a new account fails with `proposal has reached maximum number of voters`.
 
 ## Create Validator
 
