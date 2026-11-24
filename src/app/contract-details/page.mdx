@@ -630,7 +630,7 @@ Creates a proposal to change the chain network parameters.
 | 40  | MaxGasPerTX                              | Max gas limit of one transaction                    |
 | 41  | MinKFIVoteAmount                         | Min KFI amount of a vote on a proposal              |
 
-`MinSelfDelegatedAmount` and `MinTotalDelegatedAmount` take effect at the start of the epoch after the proposal is approved: a validator below the new minimum leaves the elected list. From the FixAuditChangesV7 epoch (6424 on mainnet), a new minimum cannot leave the network with fewer elected validators than it needs. Validators below the minimum are removed only while enough others remain, and no more than the usual number of validators changes in one epoch. The others keep their seats until their stake reaches the minimum or the parameter is changed again.
+`MinSelfDelegatedAmount` and `MinTotalDelegatedAmount` take effect at the start of the epoch after the proposal is approved: a validator below the new minimum leaves the elected list. From the FixAuditChangesV7 epoch (6424 on mainnet), a new minimum cannot leave the network with fewer elected validators than it needs. Validators below the minimum are removed only while enough others remain, and no more than the usual number of validators changes in one epoch. The others keep their seats for now. The check runs again at the end of every epoch, so they are removed in a later epoch as soon as there are validators to replace them, still within the number that can change in one epoch.
 
 ## Vote
 

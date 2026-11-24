@@ -52,7 +52,7 @@ Most of the gas in a real call is not spent on instructions. These charges follo
 - **Big integers longer than 32 bytes.** `CopyPerByteForTooBig` (1,000) per byte, when the value is copied or operated on.
 - **Built-in functions.** Protocol operations a contract triggers, such as a transfer or a freeze, cost what `BuiltInCost` lists (`Transfer`: 200,000). A transfer made by a contract also pays `BaseOpsAPICost.TransferValue` (100,000) per transfer, so it costs at least 300,000. From the FixAuditChangesV7 epoch (6424 on mainnet):
   - a built-in called with less gas than its cost fails with `not enough gas was sent in the transaction`. Before, it ran on whatever gas was left. `CreateValidator`, `ValidatorConfig` and `Unjail` cost more than `MaxGasPerTX`, so a contract cannot call them;
-  - a built-in that stores data pays `StorePerByte` (10,000) for each stored byte on top of its fixed cost. `AssetTrigger` pays it when it updates NFT metadata (the MIME type and the metadata, plus 22 bytes) and when it mints (11 bytes for each NFT; 87 bytes for the first mint of an SFT nonce). `ConfigITO` and the `AddToWhitelist` trigger of `ITOTrigger` pay 11 bytes for each whitelist entry. A `Buy` from an ITO pays for the NFTs it mints in the same way;
+  - a built-in that stores data pays `StorePerByte` (10,000) for each stored byte on top of its fixed cost. `AssetTrigger` pays it when it updates NFT metadata (the MIME type, plus 22 bytes, plus the metadata as the transaction carries it: hex-encoded, so 2 bytes for each byte of the name and the attributes, and 1 more for the `@` when a name is passed) and when it mints (11 bytes for each NFT; 87 bytes for the first mint of an SFT nonce). `ConfigITO` and the `AddToWhitelist` trigger of `ITOTrigger` pay 11 bytes for each whitelist entry. A `Buy` from an ITO pays for the NFTs it mints in the same way;
   - `Buy` and `Claim` pay the cost of a contract transfer (300,000) for each account they create, for example a royalty receiver that did not exist before the payout.
 
 ### Storage reads
@@ -81,7 +81,7 @@ uncached length = 15,287 + 50·k + 50·max(0, k − 32) + 50·v
 cached length   =  1,000 + 50·k
 ```
 
-Reading the length first does not make the read that follows cheaper. A read served from the cache pays `DataCopyPerByte` for each byte of the value whatever put the value there: an earlier read, a write or `StorageLoadLength`.
+Reading the length first puts the value in the cache, so the read that follows is a cached one: it pays `CachedStorageLoad` (1,000) instead of the 15,287 of the curve. It still pays `DataCopyPerByte` for each byte of the value. A read served from the cache pays that whatever put the value there: an earlier read, a write or `StorageLoadLength`.
 
 ### Per-transaction limits
 

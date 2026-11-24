@@ -29,4 +29,4 @@ All available transactions:
 | 23 | [Deposit](/contract-details#deposit)           |
 | 24 | [ITO Trigger](/contract-details#ito-trigger)   |
 
-A transaction the network refuses is still included in a block, with status `fail`. Its receipts include an `Error` receipt that names the check that failed. See [Failed transactions](/exchange-integration#failed-transactions).
+A transaction that the pool accepts and that is refused when it executes is still included in a block, with status `fail`. Its receipts include an `Error` receipt that names the check that failed. A transaction the pool refuses, for example because the fee is not covered or the nonce is out of range, never reaches a block. See [Failed transactions](/exchange-integration#failed-transactions).
