@@ -394,7 +394,7 @@ verify_custom_secp256k1(key: &[u8], message: &[u8], signature: &[u8], hash_type:
 
 `MessageHashType` is an enum, representing the hashing algorithm that was used to create the `message` argument. Use `ECDSAPlainMsg` if the message is in "plain text".
 
-With `ECDSAPlainMsg` the message is used as the digest, without hashing, so it must be exactly 32 bytes: any other length fails the call with `bad bounds`. From the FixAuditChangesV7 epoch (6424 on mainnet) it must also be lower than the order of the secp256k1 curve; otherwise the call fails with `secp256k1 plain message must be below the curve order`.
+With `ECDSAPlainMsg` the message is used as the digest, without hashing. From the FixAuditChangesV6 epoch (6312 on mainnet) it must be exactly 32 bytes; any other length fails the call with `secp256k1 plain message must be exactly 32 bytes`. Before that epoch, a shorter message was extended with zeros and a longer one was cut to 32 bytes. From the FixAuditChangesV7 epoch (6424 on mainnet) it must also be lower than the order of the secp256k1 curve; otherwise the call fails with `secp256k1 plain message must be below the curve order`.
 
 ```rust
 pub enum MessageHashType {
