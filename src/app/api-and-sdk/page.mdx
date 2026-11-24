@@ -301,7 +301,9 @@ A Klever node pushes blocks, transactions and account changes over a WebSocket a
 | Mainnet | `108` | `wss://node.mainnet.klever.org/subscribe` |
 | Testnet | `109` | `wss://node.testnet.klever.org/subscribe` |
 
-The public endpoints need no API key and are shared by everyone. For a workload that cannot miss events or depend on a shared service, run your own node with the indexer enabled and connect to its `ws://localhost:8080/subscribe`. See [How to Set Up Your Own Indexer](/node-operations#how-to-set-up-your-own-indexer) and [Securing the node API](/node-operations/securing-the-api).
+The public endpoints need no authentication and are shared by everyone. For a workload that cannot miss events or depend on a shared service, run your own node with the indexer enabled and connect to its `ws://localhost:8080/subscribe`. See [How to Set Up Your Own Indexer](/node-operations#how-to-set-up-your-own-indexer) and [Securing the node API](/node-operations/securing-the-api).
+
+`/subscribe` has no API key. The only authentication a node can require is HTTP Basic Auth on the WebSocket upgrade, when its operator sets the route to `secured: true`, as the securing page recommends for a node reachable from other machines. The examples below send no credentials: to use them against such a node, add an `Authorization: Basic ...` header to the connection request.
 
 ### Connecting
 
@@ -332,7 +334,7 @@ The subscription message:
 | `accounts` | Yes | The new state of a watched account each time it changes. |
 | `user_transactions` | Yes | Each transaction a watched address sends or receives. |
 
-You can combine any of the four types in one connection. `accounts` and `user_transactions` deliver nothing until you give them at least one address.
+You can combine any of the four types in one connection. `accounts` and `user_transactions` deliver nothing until you give them at least one address, in the same message that names the type. Types and addresses pair up only inside one message: the `subscribe` request below explains what that means when you add subscriptions later.
 
 ### Events
 
@@ -429,6 +431,8 @@ The samples below are shortened: long hex strings are cut and some fields are le
 #### `user_transactions`
 
 `data` is one transaction, in the same shape as an item of the `transactions` array. `address` is the watched address the transaction involves. A transaction between two watched addresses arrives once for each.
+
+The same transaction can also arrive more than once for the same address. The node sends one copy to the sender and one for each transfer receipt whose `to` is a watched address, so a transfer to yourself, or a transaction with two transfers to the same address, arrives twice. Deduplicate on `data.hash`.
 
 ```json
 {
@@ -558,6 +562,13 @@ Adds types and addresses to the connection. Subscriptions add up: each call merg
 
 The reply is `{"id": "4", "data": "subscribed"}`.
 
+Types and addresses pair up only inside one call. The addresses in a call get the `accounts` and `user_transactions` types named in that same call, and nothing else:
+
+- A later call with only `"types": ["user_transactions"]` and no addresses does not reach the addresses you already watch. To add a type to them, send the type and the addresses again.
+- A call with addresses but neither `accounts` nor `user_transactions` in `types` ignores the addresses. The reply is still `subscribed`.
+
+The same rule applies to the subscription message that opens the connection.
+
 #### `unsubscribe`
 
 Removes types and addresses from the connection, and leaves the rest untouched.
@@ -579,6 +590,8 @@ The reply is `{"id": "5", "data": "unsubscribed"}`. For an address, only the nam
 
 ### Errors
 
+**In the connection request.** A node that has reached its connection limit refuses the WebSocket upgrade with HTTP 503 and the body `{"error":"too many websocket connections"}`, before any message is exchanged. Wait and try again.
+
 **In the subscription message.** The node answers with an error that has no `id` and closes the connection:
 
 | Error | Cause |
@@ -586,6 +599,7 @@ The reply is `{"id": "5", "data": "unsubscribed"}`. For an address, only the nam
 | `subscribed_types must not be empty` | `subscribed_types` is missing, empty or misspelled. |
 | `invalid subscription type: ...` | A type is not one of the four above. Note the plural in `blocks` and `transactions`. |
 | `too many addresses in a single subscribe` | More than 10,000 addresses in the message. |
+| `subscription address exceeds the maximum length of 62 bytes` | An entry in `addresses` is longer than a `klv1...` address. |
 
 If the first message is not valid JSON, or does not arrive within 30 seconds, the node closes the connection without an error message.
 
@@ -597,10 +611,15 @@ If the first message is not valid JSON, or does not arrive within 30 seconds, th
 | `unknown method: ...` | `method` is not one of the four methods. |
 | `missing required param: hash` | `get_transaction` without `hash`. |
 | `must provide nonce or hash` | `get_block` without `nonce` or `hash`. |
+| `invalid params: ...` | The request has no `params`, or a param has the wrong JSON type, such as a `nonce` sent as a string. |
+| `transaction not found` | `get_transaction` with a hash the node does not have. |
+| `block not found` | `get_block` with a nonce or hash the node does not have. |
 | `invalid subscription type: ...` | `subscribe` or `unsubscribe` with an unknown type. |
 | `too many addresses in a single subscribe: ...` | `subscribe` with more than 10,000 addresses. |
+| `subscription address exceeds the maximum length of 62 bytes` | `subscribe` with an entry in `addresses` longer than a `klv1...` address. |
 | `address subscription limit reached for this connection (max 50000)` | The connection already watches the maximum number of addresses. |
 | `query not supported: facade unavailable` | The node does not answer `get_transaction` and `get_block` over WebSocket. |
+| `internal error` | The node failed while handling the request. |
 
 ### Connection lifecycle
 
@@ -620,6 +639,8 @@ To watch more addresses, split them across connections. These are the node defau
 ### Do not assume you receive every event
 
 The feed is best effort. When the node's event queue or your connection's buffer is full, the node drops the event rather than wait for a slow client. It does not send it again and does not tell you. You also miss everything that happens while you are disconnected.
+
+Replies to your requests go through the same per-connection buffer and are dropped the same way. A `get_block` or `subscribe` sent while your client is behind on reading can go unanswered, so give every request a timeout and send it again when the timeout expires.
 
 To detect and repair gaps:
 
