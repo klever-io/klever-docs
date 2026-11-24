@@ -99,7 +99,12 @@ const PROSE_VALUES: [
     50,
     'gas page: host functions, storage writes, storage read formulas',
   ],
-  ['BaseOperationCost', 'StorePerByte', 10_000, 'gas page: storage writes'],
+  [
+    'BaseOperationCost',
+    'StorePerByte',
+    10_000,
+    'gas page: storage writes, built-in functions',
+  ],
   ['BaseOperationCost', 'PersistPerByte', 1_000, 'gas page: storage writes'],
   [
     'BaseOpsAPICost',
@@ -120,9 +125,19 @@ const PROSE_VALUES: [
     1_000,
     'gas page: storage reads and read formulas',
   ],
-  ['BaseOpsAPICost', 'TransferValue', 100_000, 'gas page: built-in functions'],
+  [
+    'BaseOpsAPICost',
+    'TransferValue',
+    100_000,
+    'gas page: built-in functions; royalties page: purchase by a contract',
+  ],
   ['BigIntAPICost', 'CopyPerByteForTooBig', 1_000, 'gas page: big integers'],
-  ['BuiltInCost', 'Transfer', 200_000, 'gas page: built-in functions'],
+  [
+    'BuiltInCost',
+    'Transfer',
+    200_000,
+    'gas page: built-in functions; royalties page: purchase by a contract',
+  ],
   [
     'DynamicStorageLoad',
     'QuadraticCoefficient',
@@ -273,7 +288,7 @@ const OPCODE_GROUPS: [title: string, match: RegExp, noun: string][] = [
     /^((I32|I64|F32|F64)(Load|Store)|MemorySize|MemoryGrow|MemoryInit|MemoryCopy|MemoryFill|DataDrop)/,
     'memory opcodes',
   ],
-  ['References', /^(Table|Elem|Ref)/, 'reference opcodes'],
+  ['References', /^Ref/, 'reference opcodes'],
   ['Atomics (threads)', /Atomic/, 'atomic'],
   [
     'SIMD (128-bit vectors)',

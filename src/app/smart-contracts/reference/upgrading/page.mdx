@@ -21,7 +21,7 @@ Check your flags --payable --payableBySC --readable --upgradeable to make sure t
 
 ## When an upgrade is refused
 
-The node refuses an upgrade for one of three reasons, and the error says which:
+The node checks three things about the contract and the sender before it accepts an upgrade, and the error says which one failed:
 
 | Error                                      | Reason                                                             |
 | ------------------------------------------ | ------------------------------------------------------------------ |
