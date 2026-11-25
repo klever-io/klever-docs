@@ -739,6 +739,8 @@ Once the indexer is running, your node will expose a WebSocket endpoint for real
 ws://localhost:8080/subscribe
 ```
 
+The messages it accepts and sends are described in the [Websocket Reference](/api-and-sdk#websocket-reference). If you only need the feed and not your own node, the public mainnet and testnet nodes serve the same endpoint.
+
 The API binds to `localhost` by default, so this endpoint is reachable only from the node host. To serve it to other machines, put a reverse proxy with TLS and authentication in front of it rather than binding the node to all interfaces; see "Keep the node API private" under [How To Run A Node](/node-operations#how-to-run-a-node).
 
 ### Important Notes
