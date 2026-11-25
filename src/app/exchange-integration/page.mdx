@@ -38,6 +38,43 @@ To create transactions, you can [use the endpoints directly](/api-and-sdk#web-sd
 
 To read the recent transactions, you'll need to  [use transaction list endpoint](https://api.mainnet.klever.org/swagger/index.html#/Transaction/get_v1_0_transaction_list),  and use the queries that are relevant for your search (Ex: filter by asset, date, receiver/sender address, etc.)
 
+<div id="failed-transactions" />
+
+**Failed transactions**
+
+A transaction can be included in a block and still fail. Do not credit a deposit because the transaction is in a block: check that its `status` is `success`.
+
+A failed transaction has `status` `fail`, a `resultCode`, and an `Error` receipt (type 122) that says which check refused it. `title` names the check and `description` gives the reason:
+
+```json
+{
+  "status": "fail",
+  "resultCode": "OutOfFunds",
+  "receipts": [
+    {
+      "cID": 0,
+      "type": 122,
+      "typeString": "Error",
+      "title": "InsufficientFunds",
+      "description": "insufficient funds"
+    }
+  ]
+}
+```
+
+For a transfer, the most common values of `title` are:
+
+| Title                | The transfer was refused because                          |
+| -------------------- | --------------------------------------------------------- |
+| `InsufficientFunds`  | The sender does not hold the amount                       |
+| `InvalidAmount`      | The amount is not valid, for example zero                 |
+| `SameAddress`        | The sender and the receiver are the same address          |
+| `InvalidToAddress`   | The receiver address is not valid                         |
+| `AssetNotFound`      | The asset does not exist                                  |
+| `AssetPaused`        | The asset is paused                                       |
+| `TransferNotAllowed` | The asset does not allow this transfer                    |
+| `AddressNotPayable`  | The receiver is a smart contract that is not payable      |
+
 
 ## Testing
 

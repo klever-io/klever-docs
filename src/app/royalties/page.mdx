@@ -21,6 +21,8 @@ Even if the asset has already been created, the Asset Trigger contract allows on
 
 The royalties can even be split between multiple accounts.
 
+When a smart contract makes the purchase, each royalty receiver that does not have an account yet adds 300,000 gas to the call, from the FixAuditChangesV7 epoch (6424 on mainnet). See [Gas and Fees](/smart-contracts/reference/gas#what-is-not-per-instruction).
+
 Here are all the royalty types in Klever Blockchain:
 
 1. Transfer fixed: Charges a fixed amount of KLV every time someone transfers an NFT from one account to another. This is applied to all types of assets.

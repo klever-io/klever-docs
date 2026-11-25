@@ -259,6 +259,24 @@ The node performs no access control of its own. Do not add `--rest-api-interface
 
 [Securing the Node API](/node-operations/securing-the-api) has the full configuration and a checklist.
 
+### Peer discovery
+
+How the node finds other peers is set by `p2p.kadDhtPeerDiscovery.type` in `config.yaml`. It takes one of two values:
+
+| Value        | What the node does                                                                                                                                                                                              |
+| ------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `continuous` | Connects to the first seednode of `initialPeerList` that answers, and goes back to the seednodes only when it has fewer peers than `thresholdMinConnectedPeers`. Used when `type` is empty.                     |
+| `optimized`  | Keeps up to `maxSeeders` seednodes of `initialPeerList` connected (`0` keeps all of them) and protects them from connection trimming. It tops them up every 5 minutes, or every `refreshIntervalInSec` while it is connected to none. |
+
+The mainnet configuration package sets `type: optimized` with `maxSeeders: 2`. Keep the values from the package unless you have a reason to change them.
+
+`optimized` checks the configuration when the node starts, and the node does not start if:
+
+- `sharding.type` is not `NilListSharder`;
+- an entry of `initialPeerList` is malformed or names the node itself (`continuous` skips those entries instead).
+
+Any other value of `type` also stops the node at start-up, with `unable to select peer discoverer based on type`.
+
 ### Run node in the background the first time
 
 When running in the background, add parameter `--use-log-view` and replace `--rm` for `-d`
@@ -500,6 +518,15 @@ To check your own clock:
 2. Check `klv_clock_offset_ns` and `klv_clock_last_sync_timestamp` as described above.
 3. Compare the two timestamps on a `SLOT … BEGINS` log line. The outer one comes from the host clock and the one inside the banner is the node's corrected time. A gap of more than 5 ms means the host clock is not tracking UTC.
 
+### Every block needs 15 of 21 signatures
+
+A block is accepted only when at least 15 of the 21 validators of its consensus group signed it (two thirds plus one). From the FixAuditChangesV7 epoch (6424 on mainnet) this holds for every block, including the first block of an epoch. Before that epoch, the first block of an epoch was accepted with 11 signatures when it came 50 or more slots after the previous block.
+
+A node that receives a block with fewer signatures rejects it with `not enough signatures in block`. For a validator operator, this means:
+
+- If 7 or more of the 21 validators are offline or out of sync, no block is committed until enough of them are back. There is no reduced quorum that restarts the chain at an epoch change.
+- Keep your validator online and its clock synchronized through epoch changes, and run a [fallback node](#how-to-set-up-a-fallback-node) so that a failure of the main node does not take your signature away.
+
 ### Cloud VM caveats
 
 Cloud VMs, such as Hetzner Cloud and other KVM-based instances, usually run on `kvm-clock`. The hypervisor adjusts it, and long uptimes or noisy neighbours make it less stable. The `Frequency` line of `chronyc tracking` shows how hard chrony is working to correct it.
@@ -702,6 +729,10 @@ Start your Klever node with the updated configuration. On startup, you should se
 
 This confirms that your node is now acting as an indexer.
 
+<Note>
+  **Known issue in v1.7.23-rc1.** At start-up Elasticsearch refuses the `scdeploys` index template and the `logs` and `scdeploys` aliases, so the node does not create them. The node starts and indexes anyway, as it did on v1.7.22: logs and contract deploys are written to indices named `logs` and `scdeploys`, with the mapping Elasticsearch infers. Do not run v1.7.23-rc0 with the indexer enabled: it stops at start-up on the same refusals.
+</Note>
+
 #### 5. WebSocket Endpoint
 Once the indexer is running, your node will expose a WebSocket endpoint for real-time data:
 ```
@@ -716,6 +747,7 @@ The API binds to `localhost` by default, so this endpoint is reachable only from
 - **Its is recommended to not run a node as both validator and indexer** - use a dedicated observer node for indexing
 - **Resource intensive** - Elasticsearch requires considerable RAM and storage
 - **Production clusters** - Setting up a production-grade Elasticsearch cluster is beyond the scope of this tutorial. Please refer to the official documentation for detailed instructions.
+- **Contract deploys** - The `scdeploys` index records a deploy or an upgrade only from the events the node itself generates. An event a contract emits with the same name is ignored.
 
 **Resource Requirements:**
 - Minimum 4GB RAM for Elasticsearch JVM
@@ -880,6 +912,18 @@ The unjailing process performs several important operations:
    - **Index Assignment**: Gets a new position based on current block nonce
    - **Eligibility Wait**: May take 1-3 epochs to become eligible for selection
    - **Selection Process**: Must wait to be selected for active validation again
+
+### How a jailed node reports itself
+
+While a validator is jailed, its node keeps running and reports its state on `/node/metrics` and `/node/status`:
+
+| Metric                     | Value while jailed                                         |
+| -------------------------- | ---------------------------------------------------------- |
+| `klv_node_type`            | `validator`                                                |
+| `klv_peer_type`            | `jailed`                                                   |
+| `klv_live_validator_nodes` | Does not count the jailed node                             |
+
+The terminal UI shows `Consensus slot state: N/A (jailed)`. To alert on a jailed validator, watch `klv_peer_type` on your own node.
 
 ## All Cli Operations
 

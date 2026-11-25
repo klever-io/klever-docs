@@ -15,7 +15,7 @@ When a transaction calls a contract, the VM charges gas in this order:
 
 If the gas runs out at any point, the call stops. See [Running out of gas](#running-out-of-gas).
 
-Deploying or upgrading a contract is charged differently from a call: `CreateContract` plus `CompilePerByte` for every byte of code, instead of `GetCode` and `AoTPreparePerByte`.
+Deploying or upgrading a contract is charged differently from a call: `CreateContract` plus `CompilePerByte` for every byte of code, instead of `GetCode` and `AoTPreparePerByte`. From the FixAuditChangesV7 epoch (6424 on mainnet), a deploy or an upgrade is refused when the code is larger than 786,432 bytes (768 KiB); the error ends with `(code too large)`.
 
 ### Instructions: linear in what you execute
 
@@ -30,7 +30,7 @@ Gas metering is injected into the contract's WebAssembly when the VM compiles it
 
 A loop that runs 1,000 times costs about 1,000 times the gas of its body. There is no discount for repeated code and no surcharge that grows with the number of iterations.
 
-The schedule lists a cost for every opcode the WebAssembly engine knows, but only some of them are charged. The VM passes the metering engine the costs of control flow, locals and globals, integer loads, stores and arithmetic, `memory.size`, `memory.grow`, `ref.*` and `table.get`/`set`/`grow`/`size`/`init`. Floating point, SIMD, atomics and bulk memory (`memory.copy`, `memory.fill`, `memory.init`, `data.drop`), as well as `table.copy`, `table.fill` and `elem.drop`, are never charged: a contract that uses them is rejected when the VM compiles it (see [The Klever VM](/klever-vm#fast-execution-engine)). The opcode tables below mark which entries are charged.
+The schedule lists a cost for almost every opcode the WebAssembly engine knows (the table opcodes and `elem.drop` have no entry, see below), but only some of them are charged. The VM passes the metering engine the costs of control flow, locals and globals, integer loads, stores and arithmetic, `memory.size`, `memory.grow` and `ref.*`. Floating point, SIMD, atomics and bulk memory (`memory.copy`, `memory.fill`, `memory.init`, `data.drop`) are never charged: a contract that uses them is rejected when the VM compiles it (see [The Klever VM](/klever-vm#fast-execution-engine)). The table opcodes (`table.get`, `table.set`, `table.grow`, `table.size`, `table.init`, `table.copy`, `table.fill`) and `elem.drop` are rejected the same way and have no entry in the schedule. The opcode tables below mark which entries are charged.
 
 ### What is not per-instruction
 
@@ -38,7 +38,7 @@ Most of the gas in a real call is not spent on instructions. These charges follo
 
 - **Code loading.** `GetCode` (1,000,000) plus `AoTPreparePerByte` (100) per byte of code, on every call. A 50 KB contract pays about 6,000,000 gas before its first instruction runs. Code size is a cost on every call: keep `wasm-opt` on (it is by default, see [Build Reference](/smart-contracts/config-and-tooling/build-reference)) and avoid pulling in code the contract does not need.
 - **`memory.grow`.** A flat 1,000,000 per call, whatever the number of pages. The VM also limits how often and how much memory can grow; see [VM Memory Limits](/smart-contracts/config-and-tooling/memory-allocation#vm-memory-limits).
-- **Host functions.** Each one has a fixed cost per call from its API group: `BaseOpsAPICost`, `ManagedBufferAPICost`, `BigIntAPICost`, `BigFloatAPICost`, `ManagedMapAPICost`, `CryptoAPICost`. When the function moves data between the VM and the contract, it also pays `DataCopyPerByte` (50) for each byte.
+- **Host functions.** Each one has a fixed cost per call from its API group: `BaseOpsAPICost`, `ManagedBufferAPICost`, `BigIntAPICost`, `BigFloatAPICost`, `ManagedMapAPICost`, `CryptoAPICost`. When the function moves data between the VM and the contract, it also pays `DataCopyPerByte` (50) for each byte. Managed maps follow the same rule: `ManagedMapPut`, `ManagedMapGet` and `ManagedMapRemove` pay it for each byte of the key and of the value, and `ManagedMapContains` for each byte of the key.
 - **Storage reads.** Priced by a curve; see the next section.
 - **Storage writes.** The host function cost (`StorageStore`, `MBufferStorageStore`: 75,000) plus a per-byte cost that depends on what the write does:
   - a new value, or the bytes a value grows by: `StorePerByte` (10,000) per byte;
@@ -50,7 +50,10 @@ Most of the gas in a real call is not spent on instructions. These charges follo
 
 - **Logs and return data.** `PersistPerByte` per byte of event data and of data a contract returns, on top of the host function cost.
 - **Big integers longer than 32 bytes.** `CopyPerByteForTooBig` (1,000) per byte, when the value is copied or operated on.
-- **Built-in functions.** Protocol operations a contract triggers, such as a transfer or a freeze, cost what `BuiltInCost` lists (`Transfer`: 200,000). A transfer made by a contract also pays `BaseOpsAPICost.TransferValue` (100,000) per transfer, so it costs at least 300,000.
+- **Built-in functions.** Protocol operations a contract triggers, such as a transfer or a freeze, cost what `BuiltInCost` lists (`Transfer`: 200,000). A transfer made by a contract also pays `BaseOpsAPICost.TransferValue` (100,000) per transfer, so it costs at least 300,000. From the FixAuditChangesV7 epoch (6424 on mainnet):
+  - a built-in called with less gas than its cost fails with `not enough gas was sent in the transaction`. Before, it ran on whatever gas was left. `CreateValidator`, `ValidatorConfig` and `Unjail` cost more than `MaxGasPerTX`, so a contract cannot call them;
+  - a built-in that stores data pays `StorePerByte` (10,000) for each stored byte on top of its fixed cost. `AssetTrigger` pays it when it updates NFT metadata (the MIME type, plus 22 bytes, plus the metadata as the transaction carries it: hex-encoded, so 2 bytes for each byte of the name and the attributes, and 1 more for the `@` when a name is passed) and when it mints (11 bytes for each NFT; 87 bytes for the first mint of an SFT nonce). `ConfigITO` and the `AddToWhitelist` trigger of `ITOTrigger` pay 11 bytes for each whitelist entry. A `Buy` from an ITO pays for the NFTs it mints in the same way;
+  - `Buy` and `Claim` pay the cost of a contract transfer (300,000) for each account they create, for example a royalty receiver that did not exist before the payout.
 
 ### Storage reads
 
@@ -71,17 +74,37 @@ cached read   =  1,000 + 50·k + 50·v
 
 The fixed `StorageLoad` costs in `BaseOpsAPICost` (50,000) are not added to this: the curve replaces them.
 
+`StorageLoadLength` returns only the length of a value, but the node still reads the whole value to measure it. An uncached call pays `DataCopyPerByte` for each byte of the value, once, on top of the curve and the key. A call served from the cache pays for the key only, because no value is read or copied:
+
+```
+uncached length = 15,287 + 50·k + 50·max(0, k − 32) + 50·v
+cached length   =  1,000 + 50·k
+```
+
+Reading the length first puts the value in the cache, so the read that follows is a cached one: it pays `CachedStorageLoad` (1,000) instead of the 15,287 of the curve. It still pays `DataCopyPerByte` for each byte of the value. A read served from the cache pays that whatever put the value there: an earlier read, a write or `StorageLoadLength`.
+
 ### Per-transaction limits
 
 Some limits are counts, not gas. One transaction, including every contract it calls, may make only so many built-in function calls, token transfers and reads from the state trie. The current values are in the `MaxPerTransaction` table under [Current costs](#current-costs).
 
 Reads from the state trie include storage reads and the first write to each key not already read in the transaction: before writing, the VM loads the key's old value, which counts as a read even though no load gas is charged for it.
 
+From the FixAuditChangesV7 epoch (6424 on mainnet), two more kinds of read count toward the same limit when a contract makes them:
+
+- **account reads:** the balance of an account, the owner of the contract, the code metadata or the permissions of an account, whether a contract address holds a contract, and the source contract of a deploy or upgrade from source. Each call counts as one read;
+- **KDA reads:** a token balance, the data of a token, NFT or SFT, the roles of a token, and SFT metadata. Each call counts as one read.
+
+Calling another contract, and deploying or upgrading with code the contract supplies, do not count as reads.
+
+From the same epoch, each asset in a transfer a contract sends counts toward the transfer limit: a multi-transfer of five assets counts five. Before, transfers sent through the typed transfer function, the one the Rust framework uses, were not counted. KLV attached as the value of a call to another contract is not counted, before or after.
+
 Going over any of them fails the call with `max calls reached` (`too many built-in functions calls`, `too many KDA transfers` or `too many reads from trie`), with the same consequences as running out of gas.
 
 ## Running out of gas
 
 If a call needs more gas than its limit, at any point, it fails with result code `VMOutOfGas`. The same happens before execution starts if the gas limit cannot even pay for loading the code.
+
+A call that runs longer than the execution time limit of the VM fails with `VMExecutionFailed` (62) and the message `execution failed with timeout`. From the FixAuditChangesV7 epoch (6424 on mainnet) a deploy that times out returns the same code. Before, it returned `VMUserError` (57).
 
 A failed call, out of gas or for any other reason:
 
@@ -151,7 +174,7 @@ The contract's code is 57,958 bytes: the code of its last upgrade before this ca
 
 <Note>
   Values from `gasScheduleV1.yaml` in mainnet configuration package 108, read on
-  2026-11-06. They are set by the network configuration, not by the VM code, and
+  2026-11-23. They are set by the network configuration, not by the VM code, and
   a gas schedule update can change them.
 </Note>
 
@@ -370,7 +393,7 @@ Arbitrary-precision decimals (`BigFloat`).
 
 ### Host functions: managed maps
 
-Key-value maps held by the VM.
+Key-value maps held by the VM. On top of the cost below, `ManagedMapPut`, `ManagedMapGet` and `ManagedMapRemove` pay `DataCopyPerByte` for each byte of the key and of the value, and `ManagedMapContains` for each byte of the key.
 
 <details>
 <summary>`ManagedMapAPICost` (5 entries)</summary>
@@ -455,14 +478,13 @@ Protocol operations that a contract triggers, such as transfers, freezes and ass
 
 ### WebAssembly opcodes
 
-`WASMOpcodeCost`: 559 entries, grouped by kind. A few entries in this section are limits or settings rather than opcode costs; they are listed first. The Charged column says whether the VM charges the opcode: an opcode marked No is never charged, because a contract that uses it is rejected when the VM compiles it.
+`WASMOpcodeCost`: 550 entries, grouped by kind. A few entries in this section are limits or settings rather than opcode costs; they are listed first. The Charged column says whether the VM charges the opcode: an opcode marked No is never charged, because a contract that uses it is rejected when the VM compiles it.
 
 <details>
-<summary>Limits and settings (6)</summary>
+<summary>Limits and settings (5)</summary>
 
 | Name                   | Value | Meaning                                                         |
 | ---------------------- | ----- | --------------------------------------------------------------- |
-| `TableInitPerElement`  | 10    | Per element copied by `table.init`                              |
 | `LocalAllocate`        | 5     | Per local variable a function declares beyond `LocalsUnmetered` |
 | `LocalsUnmetered`      | 100   | Setting, not a cost: locals per function that are not charged   |
 | `MaxMemoryGrowDelta`   | 1     | Limit, not a cost: pages one `memory.grow` may request          |
@@ -555,21 +577,13 @@ Protocol operations that a contract triggers, such as transfers, freezes and ass
 </details>
 
 <details>
-<summary>Tables and references (11, 8 charged)</summary>
+<summary>References (3, 3 charged)</summary>
 
 | Opcode      | Cost | Charged |
 | ----------- | ---- | ------- |
 | `RefNull`   | 5    | Yes     |
 | `RefIsNull` | 5    | Yes     |
 | `RefFunc`   | 5    | Yes     |
-| `TableInit` | 10   | Yes     |
-| `ElemDrop`  | 10   | No      |
-| `TableCopy` | 10   | No      |
-| `TableFill` | 10   | No      |
-| `TableGet`  | 10   | Yes     |
-| `TableSet`  | 10   | Yes     |
-| `TableGrow` | 10   | Yes     |
-| `TableSize` | 10   | Yes     |
 
 </details>
 
@@ -676,10 +690,10 @@ To regenerate the tables after a gas schedule update, download the current mainn
 ```bash
 mkdir -p /tmp/klever-config
 curl -sS https://backup.mainnet.klever.org/config.mainnet.108.tar.gz | tar -xz -C /tmp/klever-config
-curl -sS -o /tmp/klever-config/opcodeCost.go https://raw.githubusercontent.com/klever-io/klever-go/v1.7.22/kvm/wasmer2/opcodeCost.go
-pnpm run gen:gas-tables /tmp/klever-config/config/gasScheduleV1.yaml /tmp/klever-config/opcodeCost.go 108 2026-11-06
+curl -sS -o /tmp/klever-config/opcodeCost.go https://raw.githubusercontent.com/klever-io/klever-go/v1.7.23-rc1/kvm/wasmer2/opcodeCost.go
+pnpm run gen:gas-tables /tmp/klever-config/config/gasScheduleV1.yaml /tmp/klever-config/opcodeCost.go 108 2026-11-23
 ```
 
 The prose above the tables repeats some schedule values (code loading, storage costs, the storage read curve, the instruction costs) and so does [VM Memory Limits](/smart-contracts/config-and-tooling/memory-allocation#vm-memory-limits). The generator stops and lists them when the new schedule changes any of them: update that text, then the `PROSE_VALUES` list in the script, and run it again.
 
-Which schedule file a network uses, from which epoch, is set by `gasSchedule.gasScheduleByEpochs` in the package's `enableEpochs.yaml`. Mainnet package 108 uses `gasScheduleV1.yaml` from epoch 4860; testnet package 109 switched to the same file at epoch 32945.
+Which schedule file a network uses, from which epoch, is set by `gasSchedule.gasScheduleByEpochs` in the package's `enableEpochs.yaml`. Mainnet package 108 uses `gasScheduleV1.yaml` from epoch 4860; testnet package 109 switched to the same file at epoch 32945. From v1.7.23 the node loads and checks every schedule listed there when it starts. It does not start if one of the files is missing or incomplete, or if two entries have the same start epoch.

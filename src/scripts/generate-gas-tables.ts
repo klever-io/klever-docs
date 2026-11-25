@@ -99,7 +99,12 @@ const PROSE_VALUES: [
     50,
     'gas page: host functions, storage writes, storage read formulas',
   ],
-  ['BaseOperationCost', 'StorePerByte', 10_000, 'gas page: storage writes'],
+  [
+    'BaseOperationCost',
+    'StorePerByte',
+    10_000,
+    'gas page: storage writes, built-in functions',
+  ],
   ['BaseOperationCost', 'PersistPerByte', 1_000, 'gas page: storage writes'],
   [
     'BaseOpsAPICost',
@@ -120,9 +125,19 @@ const PROSE_VALUES: [
     1_000,
     'gas page: storage reads and read formulas',
   ],
-  ['BaseOpsAPICost', 'TransferValue', 100_000, 'gas page: built-in functions'],
+  [
+    'BaseOpsAPICost',
+    'TransferValue',
+    100_000,
+    'gas page: built-in functions; royalties page: purchase by a contract',
+  ],
   ['BigIntAPICost', 'CopyPerByteForTooBig', 1_000, 'gas page: big integers'],
-  ['BuiltInCost', 'Transfer', 200_000, 'gas page: built-in functions'],
+  [
+    'BuiltInCost',
+    'Transfer',
+    200_000,
+    'gas page: built-in functions; royalties page: purchase by a contract',
+  ],
   [
     'DynamicStorageLoad',
     'QuadraticCoefficient',
@@ -234,7 +249,6 @@ const MEANINGS: Record<string, string> = {
   LocalsUnmetered:
     'Setting, not a cost: locals per function that are not charged',
   MaxDeclaredTableSize: 'Limit, not a cost: largest table a module may declare',
-  TableInitPerElement: 'Per element copied by `table.init`',
 }
 
 function costTable(
@@ -256,7 +270,7 @@ function costTable(
 const OPCODE_GROUPS: [title: string, match: RegExp, noun: string][] = [
   [
     'Limits and settings',
-    /^(MaxMemoryGrow|MaxMemoryGrowDelta|MaxDeclaredTableSize|LocalAllocate|LocalsUnmetered|TableInitPerElement)$/,
+    /^(MaxMemoryGrow|MaxMemoryGrowDelta|MaxDeclaredTableSize|LocalAllocate|LocalsUnmetered)$/,
     'limits and settings',
   ],
   [
@@ -274,7 +288,7 @@ const OPCODE_GROUPS: [title: string, match: RegExp, noun: string][] = [
     /^((I32|I64|F32|F64)(Load|Store)|MemorySize|MemoryGrow|MemoryInit|MemoryCopy|MemoryFill|DataDrop)/,
     'memory opcodes',
   ],
-  ['Tables and references', /^(Table|Elem|Ref)/, 'table and reference opcodes'],
+  ['References', /^Ref/, 'reference opcodes'],
   ['Atomics (threads)', /Atomic/, 'atomic'],
   [
     'SIMD (128-bit vectors)',
@@ -431,7 +445,7 @@ export function render(
     api(
       'ManagedMapAPICost',
       'Host functions: managed maps',
-      'Key-value maps held by the VM.',
+      'Key-value maps held by the VM. On top of the cost below, `ManagedMapPut`, `ManagedMapGet` and `ManagedMapRemove` pay `DataCopyPerByte` for each byte of the key and of the value, and `ManagedMapContains` for each byte of the key.',
     ),
     '',
     api(

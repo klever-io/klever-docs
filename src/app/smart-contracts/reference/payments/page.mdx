@@ -62,6 +62,8 @@ payments.iter().for_each(|payment| {
 });
 ```
 
+A call that pays several tokens is settled as a whole. From the FixAuditChangesV7 epoch (6424 on mainnet), the node checks every payment before it moves any of them, so either all the tokens reach the contract or none does. Before, the tokens were moved one at a time, and a payment that failed left the earlier ones moved. The same rule applies to a multi-token transfer a contract sends.
+
 Payment objects (KdaTokenPayment) store three variables that you can use to assert the token and also gather the amount:
 ```rust
 let amount = payment.amount;
